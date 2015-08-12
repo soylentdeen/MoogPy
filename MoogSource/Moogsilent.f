@@ -11,8 +11,6 @@ c******************************************************************************
       include 'Atmos.com'
       include 'Pstuff.com'
 
-cf2py intent(callback, hide) blah
-      external blah
 
 c$$$$$$$$$$$$$$$$$$$$$$$$ USER SETUP AREA $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 c     in compiling MOOG, here the various machine-specific things are
@@ -52,7 +50,6 @@ c     if silent = 'y', the non-interactive MOOG is run
 c*****invoke the overall starting routine
       control = '       '
       call begin
-      call blah()
 
 
 c*****use one of the standard driver routines ("isotop" is obsolete): 
@@ -62,8 +59,7 @@ c      elseif (control .eq. 'isoplot') then
 c         call plotit
 c      elseif (control .eq. 'synth  ') then
       if (control .eq. 'synth  ') then
-          write (*,*) "Blah"
-c         call synth
+         call synth
 c      elseif (control .eq. 'cogsyn ') then
 c         call cogsyn  
 c      elseif (control .eq. 'blends ') then

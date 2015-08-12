@@ -4,12 +4,12 @@ import numpy
 import scipy
 import matplotlib.pyplot as pyplot
 
-#def recorder(x, y):
-#    wave.append(x)
-#    flux.append(y)
+def recorder(x, y):
+    wave.append(x)
+    flux.append(y)
 
-def recorder():
-    print 'Hi!'
+#def recorder():
+#    print 'Hi!'
 
 
 #datadir = '/home/deen/Data/MoogStokes/Atmospheres/MARCS'
@@ -29,8 +29,7 @@ def recorder():
 flux = []
 wave = []
 
-Moog.synspec.recorder = recorder
-Moog.moogsilent.blah = recorder
+Moog.recorder = recorder
 
 Moog.moogsilent()
 

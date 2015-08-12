@@ -88,8 +88,9 @@ c*****compute a spectrum depth at this point
       call cdcalc (2)
       first = 0.4343*cd(1)
       d(n) = rinteg(xref,cd,dummy1,ntau,first)
-c      call recorder(wave, d(n))
-      call recorder()
+      write (*,*) wave, d(n)
+      call recorder(wave, d(n))
+c      call recorder()
       if (mod(n,10) .eq. 0) then
          if (iraf .eq. 1) then
             do j=1,10
