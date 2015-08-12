@@ -4,12 +4,14 @@ import numpy
 import scipy
 import matplotlib.pyplot as pyplot
 
-def recorder(x, y):
-    wave.append(x)
-    flux.append(y)
+flux = []
+wavelengths = []
 
-#def recorder():
-#    print 'Hi!'
+def recorder(x, y):
+    global flux
+    global wavelengths
+    wavelengths.append(x)
+    flux.append(y)
 
 
 #datadir = '/home/deen/Data/MoogStokes/Atmospheres/MARCS'
@@ -26,8 +28,6 @@ def recorder(x, y):
 #atomicLines = PyMoog.AtomicLines(atomicFile)
 #moleucularLines = PyMoog.MolecularLines(molecFile)
 
-flux = []
-wave = []
 
 Moog.recorder = recorder
 
@@ -36,12 +36,10 @@ Moog.moogsilent()
 fig = pyplot.figure(0)
 ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
-flux = 1.0 - Moog.linex.d
-wave = Moog.linex.wave1
+#flux = 1.0 - Moog.linex.d
+#wave = Moog.linex.wave1
 
-valid = wave > 0.
-
-ax.plot(wave[valid], flux[valid])
+ax.plot(wavelengths, 1.0-numpy.array(flux))
 
 fig.show()
 

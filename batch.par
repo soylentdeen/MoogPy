@@ -15,4 +15,4 @@ freeform        0
 ncells          695
 nrings          23
 synlimits
-                6447.0 6453.0 0.05 1.00
+                6447.0 6453.0 0.01 1.00

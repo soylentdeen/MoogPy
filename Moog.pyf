@@ -3,17 +3,16 @@
 
 python module synspec__user__routines 
     interface synspec_user_interface 
-        subroutine recorder(wave,e_d_n_err) ! in :Moog:Synspec.f:synspec:unknown_interface
+        subroutine recorder(wave,e_d_n_err) ! in :Moogsilent.f:Synspec.f:synspec:unknown_interface
             intent(callback,hide) recorder
             real*8 :: wave
             real*8 :: e_d_n_err
         end subroutine recorder
     end interface synspec_user_interface
 end python module synspec__user__routines
-python module Moog ! in 
-    interface  ! in :Moog
-        subroutine moogsilent ! in :Moog:Moogsilent.f
-            use synspec__user__routines
+python module Moogsilent.f ! in 
+    interface  ! in :Moogsilent.f
+        subroutine begin ! in :Moogsilent.f:Begin.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -217,223 +216,14 @@ python module Moog ! in
             character*1 :: rotateflag
             character*1 :: lorenflag
             character*1 :: macroflag
-            intent(callback, hide) recorder
+            intent(callback) recorder
             external recorder
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
-        end subroutine moogsilent
-        subroutine begin ! in :Moog:Begin.f
-            real*8 :: xxm1
-            real*8 :: xxb1
-            real*8 :: xxr1
-            real*8 :: xxm2
-            real*8 :: xxb2
-            real*8 :: xxr2
-            real*8 :: xxm3
-            real*8 :: xxb3
-            real*8 :: xxr3
-            real*8 :: deltaep
-            real*8 :: deltarw
-            real*8 :: deltawv
-            real*8 dimension(1000) :: p
-            real*8 dimension(1000) :: prot
-            real*8 dimension(1000) :: pmac
-            real*8 :: vsini
-            real*8 :: limbdark
-            real*8 :: vmac
-            real*8 :: fwhmgauss
-            real*8 :: fwhmloren
-            real*8 :: oldvsini
-            real*8 :: oldlimbdark
-            real*8 :: oldvmac
-            real*8 :: oldfwhmgauss
-            real*8 :: oldfwhmloren
-            real*8 :: origvsini
-            real*8 :: origlimbdark
-            real*8 :: origvmac
-            real*8 :: origfwhmgauss
-            real*8 :: origfwhmloren
-            real*8 :: half
-            real*8 :: power
-            real*8 :: powerrot
-            real*8 :: powermac
-            real*8 :: average
-            real*8 :: deviate
-            real*8 :: oldhalf
-            real*4 dimension(100000) :: xobs
-            real*4 dimension(100000) :: yobs
-            real*4 :: xlo
-            real*4 :: xhi
-            real*4 :: ylo
-            real*4 :: yhi
-            real*4 :: origxlo
-            real*4 :: origxhi
-            real*4 :: origylo
-            real*4 :: origyhi
-            real*4 :: oldxlo
-            real*4 :: oldxhi
-            real*4 :: oldylo
-            real*4 :: oldyhi
-            real*4 :: xadd
-            real*4 :: yadd
-            real*4 :: ymult
-            real*4 :: veladd
-            real*4 :: deltavel
-            real*4 :: origxadd
-            real*4 :: origyadd
-            real*4 :: origymult
-            real*4 :: origveladd
-            real*4 :: oldxadd
-            real*4 :: oldyadd
-            real*4 :: oldymult
-            real*4 :: oldveladd
-            real*4 :: bigxtic
-            real*4 :: bigytic
-            real*4 :: smlxtic
-            real*4 :: smlytic
-            real*4 :: xplotpos
-            real*4 :: yplotpos
-            real*4 :: addflux
-            real*4 :: ydelta
-            integer :: lount
-            integer :: kount
-            integer :: nsyn
-            integer :: lim1obs
-            integer :: lim2obs
-            integer :: iterm
-            integer :: iscale
-            integer :: maxline
-            integer :: histoyes
-            integer :: deviations
-            integer :: syncount
-            integer :: kounter
-            integer :: maxshift
-            character*80 :: f1out
-            character*80 :: f2out
-            character*80 :: f3out
-            character*80 :: f4out
-            character*80 :: f5out
-            character*80 :: f6out
-            character*80 :: f7out
-            character*80 :: f8out
-            character*80 :: f9out
-            character*80 :: f10out
-            character*80 :: fparam
-            character*80 :: fmodel
-            character*80 :: flines
-            character*80 :: fslines
-            character*80 :: fobs
-            character*80 :: ftable
-            character*80 :: fbarklem
-            character*80 :: fbarklemuv
-            character*80 :: atmosdir
-            character*80 :: outdir
-            character*60 :: moogpath
-            character dimension(95,2),intent(c) :: names
-            character*10 :: modtype
-            character*7 :: control
-            character*3 :: machine
-            character*1 :: silent
-            real*8 dimension(100) :: t
-            real*8 dimension(100) :: theta
-            real*8 dimension(100) :: tkev
-            real*8 dimension(100) :: tlog
-            real*8 dimension(100) :: pgas
-            real*8 dimension(100) :: ne
-            real*8 dimension(100) :: nhtot
-            real*8 dimension(8,2,100) :: numdens
-            real*8 dimension(100) :: molweight
-            real*8 dimension(100) :: vturb
-            real*8 dimension(100) :: scont
-            real*8 dimension(100) :: kapref
-            real*8 dimension(100) :: kaplam
-            real*8 dimension(100) :: tauref
-            real*8 dimension(100) :: taulam
-            real*8 dimension(100) :: kaplamabs
-            real*8 dimension(100) :: kaplamsca
-            real*8 dimension(100) :: rho
-            real*8 dimension(100) :: rhox
-            real*8 dimension(100) :: xref
-            real*8 dimension(100) :: xdepth
-            real*8 dimension(95) :: elem
-            real*8 dimension(95) :: xabund
-            real*8 dimension(95) :: xabu
-            real*8 dimension(95,4,100) :: u
-            real*8 :: flux
-            real*8 :: fudge
-            real*8 :: wavref
-            real*8 :: abscale
-            real*8 :: deltaabund
-            integer :: ntau
-            integer :: jtau5
-            integer :: iunits
-            integer :: itru
-            integer :: iraf
-            integer :: modelnum
-            integer :: nfparam
-            integer :: nfmodel
-            integer :: nflines
-            integer :: nfslines
-            integer :: nfobs
-            integer :: nftable
-            integer :: nf1out
-            integer :: nf2out
-            integer :: nf3out
-            integer :: nf4out
-            integer :: nf5out
-            integer :: nf6out
-            integer :: nf7out
-            integer :: nf8out
-            integer :: nf9out
-            integer :: nf10out
-            integer :: nfbarklem
-            integer :: nfbarklemuv
-            integer :: modprintopt
-            integer :: molopt
-            integer :: linprintopt
-            integer :: linprintalt
-            integer :: fluxintopt
-            integer :: plotopt
-            integer :: dampingopt
-            integer :: specfileopt
-            integer :: linfileopt
-            integer :: printstrong
-            integer :: linecount
-            integer :: oldcount
-            integer :: scatopt
-            character*400 :: abitle
-            character*240 :: isoitle
-            character*80 :: smterm
-            character*80 :: smtotalterm
-            character*80 :: smt1
-            character*80 :: smt2
-            character*80 :: moditle
-            character*80 :: obsitle
-            character*80 :: linitle
-            character*80 :: smitle
-            character*80 :: array
-            character*80 :: chinfo
-            character*80 :: errmess
-            character*80 :: plotroutine
-            character*4 :: whichwin
-            character*4 :: origwhichwin
-            character*4 :: oldwhichwin
-            character*1 :: choice
-            character*1 :: smtype
-            character*1 :: oldsmtype
-            character*1 :: origsmtype
-            character*1 :: gaussflag
-            character*1 :: rotateflag
-            character*1 :: lorenflag
-            character*1 :: macroflag
-            common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
-            common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
-            common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
-            common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine begin
-        subroutine synspec ! in :Moog:Synspec.f
+        subroutine synspec ! in :Moogsilent.f:Synspec.f
             use synspec__user__routines
             real*8 :: xxm1
             real*8 :: xxb1
@@ -736,7 +526,7 @@ python module Moog ! in
             character*3 :: machine
             character*1 :: silent
             character dimension(2500,7),intent(c) :: damptype
-            intent(callback, hide) recorder
+            intent(callback) recorder
             external recorder
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /dummy/ dummy1,dummy2,dummy3,dummy4
@@ -748,7 +538,7 @@ python module Moog ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine synspec
-        subroutine getasci(num,line) ! in :Moog:Getasci.f
+        subroutine getasci(num,line) ! in :Moogsilent.f:Getasci.f
             integer :: num
             integer :: line
             real*8 :: xxm1
@@ -864,7 +654,7 @@ python module Moog ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine getasci
-        subroutine putasci(num,line) ! in :Moog:Putasci.f
+        subroutine putasci(num,line) ! in :Moogsilent.f:Putasci.f
             integer :: num
             integer :: line
             real*8 :: xxm1
@@ -980,9 +770,9 @@ python module Moog ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine putasci
-        subroutine mydriver ! in :Moog:Mydriver.f
+        subroutine mydriver ! in :Moogsilent.f:Mydriver.f
         end subroutine mydriver
-        subroutine calmod ! in :Moog:Calmod.f
+        subroutine calmod ! in :Moogsilent.f:Calmod.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -1191,7 +981,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine calmod
-        subroutine finish(number) ! in :Moog:Finish.f
+        subroutine finish(number) ! in :Moogsilent.f:Finish.f
             integer :: number
             real*8 :: xxm1
             real*8 :: xxb1
@@ -1401,7 +1191,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine finish
-        subroutine binary ! in :Moog:Binary.f
+        subroutine binary ! in :Moogsilent.f:Binary.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -1733,7 +1523,7 @@ python module Moog ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine binary
-        subroutine opacit(modeop,waveop) ! in :Moog:Opacit.f
+        subroutine opacit(modeop,waveop) ! in :Moogsilent.f:Opacit.f
             integer :: modeop
             real*8 :: waveop
             character*80 :: f1out
@@ -1855,7 +1645,7 @@ python module Moog ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /dummy/ dummy1,dummy2,dummy3,dummy4
         end subroutine opacit
-        subroutine opacescat ! in :Moog:Opacscat.f
+        subroutine opacescat ! in :Moogsilent.f:Opacscat.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -1970,7 +1760,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacescat
-        subroutine opachscat ! in :Moog:Opacscat.f
+        subroutine opachscat ! in :Moogsilent.f:Opacscat.f
             character dimension(2500,7),intent(c) :: damptype
             character*80 :: f1out
             character*80 :: f2out
@@ -2161,7 +1951,7 @@ python module Moog ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine opachscat
-        subroutine opach2scat ! in :Moog:Opacscat.f
+        subroutine opach2scat ! in :Moogsilent.f:Opacscat.f
             character dimension(2500,7),intent(c) :: damptype
             character*80 :: f1out
             character*80 :: f2out
@@ -2352,7 +2142,7 @@ python module Moog ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine opach2scat
-        subroutine opachescat ! in :Moog:Opacscat.f
+        subroutine opachescat ! in :Moogsilent.f:Opacscat.f
             character dimension(2500,7),intent(c) :: damptype
             character*80 :: f1out
             character*80 :: f2out
@@ -2543,7 +2333,7 @@ python module Moog ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine opachescat
-        subroutine opacc1 ! in :Moog:Opacmetals.f
+        subroutine opacc1 ! in :Moogsilent.f:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -2658,7 +2448,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacc1
-        subroutine opacmg1 ! in :Moog:Opacmetals.f
+        subroutine opacmg1 ! in :Moogsilent.f:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -2773,7 +2563,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacmg1
-        subroutine opacmg2 ! in :Moog:Opacmetals.f
+        subroutine opacmg2 ! in :Moogsilent.f:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -2888,7 +2678,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacmg2
-        subroutine opacal1 ! in :Moog:Opacmetals.f
+        subroutine opacal1 ! in :Moogsilent.f:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3003,7 +2793,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacal1
-        subroutine opacsi1 ! in :Moog:Opacmetals.f
+        subroutine opacsi1 ! in :Moogsilent.f:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3118,7 +2908,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacsi1
-        subroutine opacsi2 ! in :Moog:Opacmetals.f
+        subroutine opacsi2 ! in :Moogsilent.f:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3233,7 +3023,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacsi2
-        subroutine opacfe1 ! in :Moog:Opacmetals.f
+        subroutine opacfe1 ! in :Moogsilent.f:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3348,7 +3138,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacfe1
-        function seaton(freq0,xsect,power,a) ! in :Moog:Opacmetals.f
+        function seaton(freq0,xsect,power,a) ! in :Moogsilent.f:Opacmetals.f
             real*8 :: freq0
             real*8 :: xsect
             real*8 :: power
@@ -3373,7 +3163,7 @@ python module Moog ! in
             real*8 :: seaton
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end function seaton
-        subroutine opacheminus ! in :Moog:OpacHelium.f
+        subroutine opacheminus ! in :Moogsilent.f:OpacHelium.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3488,7 +3278,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacheminus
-        subroutine opach1 ! in :Moog:OpacHydrogen.f
+        subroutine opach1 ! in :Moogsilent.f:OpacHydrogen.f
             real*8 dimension(110) :: amol
             real*8 dimension(7,110) :: datmol
             real*8 :: const
@@ -3618,7 +3408,7 @@ python module Moog ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /mol/ pmol,xmol,xatom,patom,xamol,neq,lev,nmol,natoms,iorder
         end subroutine opach1
-        subroutine opachminus ! in :Moog:OpacHydrogen.f
+        subroutine opachminus ! in :Moogsilent.f:OpacHydrogen.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3733,7 +3523,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opachminus
-        subroutine linter(xold,yold,nold,xnew,ynew,nnew) ! in :Moog:OpacHydrogen.f
+        subroutine linter(xold,yold,nold,xnew,ynew,nnew) ! in :Moogsilent.f:OpacHydrogen.f
             real*8 dimension(*) :: xold
             real*8 dimension(*) :: yold
             integer :: nold
@@ -3741,7 +3531,7 @@ python module Moog ! in
             real*8 dimension(*) :: ynew
             integer :: nnew
         end subroutine linter
-        function map1(xold,fold,nold,xnew,fnew,nnew) ! in :Moog:OpacHydrogen.f
+        function map1(xold,fold,nold,xnew,fnew,nnew) ! in :Moogsilent.f:OpacHydrogen.f
             real*8 dimension(*) :: xold
             real*8 dimension(*) :: fold
             integer :: nold
@@ -3750,7 +3540,7 @@ python module Moog ! in
             integer :: nnew
             integer :: map1
         end function map1
-        subroutine nearly(numpass) ! in :Moog:Nearly.f
+        subroutine nearly(numpass) ! in :Moogsilent.f:Nearly.f
             integer :: numpass
             real*8 dimension(100) :: dummy1
             real*8 dimension(100) :: dummy2
@@ -3976,7 +3766,7 @@ python module Moog ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine nearly
-        function ivcleof(y,x) ! in :Moog:Nansi.f
+        function ivcleof(y,x) ! in :Moogsilent.f:Nansi.f
             integer :: y
             integer :: x
             real*8 :: xxm1
@@ -4093,7 +3883,7 @@ python module Moog ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end function ivcleof
-        function ivwrite(y,x,arr,ccount) ! in :Moog:Nansi.f
+        function ivwrite(y,x,arr,ccount) ! in :Moogsilent.f:Nansi.f
             integer :: y
             integer :: x
             character*80 :: arr
@@ -4212,7 +4002,7 @@ python module Moog ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end function ivwrite
-        function ivmove(y,x) ! in :Moog:Nansi.f
+        function ivmove(y,x) ! in :Moogsilent.f:Nansi.f
             integer :: y
             integer :: x
             real*8 :: xxm1
@@ -4329,18 +4119,18 @@ python module Moog ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end function ivmove
-        function ivcleol() ! in :Moog:Nansi.f
+        function ivcleol() ! in :Moogsilent.f:Nansi.f
             integer :: ivcleol
         end function ivcleol
-        function ivbold(on) ! in :Moog:Nansi.f
+        function ivbold(on) ! in :Moogsilent.f:Nansi.f
             integer :: on
             integer :: ivbold
         end function ivbold
-        function ivundl(on) ! in :Moog:Nansi.f
+        function ivundl(on) ! in :Moogsilent.f:Nansi.f
             integer :: on
             integer :: ivundl
         end function ivundl
-        subroutine eqlib ! in :Moog:Eqlib.f
+        subroutine eqlib ! in :Moogsilent.f:Eqlib.f
             real*8 dimension(100) :: dummy1
             real*8 dimension(100) :: dummy2
             real*8 dimension(5000) :: dummy3
@@ -4467,7 +4257,7 @@ python module Moog ! in
             common /mol/ pmol,xmol,xatom,patom,xamol,neq,lev,nmol,natoms,iorder
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
         end subroutine eqlib
-        function partnew(atom,k,level) ! in :Moog:Partnew.f
+        function partnew(atom,k,level) ! in :Moogsilent.f:Partnew.f
             real*8 :: atom
             integer :: k
             integer :: level
@@ -4578,7 +4368,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /quants/ xsolar,xam,newpartdata,xchi1,xchi2,xchi3,nudata,partflag,nu
         end function partnew
-        subroutine cdcalc(number) ! in :Moog:Cdcalc.f
+        subroutine cdcalc(number) ! in :Moogsilent.f:Cdcalc.f
             integer :: number
             character*80 :: f1out
             character*80 :: f2out
@@ -4752,12 +4542,12 @@ python module Moog ! in
             common /lindamp/ damptype
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine cdcalc
-        function expint(x,n) ! in :Moog:Jexpint.f
+        function expint(x,n) ! in :Moogsilent.f:Jexpint.f
             real*8 :: x
             integer :: n
             real*8 :: expint
         end function expint
-        subroutine linlimit ! in :Moog:Linlimit.f
+        subroutine linlimit ! in :Moogsilent.f:Linlimit.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -4947,7 +4737,7 @@ python module Moog ! in
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine linlimit
-        subroutine prinfo(line) ! in :Moog:Prinfo.f
+        subroutine prinfo(line) ! in :Moogsilent.f:Prinfo.f
             integer :: line
             real*8 :: xxm1
             real*8 :: xxb1
@@ -5157,12 +4947,12 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine prinfo
-        subroutine sunder(amol,i1,i2) ! in :Moog:Sunder.f
+        subroutine sunder(amol,i1,i2) ! in :Moogsilent.f:Sunder.f
             real*8 :: amol
             integer :: i1
             integer :: i2
         end subroutine sunder
-        subroutine gammabark ! in :Moog:Gammabark.f
+        subroutine gammabark ! in :Moogsilent.f:Gammabark.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -5458,7 +5248,7 @@ python module Moog ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine gammabark
-        function rinteg(x,f,fint,n,start) ! in :Moog:Rinteg.f
+        function rinteg(x,f,fint,n,start) ! in :Moogsilent.f:Rinteg.f
             real*8 dimension(5000) :: x
             real*8 dimension(5000) :: f
             real*8 dimension(5000) :: fint
@@ -5466,7 +5256,7 @@ python module Moog ! in
             real*8 :: start
             real*8 :: rinteg
         end function rinteg
-        subroutine parcoe(f,x,a,b,c,n) ! in :Moog:Rinteg.f
+        subroutine parcoe(f,x,a,b,c,n) ! in :Moogsilent.f:Rinteg.f
             real*8 dimension(5000) :: f
             real*8 dimension(5000) :: x
             real*8 dimension(5000) :: a
@@ -5474,7 +5264,7 @@ python module Moog ! in
             real*8 dimension(5000) :: c
             integer :: n
         end subroutine parcoe
-        subroutine inlines(num) ! in :Moog:Inlines.f
+        subroutine inlines(num) ! in :Moogsilent.f:Inlines.f
             integer :: num
             real*8 :: xxm1
             real*8 :: xxb1
@@ -5893,7 +5683,7 @@ python module Moog ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine inlines
-        subroutine params ! in :Moog:Params.f
+        subroutine params ! in :Moogsilent.f:Params.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -6335,7 +6125,7 @@ python module Moog ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine params
-        subroutine taukap ! in :Moog:Taukap.f
+        subroutine taukap ! in :Moogsilent.f:Taukap.f
             real*8 dimension(100) :: dummy1
             real*8 dimension(100) :: dummy2
             real*8 dimension(5000) :: dummy3
@@ -6513,34 +6303,34 @@ python module Moog ! in
             common /lindamp/ damptype
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine taukap
-        function voigt(a,v) ! in :Moog:Voigt.f
+        function voigt(a,v) ! in :Moogsilent.f:Voigt.f
             real*8 :: a
             real*8 :: v
             real*8 :: voigt
         end function voigt
-        subroutine discov(amol,i1,i2) ! in :Moog:Discov.f
+        subroutine discov(amol,i1,i2) ! in :Moogsilent.f:Discov.f
             real*8 :: amol
             integer :: i1
             integer :: i2
         end subroutine discov
-        function coulx(n,freq,z) ! in :Moog:Opaccouls.f
+        function coulx(n,freq,z) ! in :Moogsilent.f:Opaccouls.f
             integer :: n
             real*8 :: freq
             real*8 :: z
             real*8 :: coulx
         end function coulx
-        function coulbf1s(freq,z) ! in :Moog:Opaccouls.f
+        function coulbf1s(freq,z) ! in :Moogsilent.f:Opaccouls.f
             real*8 :: freq
             real*8 :: z
             real*8 :: coulbf1s
         end function coulbf1s
-        function coulff(nz,tlog,freq) ! in :Moog:Opaccouls.f
+        function coulff(nz,tlog,freq) ! in :Moogsilent.f:Opaccouls.f
             integer :: nz
             real*8 :: tlog
             real*8 :: freq
             real*8 :: coulff
         end function coulff
-        subroutine inmodel ! in :Moog:Inmodel.f
+        subroutine inmodel ! in :Moogsilent.f:Inmodel.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -6877,7 +6667,7 @@ python module Moog ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine inmodel
-        subroutine partfn(atom,jmark) ! in :Moog:Partfn.f
+        subroutine partfn(atom,jmark) ! in :Moogsilent.f:Partfn.f
             real*8 :: atom
             integer :: jmark
             character*80 :: f1out
@@ -7062,7 +6852,7 @@ python module Moog ! in
             common /quants/ xsolar,xam,newpartdata,xchi1,xchi2,xchi3,nudata,partflag,nu
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine partfn
-        subroutine damping(linnumber) ! in :Moog:Damping.f
+        subroutine damping(linnumber) ! in :Moogsilent.f:Damping.f
             integer :: linnumber
             character*80 :: f1out
             character*80 :: f2out
@@ -7236,7 +7026,7 @@ python module Moog ! in
             common /lindamp/ damptype
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine damping
-        function ucalc(atom,level) ! in :Moog:Ucalc.f
+        function ucalc(atom,level) ! in :Moogsilent.f:Ucalc.f
             real*8 :: atom
             integer :: level
             character*80 :: f1out
@@ -7346,7 +7136,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /quants/ xsolar,xam,newpartdata,xchi1,xchi2,xchi3,nudata,partflag,nu
         end function ucalc
-        subroutine invert(order,a,i,nsiz) ! in :Moog:Invert.f
+        subroutine invert(order,a,i,nsiz) ! in :Moogsilent.f:Invert.f
             integer :: order
             real*8 dimension(nsiz,nsiz) :: a
             real*8 dimension(nsiz,nsiz),depend(nsiz,nsiz) :: i
@@ -7447,7 +7237,7 @@ python module Moog ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
         end subroutine invert
-        block data atomic ! in :Moog:Batom.f
+        block data atomic ! in :Moogsilent.f:Batom.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -7554,7 +7344,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /quants/ xsolar,xam,newpartdata,xchi1,xchi2,xchi3,nudata,partflag,nu
         end block data atomic
-        subroutine infile(type_bn,iunit,mode,irec,charcount,fname,line) ! in :Moog:Infile.f
+        subroutine infile(type_bn,iunit,mode,irec,charcount,fname,line) ! in :Moogsilent.f:Infile.f
             character*7 :: type_bn
             integer :: iunit
             character*11 :: mode
@@ -7770,7 +7560,7 @@ python module Moog ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine infile
-        subroutine trudamp(linnum) ! in :Moog:Trudamp.f
+        subroutine trudamp(linnum) ! in :Moogsilent.f:Trudamp.f
             integer :: linnum
             character*80 :: f1out
             character*80 :: f2out
@@ -7944,11 +7734,11 @@ python module Moog ! in
             common /lindamp/ damptype
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine trudamp
-        subroutine getcount(num,linechars) ! in :Moog:Getcount.f
+        subroutine getcount(num,linechars) ! in :Moogsilent.f:Getcount.f
             integer :: num
             character*80 :: linechars
         end subroutine getcount
-        subroutine lineinfo(number) ! in :Moog:Lineinfo.f
+        subroutine lineinfo(number) ! in :Moogsilent.f:Lineinfo.f
             integer :: number
             real*8 :: xxm1
             real*8 :: xxb1
@@ -8286,7 +8076,7 @@ python module Moog ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine lineinfo
-        subroutine synth ! in :Moog:Synth.f
+        subroutine synth ! in :Moogsilent.f:Synth.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -8694,7 +8484,7 @@ python module Moog ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine synth
-        subroutine chabund ! in :Moog:Chabund.f
+        subroutine chabund ! in :Moogsilent.f:Chabund.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -8950,13 +8740,13 @@ python module Moog ! in
             common /mol/ pmol,xmol,xatom,patom,xamol,neq,lev,nmol,natoms,iorder
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
         end subroutine chabund
-        subroutine getnum(nchars,line,xnum,xnumsngl) ! in :Moog:Getnum.f
+        subroutine getnum(nchars,line,xnum,xnumsngl) ! in :Moogsilent.f:Getnum.f
             integer :: nchars
             integer :: line
             real*8 :: xnum
             real*4 :: xnumsngl
         end subroutine getnum
-        subroutine number(nchar,line,xnum) ! in :Moog:Number.f
+        subroutine number(nchar,line,xnum) ! in :Moogsilent.f:Number.f
             integer :: nchar
             integer :: line
             real*8 :: xnum
@@ -9073,7 +8863,7 @@ python module Moog ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine number
-        block data molec ! in :Moog:Bmolec.f
+        block data molec ! in :Moogsilent.f:Bmolec.f
             real*8 dimension(110) :: amol
             real*8 dimension(7,110) :: datmol
             real*8 :: const
@@ -9092,7 +8882,7 @@ python module Moog ! in
             common /mol/ pmol,xmol,xatom,patom,xamol,neq,lev,nmol,natoms,iorder
         end block data molec
     end interface 
-end python module Moog
+end python module Moogsilent.f
 
 ! This file was auto-generated with f2py (version:2).
 ! See http://cens.ioc.ee/projects/f2py2e/
