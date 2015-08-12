@@ -1,0 +1,18 @@
+synth
+terminal      'x11'
+summary_out   'summary.out'
+smoothed_out  'junk.out'
+standard_out  'out1'
+hardpost_out   'dummy.ps'
+atmos_dir     '/home/deen/Data/MoogStokes/Atmospheres/MARCS/'
+model_in       'MARCS_T3500_G3.0_M0.0_t2.0.md'
+lines_in      'lines.weak'
+atmosphere      1
+molecules       2
+lines           1
+damping         0
+freeform        0
+ncells          695
+nrings          23
+synlimits
+                6447.0 6453.0 0.05 1.00
