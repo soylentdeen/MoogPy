@@ -57,6 +57,7 @@ c
   506 continue
   507 expint=eisave
       rex=exsave
+c      write (*,*) expint
   777 return
 c
 c  ei(xm) for xm .lt. -1.0

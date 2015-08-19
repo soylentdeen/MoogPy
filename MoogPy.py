@@ -14,6 +14,9 @@ def recorder(x, y):
     global wave
     wave.append(x)
     flux.append(y)
+    print wave[-1], flux[-1]
+    if flux[-1] < 0:
+        raw_input()
 
 
 configFile = 'gfOptimizer.cfg'
@@ -48,8 +51,10 @@ U,S,V = scipy.linalg.svd(IM)
 fig = pyplot.figure(0)
 ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
-for i in range(Lines.numLines):
-    ax.plot(wavelengths, IM[i,:])
+#for i in range(Lines.numLines):
+#    ax.plot(wavelengths, IM[i,:])
+
+ax.plot(wavelengths, nominalSpectrum)
 
 fig.show()
 

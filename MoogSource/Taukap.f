@@ -14,6 +14,7 @@ c******************************************************************************
 c*****compute the total line opacity at each depth                          
       do i=1,ntau     
          kapnu(i) = 0.0
+c         write (*,*) i, lim1, lim2
          do j=lim1,lim2
             v = 2.997929d10*dabs(wave-wave1(j))/
      .             (wave1(j)*dopp(j,i))            
