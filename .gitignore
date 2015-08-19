@@ -7,6 +7,8 @@ __pycache__/
 
 out1
 summary.out
+*.cfg
+*.lines
 
 # Distribution / packaging
 .Python

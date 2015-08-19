@@ -3,45 +3,62 @@ import PyMoog
 import numpy
 import scipy
 import matplotlib.pyplot as pyplot
+import AstroUtils
+import MoogTools
 
 flux = []
-wavelengths = []
+wave = []
 
 def recorder(x, y):
     global flux
-    global wavelengths
-    wavelengths.append(x)
+    global wave
+    wave.append(x)
     flux.append(y)
 
 
-#datadir = '/home/deen/Data/MoogStokes/Atmospheres/MARCS'
-#modelfile = datadir+'/MARCS_T3400_G4.0_M0.0_t2.0.md'
-
-#paramFile = 'ParFile'
-#atomicFile = 'AtomicFile'
-#molecFile = 'MolecFile'
-
-#model = PyMoog.Atmosphere(modelfile)
-
-#params = PyMoog.Params(paramFile)
-
-#atomicLines = PyMoog.AtomicLines(atomicFile)
-#moleucularLines = PyMoog.MolecularLines(molecFile)
-
-
+configFile = 'gfOptimizer.cfg'
 Moog.recorder = recorder
-
+Lines = MoogTools.LineList(configFile, 11700, 11730, 0.0, molecules=False)
+Lines.writeLineLists()
 Moog.moogsilent()
+
+IM = numpy.zeros((Lines.numLines, len(wave)))
+
+wavelengths = numpy.array(wave)
+nominalSpectrum = numpy.array(flux)
+
+for i in range(Lines.numLines):
+    flux = []
+    wave = []
+    #Moog.rewind()
+    Lines.perturbLine(i, 0.3)
+    Moog.moogsilent()
+    plus = numpy.array(flux)
+    flux = []
+    wave = []
+    #Moog.rewind()
+    Lines.perturbLine(i, -0.3)
+    Moog.moogsilent()
+    minus = numpy.array(flux)
+    IM[i,:] = plus - minus
+
+
+U,S,V = scipy.linalg.svd(IM)
 
 fig = pyplot.figure(0)
 ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
+for i in range(Lines.numLines):
+    ax.plot(wavelengths, IM[i,:])
+
+fig.show()
+
 #flux = 1.0 - Moog.linex.d
 #wave = Moog.linex.wave1
 
-ax.plot(wavelengths, 1.0-numpy.array(flux))
+#ax.plot(wavelengths, 1.0-numpy.array(flux))
 
-fig.show()
+#fig.show()
 
 #model.loadIntoFORTRAN(MoogStokes)
 

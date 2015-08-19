@@ -105,6 +105,7 @@ c         istat = ivwrite (4,3,array,49)
 c         stop
       endif
 
+      rewind nfparam
 
 c*****format statements
 1001  format (60(' '))
