@@ -4,7 +4,7 @@ summary_out   'summary.out'
 smoothed_out  'junk.out'
 standard_out  'out1'
 hardpost_out   'dummy.ps'
-atmos_dir     '/home/deen/Data/Atmospheres/'
+atmos_dir     '/home/deen/Data/MoogStokes/Atmospheres/'
 model_in       'MARCS_Solar.md'
 lines_in      'weak.lines'
 atmosphere      1

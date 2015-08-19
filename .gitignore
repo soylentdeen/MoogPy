@@ -9,6 +9,7 @@ out1
 summary.out
 *.cfg
 *.lines
+*.par
 
 # Distribution / packaging
 .Python
