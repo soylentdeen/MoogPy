@@ -42,6 +42,8 @@ c*****line plus continuum "contribution curve" calculation
      .                 (1.0+kapnu(i)/kaplam(i))*sline(i)*
      .                 expint(taulam(i)+taunu(i),2)) 
                write (*,*) cd(i), expint(taulam(i),2), taulam(i)
+               write (*,*) cd(i), expint(taulam(i),2), taulam(i)
+               write (*,*) cd(i), expint(taulam(i),2), taulam(i)
             endif
          enddo
       endif

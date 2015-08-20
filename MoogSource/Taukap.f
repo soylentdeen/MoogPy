@@ -14,11 +14,11 @@ c******************************************************************************
 c*****compute the total line opacity at each depth                          
       do i=1,ntau     
          kapnu(i) = 0.0
-c         write (*,*) i, lim1, lim2
          do j=lim1,lim2
             v = 2.997929d10*dabs(wave-wave1(j))/
      .             (wave1(j)*dopp(j,i))            
             kapnu(i) = kapnu(i) + kapnu0(j,i)*voigt(a(j,i),v)
+c            write (*,*) kapnu(i), i
          enddo                                     
 
          dummy1(i) = tauref(i)*kapnu(i)/(0.4343*kapref(i))
@@ -41,6 +41,7 @@ c*****compute the optical depths
       taunu(1) = first
       do i=2,ntau                                                     
          taunu(i) = taunu(i-1) + taunu(i)                  
+         write (*,*) taunu(i), i
       enddo
 
 

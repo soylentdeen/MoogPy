@@ -80,6 +80,7 @@ c     in a new set if needed
          endif
          lim1 = lim1line
          lim2 = lim2line
+         write (*,*) lim1line, lim2line, " mode 3"
       endif
 
 
