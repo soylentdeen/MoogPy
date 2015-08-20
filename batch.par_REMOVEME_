@@ -1,9 +1,9 @@
 synth
 terminal      'x11'
-summary_out   'summary.out'
-smoothed_out  'junk.out'
-standard_out  'out1'
-hardpost_out   'dummy.ps'
+summary_out   'Output/summary.out'
+smoothed_out  'Output/junk.out'
+standard_out  'Output/out1'
+hardpost_out   'Output/dummy.ps'
 atmos_dir     '/home/deen/Data/MoogStokes/Atmospheres/'
 model_in       'MARCS_Solar.md'
 lines_in      'weak.lines'
