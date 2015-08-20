@@ -4,6 +4,7 @@ import scipy
 import matplotlib.pyplot as pyplot
 import AstroUtils
 import MoogTools
+import SpectralTools
 
 flux = []
 wave = []
@@ -17,6 +18,9 @@ def recorder(x, y):
 
 configFile = 'gfOptimizer.cfg'
 Moog.recorder = recorder
+
+Synth = MoogTools.Synth(configFile)
+Synth.writeLineLists()
 Lines = MoogTools.LineList(configFile, 11700, 11730, 0.0, molecules=False)
 Lines.writeLineLists()
 Moog.moogsilent()
