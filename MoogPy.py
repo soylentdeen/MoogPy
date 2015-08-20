@@ -1,5 +1,4 @@
 import Moog
-import PyMoog
 import numpy
 import scipy
 import matplotlib.pyplot as pyplot
@@ -13,10 +12,7 @@ def recorder(x, y):
     global flux
     global wave
     wave.append(x)
-    flux.append(y)
-    print wave[-1], flux[-1]
-    if flux[-1] < 0:
-        raw_input()
+    flux.append(1.0-y)
 
 
 configFile = 'gfOptimizer.cfg'
@@ -33,13 +29,11 @@ nominalSpectrum = numpy.array(flux)
 for i in range(Lines.numLines):
     flux = []
     wave = []
-    #Moog.rewind()
     Lines.perturbLine(i, 0.3)
     Moog.moogsilent()
     plus = numpy.array(flux)
     flux = []
     wave = []
-    #Moog.rewind()
     Lines.perturbLine(i, -0.3)
     Moog.moogsilent()
     minus = numpy.array(flux)

@@ -80,7 +80,6 @@ c     in a new set if needed
          endif
          lim1 = lim1line
          lim2 = lim2line
-         write (*,*) lim1line, lim2line, " mode 3"
       endif
 
 
@@ -89,8 +88,6 @@ c*****compute a spectrum depth at this point
       call cdcalc (2)
       first = 0.4343*cd(1)
       d(n) = rinteg(xref,cd,dummy1,ntau,first)
-c      write (*,*) wave, d(n), first
-      write (*,*) wave, lim1, lim2
       call recorder(wave, d(n))
 c      call recorder()
       if (mod(n,10) .eq. 0) then

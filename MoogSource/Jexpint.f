@@ -29,6 +29,7 @@ c
 c      write (*,*) "x = ", x, ", n = ", n
       if (x.ge.100.) goto 800 
       if (x.le.-100.) goto 800 
+      xsave = 0.
       xu=x
       if(xu)603,602,603
   602 rex=1.d+00

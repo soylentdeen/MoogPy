@@ -41,7 +41,7 @@ c*****compute the optical depths
       taunu(1) = first
       do i=2,ntau                                                     
          taunu(i) = taunu(i-1) + taunu(i)                  
-         write (*,*) taunu(i), i
+c         write (*,*) taunu(i), i
       enddo
 
 

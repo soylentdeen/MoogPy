@@ -5,11 +5,11 @@ __pycache__/
 # C extensions
 *.so
 
-out1
-summary.out
+Output/*
 *.cfg
 *.lines
 *.par
+.*.swp
 
 # Distribution / packaging
 .Python
