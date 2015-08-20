@@ -19,26 +19,28 @@ def recorder(x, y):
 configFile = 'gfOptimizer.cfg'
 Moog.recorder = recorder
 
-Synth = MoogTools.Synth(configFile)
-Synth.writeLineLists()
-Lines = MoogTools.LineList(configFile, 11700, 11730, 0.0, molecules=False)
-Lines.writeLineLists()
+Synth = MoogTools.Configuration(configFile)
+Synth.lineList.writeLineLists()
+Synth.parameterFile.writeParFile()
+
+#Lines = MoogTools.LineList(configFile, 11700, 11730, 0.0, molecules=False)
+#Lines.writeLineLists()
 Moog.moogsilent()
 
-IM = numpy.zeros((Lines.numLines, len(wave)))
+IM = numpy.zeros((Synth.lineList.numLines, len(wave)))
 
 wavelengths = numpy.array(wave)
 nominalSpectrum = numpy.array(flux)
 
-for i in range(Lines.numLines):
+for i in range(Synth.lineList.numLines):
     flux = []
     wave = []
-    Lines.perturbLine(i, 0.3)
+    Synth.lineList.perturbLine(i, 0.3)
     Moog.moogsilent()
     plus = numpy.array(flux)
     flux = []
     wave = []
-    Lines.perturbLine(i, -0.3)
+    Synth.lineList.perturbLine(i, -0.3)
     Moog.moogsilent()
     minus = numpy.array(flux)
     IM[i,:] = plus - minus

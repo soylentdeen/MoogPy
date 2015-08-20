@@ -1,0 +1,12 @@
+parFileName = batch.par
+mode = synth
+atmos_dir = /home/deen/Data/MoogStokes/Atmospheres/
+model_in = MARCS_Solar.md
+atmosphere = 1
+strong = 0
+molecules = 2
+lines = 1
+damping = 0
+freeform = 0
+synlimits_c = 0.01
+synlimits_d = 1.0

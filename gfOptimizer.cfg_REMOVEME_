@@ -1,7 +1,17 @@
+# Global Parameters
+Bfield = 0.0
+Strong_FileName = strong.lines
+Weak_FileName = weak.lines
+wlStart = 11695
+wlStop = 11745
+
+# Atomic and Molecular line files for generating Moog line lists
 weak_file = /home/deen/Data/MoogStokes/VALD_lines/atomic_corrected.zeeman
 strong_file = /home/deen/Data/MoogStokes/VALD_lines/lines.strong
 molecules = /home/deen/Data/MoogStokes/VALD_lines/Molecules/
 VALD_file = /home/deen/Data/MoogStokes/VALD_lines/vald_master.txt
 gf_file = /home/deen/Data/MoogStokes/VALD_lines/osv/corrected_lines.dat
-Strong_FileName = strong.lines
-Weak_FileName = weak.lines
+doMolecules = False
+
+# Parameters for the Moog .par file
+moog_Parameters = moogPar.cfg
