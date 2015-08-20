@@ -23,14 +23,15 @@ Synth = MoogTools.Configuration(configFile)
 Synth.lineList.writeLineLists()
 Synth.parameterFile.writeParFile()
 
-#Lines = MoogTools.LineList(configFile, 11700, 11730, 0.0, molecules=False)
-#Lines.writeLineLists()
 Moog.moogsilent()
+
 
 IM = numpy.zeros((Synth.lineList.numLines, len(wave)))
 
 wavelengths = numpy.array(wave)
 nominalSpectrum = numpy.array(flux)
+
+"""
 
 for i in range(Synth.lineList.numLines):
     flux = []
@@ -47,6 +48,7 @@ for i in range(Synth.lineList.numLines):
 
 
 U,S,V = scipy.linalg.svd(IM)
+"""
 
 fig = pyplot.figure(0)
 ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
@@ -55,6 +57,7 @@ ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 #    ax.plot(wavelengths, IM[i,:])
 
 ax.plot(wavelengths, nominalSpectrum)
+ax.plot(Synth.solarSpectrum.wave, Synth.solarSpectrum.flux)
 
 fig.show()
 
