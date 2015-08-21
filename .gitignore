@@ -6,10 +6,19 @@ __pycache__/
 *.so
 
 Output/*
-*.cfg
 *.lines
 *.par
 .*.swp
+*.pdf
+*.zip
+*.tar
+*GEISA*
+*Goorvitch*
+*Plez_CN*
+*Wende_FeH*
+*vald_master.txt
+*atomic_corrected.zeeman
+*.gz
 
 # Distribution / packaging
 .Python

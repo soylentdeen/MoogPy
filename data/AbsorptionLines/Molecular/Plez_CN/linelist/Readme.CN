@@ -1,0 +1,61 @@
+
+The format is the following:
+
+
+Mol vup vlow JLow branch gf       wavenumber  exc (eV) transition (V=violet, R=red)
+CN1 11 03 034 +  R1   0.4853E-07  39338.026  1.020 V
+CN1 11 03 035 +  R1   0.5286E-07  39328.627  1.036 V
+CN1 11 03 036 +  R1   0.5757E-07  39318.836  1.052 V
+CN1 11 03 035 +  R2   0.5286E-07  39318.397  1.052 V
+CN1 11 03 037 +  R1   0.6261E-07  39308.652  1.069 V
+ 
+The line list for B-X (Violet) was corrected on 13/07-2010 for an error affecting all
+levels with vup>9. Before that their wavenumbers were all too small by about 1031cm-1.
+This was discovered by Bengt Edvardsson while he was attempting to replace calculated
+wavenumbers by observed ones from Davis and Phillips.
+
+The line list for the red system was improved on 24/05-2011. line positions were improved.
+The list contains now three values of the wavenumber : 
+1) calculated by Plez using molecular constants,
+2) calculated using Kotlar's data and programs (to which the isotopic shift calculated
+by Plez is added for isotopes other than 12C14N, and 
+3) calculated from the energy levels given in Ram et al. (2010, JMolSpec, 263, 82, 12C14N) 
+and Ram et al.  (2010, ApJS, 188, 500, 13C14N).
+The program translatelinelists_autocount_identif.f uses some prescription to select 
+between the 3, and can be adapted. 
+In principle Ram et al.'s data is better except, it seems, for a few bands, and for high J values.
+Comparisons between Ram's data and Plez calculations for low lying 13C14N lines should give an
+idea of the accuracy of the position of the same lines for the 12C15N and 13C15N isotopes.
+
+Example for 13C14N:
+CN3  0  0  18 + SR21  0.2460E-02   9195.258  0.077 R   9195.311   9195.543
+CN3  0  0  17 + SR21  0.2497E-02   9195.497  0.069 R   9195.546   9195.788
+CN3  0  0  16 + SR21  0.2534E-02   9195.408  0.061 R   9195.453   9195.706
+CN3  0  0  19 + SR21  0.2411E-02   9194.688  0.085 R   9194.744   9194.967
+
+A combined linelist containing all isotopes was generated, and can be read by the program
+translatelinelist_autocount_identif.f. It includes a recipe to improve the isotopic shifts
+for 12C15N, and 13C15N.
+
+Excerpt from the combined list:
+It contains "CN" vup vlow Jlow branch gf(4 isotopes), wave_plez(4 isotopes) wave_kotlar(4 isotopes) wave_ram(4 isotopes) "R" (for red transition)
+CN   0  0   0 +  Q2   0.1566E-02  0.1550E-02  0.1544E-02  0.1526E-02    9141.648   9143.225   9143.791   9145.402    9141.650   9143.227   9143.793   9145.404    9141.648     -1.000   9144.217     -1.000   0.000  0.000  0.000  0.000 R
+CN   0  0   0 +  R1   0.2497E-02  0.2459E-02  0.2449E-02  0.2421E-02    9094.328   9096.558   9097.358   9099.641    9094.329   9096.559   9097.359   9099.642    9094.324     -1.000   9096.676     -1.000   0.000  0.000  0.000  0.000 R
+
+The line list is provided as is, and corrections and comments are welcome.
+
+How to acknowledge its use:
+
+The present version will be described in a paper by Hedrosa, Abia, Plez et al. (2011 or 2012).
+Please come back to me when it is time to cite this work.
+
+private communication B. Plez (2010, updated version for violet, with B. Edvardsson); 
+The first version of the CN line list was assembled by B. Plez and was shortly described in 
+Hill, V., Plez, B., Cayrel, R., Beers, T.C., Nordström, B., 
+Andersen, J., Spite, m., Spite, F., Barbuy, B., Bonifacio, P., 
+Depagne, E., François, P., Primas, F., 2002,  First stars. I: 
+The extreme r-element rich, iron-poor halo giant CS31082-001: 
+Implications for the r-process site(s) and radioactive cosmochronology, 
+A&A, 387, 560 
+
+BPz
