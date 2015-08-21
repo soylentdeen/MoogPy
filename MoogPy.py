@@ -16,6 +16,11 @@ def recorder(x, y):
     flux.append(1.0-y)
 
 
+fig = pyplot.figure(0)
+fig.clear()
+ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+
+
 configFile = 'gfOptimizer.cfg'
 Moog.recorder = recorder
 
@@ -61,7 +66,7 @@ for i in range(Synth.lineList.numLines):
 
 #Continuum Level
 plus = newNominalSpectrum.copy()+ 0.005
-mins = newNominalSpectrum.copy()- 0.005
+minus = newNominalSpectrum.copy()- 0.005
 IM[Synth.lineList.numLines, :] = plus-minus
 
 plus = SpectralTools.binSpectrum(nominalSpectrum, wavelengths+0.1, solarWave)
@@ -71,18 +76,13 @@ IM[Synth.lineList.numLines+1, edges] = plus[edges]-minus[edges]
 
 #U,S,V = scipy.linalg.svd(IM)
 #"""
-
-fig = pyplot.figure(0)
-fig.clear()
-ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
-
 """
 ax.plot(wavelengths, nominalSpectrum)
 ax.plot(Synth.solarSpectrum.wave, newNominalSpectrum)
 ax.plot(Synth.solarSpectrum.wave, Synth.solarSpectrum.flux)
 #"""
 
-#"""
+"""
 for i in range(Synth.lineList.numLines+2):
     ax.plot(solarWave, IM[i,:])
 #"""
