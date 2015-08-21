@@ -88,7 +88,6 @@ c*****compute a spectrum depth at this point
       call cdcalc (2)
       first = 0.4343*cd(1)
       d(n) = rinteg(xref,cd,dummy1,ntau,first)
-      write (*,*) wave
       call recorder(wave, d(n))
 c      call recorder()
       if (mod(n,10) .eq. 0) then
@@ -112,6 +111,7 @@ c      call recorder()
 
 c*****step in wavelength and try again 
       wave = oldstart + step*nsteps
+c      write (*,*) wave, step, nsteps, sstop
       if (wave .le. sstop) then
          n = n + 1        
          nsteps = nsteps + 1
@@ -146,6 +146,9 @@ c*****finish the synthesis
          else
             write (nf1out,1114) wave
          endif
+c         do j =1,30
+c             write (*,*) "blah - ", j
+c         enddo
          return 
       endif
 
