@@ -5,20 +5,9 @@ __pycache__/
 # C extensions
 *.so
 
-Output/*
 *.lines
 *.par
 .*.swp
-*.pdf
-*.zip
-*.tar
-*GEISA*
-*Goorvitch*
-*Plez_CN*
-*Wende_FeH*
-*vald_master.txt
-*atomic_corrected.zeeman
-*.gz
 
 # Distribution / packaging
 .Python
