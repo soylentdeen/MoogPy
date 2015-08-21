@@ -74,7 +74,19 @@ minus = SpectralTools.binSpectrum(nominalSpectrum, wavelengths-0.1, solarWave)
 edges = (plus !=0) & (minus != 0)
 IM[Synth.lineList.numLines+1, edges] = plus[edges]-minus[edges]
 
-#U,S,V = scipy.linalg.svd(IM)
+nFilt = 1
+dims = IM.shape
+U,S,V = scipy.linalg.svd(IM)
+D = 1.0/(S[0:-nFilt])
+S[-nFilt:] = 0.0
+newS = numpy.zeros((dims[0], dims[1]))
+I = [i for i in range(dims[1])]
+for i in range(len(D)):
+    newS[i][i] = D[i]
+
+S = newS.copy()
+CM = numpy.array(scipy.matrix(V.T.dot(S.T.dot(U.T)),dtype=numpy.float32))
+
 #"""
 """
 ax.plot(wavelengths, nominalSpectrum)
