@@ -1,6 +1,12 @@
 # MoogPy
 Python-Fortran hybrid version of MOOG spectral synthesis code
 
+# Requirements (Probably not complete, let me know if something complains)
+numpy/scipy
+matplotlib
+pyfits
+--NOTE-- Astute observers may note that supermongo is no longer required!! (Sorry, Chris)
+
 
 # Installation
 1) Fork (or download) the repository
