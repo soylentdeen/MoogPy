@@ -1,2 +1,2 @@
 f2py --f77flags=-fcheck=all -c MoogPy.pyf Moogsilent.f Begin.f Synspec.f Getasci.f Putasci.f Mydriver.f Calmod.f Finish.f Binary.f Opacit.f Opacscat.f Opacmetals.f OpacHelium.f OpacHydrogen.f Nearly.f Nansi.f Eqlib.f Partnew.f Cdcalc.f Jexpint.f Linlimit.f Prinfo.f Sunder.f Gammabark.f Rinteg.f Inlines.f Params.f Taukap.f Voigt.f Discov.f Opaccouls.f Inmodel.f Partfn.f Damping.f Ucalc.f Invert.f Batom.f Infile.f Trudamp.f Getcount.f Lineinfo.f Synth.f Chabund.f Getnum.f Number.f Bmolec.f
-cp MoogPy.so ../lib/
+cp MoogPy.so ../MoogTools/

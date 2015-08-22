@@ -8,6 +8,7 @@ __pycache__/
 *.lines
 *.par
 .*.swp
+*.gz
 
 # Distribution / packaging
 .Python
