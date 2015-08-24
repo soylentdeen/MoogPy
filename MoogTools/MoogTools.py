@@ -277,12 +277,16 @@ class LineList( object ):
             outfile.close()
             self.sort_file(self.wfn, weak=True)
             self.parent.parameterFile.writeParFile()
+            self.parent.MoogPy.linex.start = self.wlStart
+            self.parent.MoogPy.linex.sstop = self.wlStop
         else:
             weakLine = self.weakLines[lineIndex-len(self.strongLines)]
             wlStart = weakLine.wl - 3.0
             wlStop = weakLine.wl + 3.0
             self.parent.parameterFile.synlimits[0] = wlStart
             self.parent.parameterFile.synlimits[1] = wlStop
+            self.parent.MoogPy.linex.start = wlStart
+            self.parent.MoogPy.linex.sstop = wlStop
             self.parent.parameterFile.writeParFile()
             self.parent.parameterFile.synlimits[0] = self.wlStart
             self.parent.parameterFile.synlimits[1] = self.wlStop
