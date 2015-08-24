@@ -209,7 +209,6 @@ class ParameterFile( object ):
 class LineList( object ):
     def __init__(self, config):
         # Load in configuration file
-        self.weak_file = config['weak_file']
         self.strong_file = config['strong_file']
         self.molecules = config['molecules']
         self.VALD_list = config['VALD_file']
@@ -285,8 +284,10 @@ class LineList( object ):
         for i in range(self.numLines):
             if i < len(self.strongLines):
                 self.strongLines[i].zeeman["NOFIELD"][1] += corrections[i]
+                self.strongLines[i].loggf += corrections[i]
             else:
                 self.weakLines[i-len(self.strongLines)].zeeman["NOFIELD"][1]+=corrections[i]
+                self.weakLines[i-len(self.strongLines)].loggf +=corrections[i]
         self.writeLineLists()
 
 

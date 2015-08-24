@@ -22,7 +22,7 @@ def parse_config(filename, defaults=None):
         Attempts to convert the values to int, float, boolean then string.
         
 
-        Borrowed from Neil Crighton
+        Borrowed from Dr. Neil Crighton
     """
     if defaults is None:
         cfg = dict()

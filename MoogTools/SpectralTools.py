@@ -122,7 +122,7 @@ def binSpectrum(spectrum, native_wl, new_wl):
             retval[-1] = spectrum[-1]
     return retval
 
-def diff_spectra(x1, y1, x2, y2):
+def diff_spectra(x1, y1, x2, y2, pad=False):
     '''
     '''
     x1 = numpy.array(x1)
@@ -131,11 +131,30 @@ def diff_spectra(x1, y1, x2, y2):
     y2 = numpy.array(y2)
     overlap_start = numpy.max([numpy.min(x1), numpy.min(x2)])
     overlap_stop = numpy.min([numpy.max(x1), numpy.max(x2)])
-    overlap = scipy.where((x1 > overlap_start) & (x1 < overlap_stop))
+    overlap = scipy.where((x1 >= overlap_start) & (x1 <= overlap_stop))
 
     y = scipy.interpolate.splrep(x2, y2)
-    return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
+
+    if pad:
+        retval = numpy.zeros(len(x1))
+        retval[overlap] = y1[overlap] - scipy.interpolate.splev(x1[overlap],y)
+        return x1, retval
+    else:
+        return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
     
+
+def interpolate_spectrum(x1, x2, y1, pad=False):
+    overlap_start = numpy.max([numpy.min(x1), numpy.min(x2)])
+    overlap_stop = numpy.min([numpy.max(x1), numpy.max(x2)])
+    overlap = ( x2 >= overlap_start) & (x2 <= overlap_stop)
+
+    y = scipy.interpolate.splrep(x1, y1)
+    if pad:
+        retval = numpy.ones(len(x2))
+        retval[overlap] = scipy.interpolate.splev(x2[overlap],y)
+        return retval
+    else:
+        return scipy.interpolate.splev(x2[overlap],y)
 
 def write_2col_spectrum(filename, wl, fl):
     '''
