@@ -225,7 +225,9 @@ class LineList( object ):
         self.doMolecules = config['doMolecules']
 
         self.readInLineLists()
-        self.numLines = len(self.strongLines)+len(self.weakLines)
+        self.nStrong = len(self.strongLines)
+        self.numLines = self.nStrong+len(self.weakLines)
+        self.dummyLine = dummy_Line()
 
     def readInLineLists(self):
         self.strongLines, self.weakLines = parse_VALD(self.VALD_list,
@@ -247,30 +249,26 @@ class LineList( object ):
                self.molecules+'CN_Plez_linelist.dat', self.wlStart, self.wlStop,
                self.Bfield, self.gf_corrections))
 
-    def perturbLine(self, index, delta, partial=False):
-        if index < len(self.strongLines):
-            self.strongLines[index].zeeman["NOFIELD"][1] += delta
-            if partial:
-                self.writeLineLists(lineIndex=index)
-            else:
-                self.writeLineLists()
-            self.strongLines[index].zeeman["NOFIELD"][1] -= delta
+    def perturbGf(self, index, delta):
+        if index < self.nStrong:
+            self.strongLines[index].modifyGf(delta)
         else:
-            self.weakLines[index-len(self.strongLines)].zeeman["NOFIELD"][1] += delta
-            if partial:
-                self.writeLineLists(lineIndex=index)
-            else:
-                self.writeLineLists()
-            self.weakLines[index-len(self.strongLines)].zeeman["NOFIELD"][1] -= delta
+            self.weakLines[index-self.nStrong].modifyGf(delta)
+
+    def perturbVdW(self, index, delta):
+        if index < self.nStrong:
+            self.strongLines[index].modifyVdW(delta)
+        else:
+            self.weakLines[index-self.nStrong].modifyVdW(delta)
 
     def writeLineLists(self, lineIndex=-1):
-        outfile = open(self.sfn, 'w')
-        for strongLine in self.strongLines:
-            strongLine.dump(out=outfile, mode='MOOGSCALAR')
-        outfile.close()
-        self.sort_file(self.sfn)
+        if lineIndex < 0:     #Normal case, write ALL the lines
+            outfile = open(self.sfn, 'w')
+            for strongLine in self.strongLines:
+                strongLine.dump(out=outfile, mode='MOOGSCALAR')
+            outfile.close()
+            self.sort_file(self.sfn)
 
-        if lineIndex < len(self.strongLines):
             outfile = open(self.wfn, 'w')
             for weakLine in self.weakLines:
                 weakLine.dump(out=outfile, mode='MOOGSCALAR')
@@ -279,8 +277,34 @@ class LineList( object ):
             self.parent.parameterFile.writeParFile()
             self.parent.MoogPy.linex.start = self.wlStart
             self.parent.MoogPy.linex.sstop = self.wlStop
+            self.parent.MoogPy.linex.nlines = len(self.strongLines)
+            self.parent.MoogPy.linex.nstrong = len(self.weakLines)
+        elif lineIndex < self.nStrong:   # We want to only print out one line
+            #  STRONG LINE
+            outfile = open(self.sfn, 'w')
+            self.strongLines[lineIndex].dump(out=outfile, mode='MOOGSCALAR')
+            outfile.close()
+            self.sort_file(self.sfn)
+
+            outfile = open(self.wfn, 'w')
+            self.dummyLine.create(self.strongLines[lineIndex].wl, outfile)
+            outfile.close()
+            self.sort_file(self.wfn, weak=True)
+
+            # Set Moog varibles
+            self.parent.MoogPy.linex.start = self.wlStart
+            self.parent.MoogPy.linex.sstop = self.wlStop
+            self.parent.MoogPy.linex.nlines = 1
+            self.parent.MoogPy.linex.nstrong = 1
+            
         else:
-            weakLine = self.weakLines[lineIndex-len(self.strongLines)]
+            # WEAK LINE
+            index = lineIndex-self.nStrong
+            # Write empty strong line file
+            outfile = open(self.sfn, 'w')
+            outfile.close()
+
+            weakLine = self.weakLines[index]
             wlStart = weakLine.wl - 3.0
             wlStop = weakLine.wl + 3.0
             self.parent.parameterFile.synlimits[0] = wlStart
@@ -290,11 +314,13 @@ class LineList( object ):
             self.parent.parameterFile.writeParFile()
             self.parent.parameterFile.synlimits[0] = self.wlStart
             self.parent.parameterFile.synlimits[1] = self.wlStop
+            self.parent.MoogPy.linex.nlines = 1
+            self.parent.MoogPy.linex.nstrong = 0
             outfile = open(self.wfn, 'w')
             weakLine.dump(out=outfile, mode='MOOGSCALAR')
             outfile.close()
             self.sort_file(self.wfn, weak=True)
-    
+
     def sort_file(self, name, weak=False):
         data = open(name, 'r').readlines()
         wl = []
@@ -311,10 +337,12 @@ class LineList( object ):
 
     def applyCorrection(self, corrections):
         for i in range(self.numLines):
-            if i < len(self.strongLines):
-                self.strongLines[i].zeeman["NOFIELD"][1] += corrections[i]
+            if i < self.nStrong:
+                self.strongLines[i].modifyGf(corrections[i*2])
+                self.strongLines[i].modifyVdW(corrections[i*2+1])
             else:
-                self.weakLines[i-len(self.strongLines)].zeeman["NOFIELD"][1]+=corrections[i]
+                self.weakLines[i-nStrong].modifyGf(corrections[i*2])
+                self.weakLines[i-nStrong].modifyVdW(corrections[i*2+1])
         self.writeLineLists()
 
 
@@ -339,6 +367,15 @@ class Spectral_Line( object ):
         self.g_hi = None
         self.g_eff = None
         self.verbose = False
+        self.Bfield = 0.0
+
+    def modifyGf(self, delta_loggf):
+        self.loggf += delta_loggf
+        self.zeeman_splitting()
+
+    def modifyVdW(self, deltaVdW):
+        if not(self.VdW):
+            self.VdW += deltaVdW
 
     def dump(self, **kwargs):
         if "out" in kwargs:
@@ -502,8 +539,12 @@ class Spectral_Line( object ):
                         else:
                             out.write('%10.3f\n' %
                                     (self.stark))
-    def zeeman_splitting(self, B, **kwargs):
-        self.compute_zeeman_transitions(B, **kwargs)
+    def zeeman_splitting(self, B=None, **kwargs):
+        if B:
+            self.Bfield = B
+        
+        self.zeeman["NOFIELD"] = [self.wl, self.loggf]
+        self.compute_zeeman_transitions(**kwargs)
         wl = []
         lgf = []
         for transition in self.pi_transitions:
@@ -531,7 +572,9 @@ class Spectral_Line( object ):
                     10.0**(self.loggf)))
         self.zeeman["RCP"] = [numpy.array(wl), numpy.array(lgf)]
 
-    def compute_zeeman_transitions(self, B, **kwargs):
+    def compute_zeeman_transitions(self, **kwargs):
+
+        B = self.Bfield
 
         bohr_magneton = 5.78838176e-5        #eV*T^-1
         hc = 12400                           #eV*Angstroms
@@ -628,6 +671,27 @@ class Spectral_Line( object ):
         self.lcp_transitions = lcp_transitions
         self.rcp_transitions = rcp_transitions
 
+class dummy_Line( Spectral_Line ):
+    def __init__(self):
+        self.wl = 0.0
+        self.species = 26.0
+        self.element = 26.0
+        self.ionization = 0.0
+        self.loggf = -5.5
+        self.expot_lo = 7.8
+        self.Bfield = 0
+        self.VdW = None
+        self.radiative =None
+        self.stark = None
+        self.DissE = None
+        self.zeeman = {}
+        self.zeeman["NOFIELD"] = [self.wl,self.loggf]
+
+    def create(self, wl, outfile):
+        self.wl = wl
+        self.zeeman["NOFIELD"][0] = wl
+        self.dump(out=outfile, mode='MOOGSCALAR')
+
 class MOOG_Line( Spectral_Line ):
     def __init__(self, line, **kwargs):
         self.wl = float(line[0:11])
@@ -636,6 +700,7 @@ class MOOG_Line( Spectral_Line ):
         self.ionization = (self.species - self.element)*10.0
         self.loggf = float(line[30:41])
         self.expot_lo = float(line[20:31])
+        self.Bfield = 0.0
         try:
             self.VdW = float(line[40:51])
         except:
@@ -674,6 +739,7 @@ class VALD_Line( Spectral_Line ):
         self.VdW = float(l1[12])
         self.DissE = None
         self.transition = line2.strip().strip('\'')
+        self.Bfield = 0.0
 
         if "verbose" in kwargs:
             self.verbose = kwargs["verbose"]
@@ -739,6 +805,7 @@ class Plez_CN_Line( Spectral_Line ):
         self.g_hi = None
         self.g_eff = None
         self.zeeman["NOFIELD"] = [self.wl, self.loggf]
+        self.Bfield = 0.0
 
         if "verbose" in kwargs:
             self.verbose = kwargs["verbose"]
@@ -765,6 +832,7 @@ class Goorvitch_CO_Line( Spectral_Line ):
             self.g_hi = None
             self.g_eff = None
             self.zeeman["NOFIELD"] = [self.wl, self.loggf]
+            self.Bfield = 0.0
 
             if "verbose" in kwargs:
                 self.verbose = kwargs["verbose"]
@@ -797,6 +865,7 @@ class HITRAN_Line( Spectral_Line ):
         self.g_hi = None
         self.g_eff = None
         self.zeeman["NOFIELD"] = [self.wl, self.loggf]
+        self.Bfield = 0.0
 
         if "verbose" in kwargs:
             self.verbose = kwargs["verbose"]
