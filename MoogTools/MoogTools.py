@@ -73,8 +73,8 @@ class HITRAN_Dictionary( object ):
 class Moog( object ):
     def __init__(self, configurationFile):
         self.config = AstroUtils.parse_config(configurationFile)
-        self.lineList = LineList(self.config)
-        self.parameterFile = ParameterFile(self.config)
+        self.lineList = LineList(self, self.config)
+        self.parameterFile = ParameterFile(self, self.config)
         self.solarSpectrum = Spectrum(self.config, 'solar')
         self.MoogPy = MoogPy
         self.MoogPy.recorder = self.recorder
@@ -158,11 +158,12 @@ class Spectrum( object ):
 #class Synth( Configuration ):
     
 class ParameterFile( object ):
-    def __init__(self, config):
+    def __init__(self, parent, config):
+        self.parent = parent
         self.moogParCfgFile = config['moog_Parameters']
         self.moogPars = AstroUtils.parse_config(self.moogParCfgFile)
-        self.synlimits = (config['wlStart'], config['wlStop'], 
-                self.moogPars['synlimits_c'], self.moogPars['synlimits_d'])
+        self.synlimits = numpy.array([config['wlStart'], config['wlStop'], 
+                self.moogPars['synlimits_c'], self.moogPars['synlimits_d']])
         self.parFileName = self.moogPars['parFileName']
         self.mode = self.moogPars['mode']
         self.labels = {'terminal':'x11',
@@ -201,14 +202,17 @@ class ParameterFile( object ):
             pf.write(l+'    '+str(self.labels[l])+'\n')
 
         pf.write('synlimits\n')
-        pf.write('               %.2f %.2f %.3f %.2f\n' % self.synlimits)
+        pf.write('               %.2f %.2f %.3f %.2f\n' % 
+                (self.synlimits[0], self.synlimits[1], 
+                self.synlimits[2], self.synlimits[3]))
         pf.close()
         
 
 
 class LineList( object ):
-    def __init__(self, config):
+    def __init__(self, parent, config):
         # Load in configuration file
+        self.parent = parent
         self.strong_file = config['strong_file']
         self.molecules = config['molecules']
         self.VALD_list = config['VALD_file']
@@ -243,28 +247,49 @@ class LineList( object ):
                self.molecules+'CN_Plez_linelist.dat', self.wlStart, self.wlStop,
                self.Bfield, self.gf_corrections))
 
-    def perturbLine(self, index, delta):
+    def perturbLine(self, index, delta, partial=False):
         if index < len(self.strongLines):
             self.strongLines[index].zeeman["NOFIELD"][1] += delta
-            self.writeLineLists()
+            if partial:
+                self.writeLineLists(lineIndex=index)
+            else:
+                self.writeLineLists()
             self.strongLines[index].zeeman["NOFIELD"][1] -= delta
         else:
             self.weakLines[index-len(self.strongLines)].zeeman["NOFIELD"][1] += delta
-            self.writeLineLists()
+            if partial:
+                self.writeLineLists(lineIndex=index)
+            else:
+                self.writeLineLists()
             self.weakLines[index-len(self.strongLines)].zeeman["NOFIELD"][1] -= delta
 
-    def writeLineLists(self):
+    def writeLineLists(self, lineIndex=-1):
         outfile = open(self.sfn, 'w')
         for strongLine in self.strongLines:
             strongLine.dump(out=outfile, mode='MOOGSCALAR')
         outfile.close()
         self.sort_file(self.sfn)
 
-        outfile = open(self.wfn, 'w')
-        for weakLine in self.weakLines:
+        if lineIndex < len(self.strongLines):
+            outfile = open(self.wfn, 'w')
+            for weakLine in self.weakLines:
+                weakLine.dump(out=outfile, mode='MOOGSCALAR')
+            outfile.close()
+            self.sort_file(self.wfn, weak=True)
+            self.parent.parameterFile.writeParFile()
+        else:
+            weakLine = self.weakLines[lineIndex-len(self.strongLines)]
+            wlStart = weakLine.wl - 3.0
+            wlStop = weakLine.wl + 3.0
+            self.parent.parameterFile.synlimits[0] = wlStart
+            self.parent.parameterFile.synlimits[1] = wlStop
+            self.parent.parameterFile.writeParFile()
+            self.parent.parameterFile.synlimits[0] = self.wlStart
+            self.parent.parameterFile.synlimits[1] = self.wlStop
+            outfile = open(self.wfn, 'w')
             weakLine.dump(out=outfile, mode='MOOGSCALAR')
-        outfile.close()
-        self.sort_file(self.wfn, weak=True)
+            outfile.close()
+            self.sort_file(self.wfn, weak=True)
     
     def sort_file(self, name, weak=False):
         data = open(name, 'r').readlines()
@@ -284,10 +309,8 @@ class LineList( object ):
         for i in range(self.numLines):
             if i < len(self.strongLines):
                 self.strongLines[i].zeeman["NOFIELD"][1] += corrections[i]
-                self.strongLines[i].loggf += corrections[i]
             else:
                 self.weakLines[i-len(self.strongLines)].zeeman["NOFIELD"][1]+=corrections[i]
-                self.weakLines[i-len(self.strongLines)].loggf +=corrections[i]
         self.writeLineLists()
 
 
