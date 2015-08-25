@@ -50,7 +50,6 @@ def resample(x, y, R, nyquist=False):
         highresx, higresy = SpectralTools.read_2col_spectrum('highres.dat')
         lowresx, lowresy = resample(x, y, 2000)
     """
-
     subsample = 16.0
 
     xstart = x[0]

@@ -261,7 +261,7 @@ class LineList( object ):
         else:
             self.weakLines[index-self.nStrong].modifyVdW(delta)
 
-    def writeLineLists(self, lineIndex=-1):
+    def writeLineLists(self, lineIndex=-1, partial=False):
         if lineIndex < 0:     #Normal case, write ALL the lines
             outfile = open(self.sfn, 'w')
             for strongLine in self.strongLines:
@@ -307,13 +307,17 @@ class LineList( object ):
             weakLine = self.weakLines[index]
             wlStart = weakLine.wl - 3.0
             wlStop = weakLine.wl + 3.0
-            self.parent.parameterFile.synlimits[0] = wlStart
-            self.parent.parameterFile.synlimits[1] = wlStop
-            self.parent.MoogPy.linex.start = wlStart
-            self.parent.MoogPy.linex.sstop = wlStop
-            self.parent.parameterFile.writeParFile()
-            self.parent.parameterFile.synlimits[0] = self.wlStart
-            self.parent.parameterFile.synlimits[1] = self.wlStop
+            if partial:
+                self.parent.parameterFile.synlimits[0] = wlStart
+                self.parent.parameterFile.synlimits[1] = wlStop
+                self.parent.MoogPy.linex.start = wlStart
+                self.parent.MoogPy.linex.sstop = wlStop
+                self.parent.parameterFile.writeParFile()
+                self.parent.parameterFile.synlimits[0] = self.wlStart
+                self.parent.parameterFile.synlimits[1] = self.wlStop
+            else:
+                self.parent.MoogPy.linex.start = self.wlStart
+                self.parent.MoogPy.linex.sstop = self.wlStop
             self.parent.MoogPy.linex.nlines = 1
             self.parent.MoogPy.linex.nstrong = 0
             outfile = open(self.wfn, 'w')
@@ -336,13 +340,21 @@ class LineList( object ):
         out.close()
 
     def applyCorrection(self, corrections):
+        """
         for i in range(self.numLines):
             if i < self.nStrong:
                 self.strongLines[i].modifyGf(corrections[i*2])
                 self.strongLines[i].modifyVdW(corrections[i*2+1])
             else:
-                self.weakLines[i-nStrong].modifyGf(corrections[i*2])
-                self.weakLines[i-nStrong].modifyVdW(corrections[i*2+1])
+                self.weakLines[i-self.nStrong].modifyGf(corrections[i*2])
+                self.weakLines[i-self.nStrong].modifyVdW(corrections[i*2+1])
+        self.writeLineLists()
+        """
+        for i in range(self.numLines):
+            if i < self.nStrong:
+                self.strongLines[i].modifyGf(corrections[i])
+            else:
+                self.weakLines[i-self.nStrong].modifyGf(corrections[i])
         self.writeLineLists()
 
 
