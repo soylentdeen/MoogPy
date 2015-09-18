@@ -249,6 +249,18 @@ class LineList( object ):
                self.molecules+'CN_Plez_linelist.dat', self.wlStart, self.wlStop,
                self.Bfield, self.gf_corrections))
 
+    def getGf(self, index):
+        if index < self.nStrong:
+            return 10.0**(self.strongLines[index].loggf)
+        else:
+            return 10.0**(self.weakLines[index-self.nStrong].loggf)
+        
+    def getVdW(self, index):
+        if index < self.nStrong:
+            return 10.0**(self.strongLines[index].VdW)
+        else:
+            return 10.0**(self.weakLines[index-self.nStrong].VdW)
+
     def perturbGf(self, index, delta):
         if index < self.nStrong:
             self.strongLines[index].modifyGf(delta)
@@ -321,6 +333,8 @@ class LineList( object ):
             self.parent.MoogPy.linex.nlines = 1
             self.parent.MoogPy.linex.nstrong = 0
             outfile = open(self.wfn, 'w')
+            if weakLine.loggf > 0:
+                self.dummyLine.create(weakLine.wl+0.01, outfile)
             weakLine.dump(out=outfile, mode='MOOGSCALAR')
             outfile.close()
             self.sort_file(self.wfn, weak=True)
@@ -340,21 +354,21 @@ class LineList( object ):
         out.close()
 
     def applyCorrection(self, corrections):
-        """
+        #"""
         for i in range(self.numLines):
             if i < self.nStrong:
-                self.strongLines[i].modifyGf(corrections[i*2])
-                self.strongLines[i].modifyVdW(corrections[i*2+1])
+                self.strongLines[i].modifyGf(corrections[i*2], push=True)
+                self.strongLines[i].modifyVdW(corrections[i*2+1], push=True)
             else:
-                self.weakLines[i-self.nStrong].modifyGf(corrections[i*2])
-                self.weakLines[i-self.nStrong].modifyVdW(corrections[i*2+1])
-        self.writeLineLists()
+                self.weakLines[i-self.nStrong].modifyGf(corrections[i*2], push=True)
+                self.weakLines[i-self.nStrong].modifyVdW(corrections[i*2+1], push=True)
         """
         for i in range(self.numLines):
             if i < self.nStrong:
                 self.strongLines[i].modifyGf(corrections[i])
             else:
                 self.weakLines[i-self.nStrong].modifyGf(corrections[i])
+        #"""
         self.writeLineLists()
 
 
@@ -369,6 +383,8 @@ class Spectral_Line( object ):
         self.loggf = None
         self.DissE = None
         self.VdW = None
+        self.loggfHistory = []
+        self.VdWHistory = []
         self.radiative = None
         self.stark = None
         self.zeeman = {}
@@ -381,13 +397,28 @@ class Spectral_Line( object ):
         self.verbose = False
         self.Bfield = 0.0
 
-    def modifyGf(self, delta_loggf):
-        self.loggf += delta_loggf
+    def modifyGf(self, delta_loggf, push=False):
+        if push:
+            self.loggfHistory.append(self.loggf)
+        self.loggf = numpy.log10(10.0**self.loggf + delta_loggf)
+        if numpy.isnan(self.loggf):
+            self.loggf = -6.0
         self.zeeman_splitting()
 
-    def modifyVdW(self, deltaVdW):
-        if not(self.VdW):
-            self.VdW += deltaVdW
+    def modifyVdW(self, delta_VdW, push=False):
+        """
+        if self.VdW:
+            old = self.VdW
+            new = numpy.log10(10.0**self.VdW + delta_VdW)
+            if numpy.isnan(new):
+                self.VdW = old
+            else:
+                self.VdW = new
+        #"""
+        if self.VdW:
+            if push:
+                self.VdWHistory.append(self.VdW)
+            self.VdW += delta_VdW
 
     def dump(self, **kwargs):
         if "out" in kwargs:
@@ -711,6 +742,8 @@ class MOOG_Line( Spectral_Line ):
         self.element = numpy.round(self.species)
         self.ionization = (self.species - self.element)*10.0
         self.loggf = float(line[30:41])
+        self.loggfHistory = []
+        self.VdWHistory = []
         self.expot_lo = float(line[20:31])
         self.Bfield = 0.0
         try:
@@ -749,6 +782,8 @@ class VALD_Line( Spectral_Line ):
         self.radiative = float(l1[10])
         self.stark = float(l1[11])
         self.VdW = float(l1[12])
+        self.loggfHistory = []
+        self.VdWHistory = []
         self.DissE = None
         self.transition = line2.strip().strip('\'')
         self.Bfield = 0.0
@@ -816,6 +851,8 @@ class Plez_CN_Line( Spectral_Line ):
         self.g_lo = None
         self.g_hi = None
         self.g_eff = None
+        self.loggfHistory = []
+        self.VdWHistory = []
         self.zeeman["NOFIELD"] = [self.wl, self.loggf]
         self.Bfield = 0.0
 
@@ -843,6 +880,8 @@ class Goorvitch_CO_Line( Spectral_Line ):
             self.g_lo = None
             self.g_hi = None
             self.g_eff = None
+            self.loggfHistory = []
+            self.VdWHistory = []
             self.zeeman["NOFIELD"] = [self.wl, self.loggf]
             self.Bfield = 0.0
 
@@ -876,6 +915,8 @@ class HITRAN_Line( Spectral_Line ):
         self.g_lo = None
         self.g_hi = None
         self.g_eff = None
+        self.loggfHistory = []
+        self.VdWHistory = []
         self.zeeman["NOFIELD"] = [self.wl, self.loggf]
         self.Bfield = 0.0
 

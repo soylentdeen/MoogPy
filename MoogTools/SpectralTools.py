@@ -31,7 +31,7 @@ def fitSawtooth(y, window_len=50):
     return (retval, newy, goodPoints)
     
 
-def resample(x, y, R, nyquist=False):
+def resample(x, y, R, nyquist=False, halt=False):
     """
     This routine convolves a given spectrum to a resolution R
     :INPUTS:
@@ -89,6 +89,9 @@ def resample(x, y, R, nyquist=False):
     else:
         retval = (xvals, yvals)
 
+    if halt:
+        print len(xvals), len(yvals), len(result)
+        raw_input()
     return retval
 
 def binSpectrum(spectrum, native_wl, new_wl):
@@ -142,14 +145,14 @@ def diff_spectra(x1, y1, x2, y2, pad=False):
         return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
     
 
-def interpolate_spectrum(x1, x2, y1, pad=False):
+def interpolate_spectrum(x1, x2, y1, pad=None):
     overlap_start = numpy.max([numpy.min(x1), numpy.min(x2)])
     overlap_stop = numpy.min([numpy.max(x1), numpy.max(x2)])
     overlap = ( x2 >= overlap_start) & (x2 <= overlap_stop)
 
     y = scipy.interpolate.splrep(x1, y1)
-    if pad:
-        retval = numpy.ones(len(x2))
+    if pad!=None:
+        retval = numpy.ones(len(x2))* pad
         retval[overlap] = scipy.interpolate.splev(x2[overlap],y)
         return retval
     else:
