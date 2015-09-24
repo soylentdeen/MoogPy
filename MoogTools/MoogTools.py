@@ -357,11 +357,12 @@ class LineList( object ):
         #"""
         for i in range(self.numLines):
             if i < self.nStrong:
-                self.strongLines[i].modifyGf(corrections[i*2], push=True)
-                self.strongLines[i].modifyVdW(corrections[i*2+1], push=True)
+                self.strongLines[i].modifyGf(corrections[i], push=True)
+                self.strongLines[i].modifyVdW(corrections[i+self.numLines], push=True)
             else:
-                self.weakLines[i-self.nStrong].modifyGf(corrections[i*2], push=True)
-                self.weakLines[i-self.nStrong].modifyVdW(corrections[i*2+1], push=True)
+                self.weakLines[i-self.nStrong].modifyGf(corrections[i], push=True)
+                self.weakLines[i-self.nStrong].modifyVdW(corrections[i+self.numLines], push=True)
+
         """
         for i in range(self.numLines):
             if i < self.nStrong:
@@ -415,10 +416,15 @@ class Spectral_Line( object ):
             else:
                 self.VdW = new
         #"""
-        if self.VdW:
-            if push:
-                self.VdWHistory.append(self.VdW)
-            self.VdW += delta_VdW
+        if not(self.VdW):
+            self.VdW = -7.5  # No damping value currently, try a guess
+        if push:
+            self.VdWHistory.append(self.VdW)
+        self.VdW += delta_VdW
+        if self.VdW > -6.0:
+            self.VdW = -6.0
+        if self.VdW < -8.5:
+            self.VdW = -8.5
 
     def dump(self, **kwargs):
         if "out" in kwargs:
