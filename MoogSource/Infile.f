@@ -34,7 +34,7 @@ c  write out the appropriate message about this file
          array(charcount+1:charcount+24) ='; here is the filename: '
          array(charcount+25:79) = fname
          charcount = 79
-         call putasci (charcount,line)
+c         call putasci (charcount,line)
          if (type .ne. 'input  ') kstat = 'unknown'
       endif
      
@@ -48,8 +48,8 @@ c  open the file specified by the user, earlier or now
      .         form=mode,status=kstat,recl=irec,
      .         iostat=jstat,err=10)
       endif
-      istat = ivmove (line+1,1)
-      istat = ivcleol ()
+c      istat = ivmove (line+1,1)
+c      istat = ivcleol ()
       return
 
 c  here are the file reading error messages;
@@ -58,7 +58,7 @@ c  is for Solaris, and 2 is for Redhat Linux operating systems.
 10    if (jstat .eq. 118 .or. jstat .eq. 1018 .or.
      .    jstat .eq. 2) then
          write (errmess,1001) jstat
-         istat = ivwrite (line+2,3,errmess,44)
+c         istat = ivwrite (line+2,3,errmess,44)
          fname = 'no_filename_given'
          charcount = nchars
          go to 5
@@ -67,21 +67,21 @@ c  SunOS, 1017 is for Solaris, and 128 is for Redhat Linux operating systems.
       elseif (jstat .eq. 117 .or. jstat .eq. 1017 .or.
      .        jstat .eq. 128) then
          write (errmess,1002) jstat
-         istat = ivwrite (line+2,3,errmess,41)
+c         istat = ivwrite (line+2,3,errmess,41)
          read (*,*) yesno
          if (yesno .eq. 'y') then
             kstat = 'unknown'
             go to 6
          else
             write (errmess,1003) 
-            istat = ivwrite (line+2,3,errmess,32)
+c            istat = ivwrite (line+2,3,errmess,32)
             fname = 'no_filename_given'
             charcount = nchars
             go to 5
          endif
       else
          write (errmess,1004) jstat
-         istat = ivwrite (line+2,3,errmess,46)
+c         istat = ivwrite (line+2,3,errmess,46)
       endif
 
 

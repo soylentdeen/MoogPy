@@ -59,7 +59,6 @@ c      elseif (control .eq. 'isoplot') then
 c         call plotit
 c      elseif (control .eq. 'synth  ') then
       if (control .eq. 'synth  ') then
-c         write (*,*) 'Blah'
          call synth
 c      elseif (control .eq. 'cogsyn ') then
 c         call cogsyn  

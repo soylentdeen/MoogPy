@@ -23,9 +23,9 @@ c*****Read in the key word to define the model type
       modelnum = modelnum + 1
       rewind nfmodel
       read (nfmodel,2001) modtype
-      write (nf1out,1010) modtype
-      if (modtype .eq. 'begn      ' .or.  modtype .eq. 'BEGN      ') 
-     .   write (nf1out,1011)
+c      write (nf1out,1010) modtype
+c      if (modtype .eq. 'begn      ' .or.  modtype .eq. 'BEGN      ') 
+c     .   write (nf1out,1011)
 
 
 c*****Read a comment line (usually describing the model)
@@ -36,11 +36,11 @@ c*****Read the number of depth points
       read (nfmodel,2002) list
       list2 = list(11:)
       read (list2,*) ntau
-      if (ntau .gt. 100) then
-         write (array,1012)
-         call prinfo (10)
-         stop
-      endif
+c      if (ntau .gt. 100) then
+c         write (array,1012)
+c         call prinfo (10)
+c         stop
+c      endif
 
 
 c*****EITHER: Read in a model from the output of the experimental new
@@ -172,7 +172,6 @@ c*****compute the atomic partition functions
          elem(j) = dble(j)
          call partfn (elem(j),j)
       enddo
-      write (*,*) "Made it past the partition function"
 
 
 c*****Read the microturbulence (either a single value to apply to 
@@ -187,12 +186,12 @@ c     Conversion to cm/sec from km/sec is done if needed
          enddo
       endif
       if (vturb(1) .lt. 100.) then
-         write (moditle(55:62),1008) vturb(1)
+c         write (moditle(55:62),1008) vturb(1)
          do i=1,ntau
             vturb(i) = 1.0e5*vturb(i)
          enddo
       else
-         write (moditle(55:62),1008) vturb(1)/1.0e5
+c         write (moditle(55:62),1008) vturb(1)/1.0e5
       endif
 
 
@@ -202,7 +201,7 @@ c*****solar ones contained in array xsolar.
       read (nfmodel,2002) list
       list2 = list(11:)
       read (list2,*) natoms,abscale
-      write (moditle(63:73),1009) abscale
+c      write (moditle(63:73),1009) abscale
       if(natoms .ne. 0) 
      .         read (nfmodel,*) (element(i),logepsilon(i),i=1,natoms) 
       xhyd = 10.0**xsolar(1)
@@ -420,20 +419,20 @@ c     xref will contain the log of the tauref
 
 c*****Write information to output files
       if (modprintopt .lt. 1) return
-      write (nf1out,1002) moditle
+c      write (nf1out,1002) moditle
       do i=1,ntau
          dummy1(i) = dlog10(pgas(i))
          dummy2(i) = dlog10(ne(i)*1.38054d-16*t(i))
       enddo
-      write (nf1out,1003) wavref,(i,xref(i),tauref(i),t(i),dummy1(i),
-     .                    pgas(i),dummy2(i),ne(i),vturb(i),i=1,ntau)
-      write (nf1out,1004)
+c      write (nf1out,1003) wavref,(i,xref(i),tauref(i),t(i),dummy1(i),
+c     .                    pgas(i),dummy2(i),ne(i),vturb(i),i=1,ntau)
+c      write (nf1out,1004)
       do i=1,95
          dummy1(i) = dlog10(xabund(i)) + 12.0
       enddo
-      write (nf1out,1005) (names(i),i,dummy1(i),i=1,95)
-      write (nf1out,1006) modprintopt, molopt, linprintopt, fluxintopt
-      write (nf1out,1007) (kapref(i),i=1,ntau)
+c      write (nf1out,1005) (names(i),i,dummy1(i),i=1,95)
+c      write (nf1out,1006) modprintopt, molopt, linprintopt, fluxintopt
+c      write (nf1out,1007) (kapref(i),i=1,ntau)
       return
 
 

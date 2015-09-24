@@ -36,7 +36,7 @@ c*****either read in the dissociation data for a molecular species
             do k=1,110                                                  
                if (datmol(1,k) .eq. amol(jmol)) go to 11                
             enddo
-            write (nf1out,1001) amol(jmol)                   
+c            write (nf1out,1001) amol(jmol)                   
             stop                                                        
 11          do kk=1,6                                                   
                const(kk,jmol) = datmol(kk+1,k)                          
@@ -63,8 +63,8 @@ c*****or read the ionization data for an atomic species
             enddo 
          endif
       enddo
-      if (molopt .ge. 2) 
-     .   write (nf1out,1002) (amol(i),(const(j,i),j=1,6),i=1,nmol)
+c      if (molopt .ge. 2) 
+c     .   write (nf1out,1002) (amol(i),(const(j,i),j=1,6),i=1,nmol)
 
 
 c*****set up the molecular equilibrium array. each element of array         
@@ -93,12 +93,12 @@ c*****understood, but is not explicitly contained in 'ident'.
             go to 2                                                     
          endif
       enddo                                                           
-      if (molopt .ge. 2) then
-         do i=1,neq
-            dummy1(i) = iorder(i)
-         enddo
-         write (nf1out,1003) (dummy1(i),i=1,neq),(amol(i),i=1,nmol)
-      endif
+c      if (molopt .ge. 2) then
+c         do i=1,neq
+c            dummy1(i) = iorder(i)
+c         enddo
+c         write (nf1out,1003) (dummy1(i),i=1,neq),(amol(i),i=1,nmol)
+c      endif
 
 
 c*****now begin the loop that goes through all the atmosphere tau layers
@@ -254,11 +254,11 @@ c*****number density for each neutral atom
       do jmol=1,nmol                                                 
          pmol(jmol) = dlog10(xmol(jmol,i)*tk)                           
       enddo
-      if (molopt .ge. 2) then
-         pglog = dlog10(pgas(lev))
-         write (nf1out,1004) lev,int(t(lev)+0.001),pglog,
-     .                       (patom(i),i=1,neq), (pmol(i),i=1,nmol)
-      endif
+c      if (molopt .ge. 2) then
+c         pglog = dlog10(pgas(lev))
+c         write (nf1out,1004) lev,int(t(lev)+0.001),pglog,
+c     .                       (patom(i),i=1,neq), (pmol(i),i=1,nmol)
+c      endif
 
 
 c*****here the big loop in tau ends

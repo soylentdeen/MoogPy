@@ -34,7 +34,7 @@ c*****decide if certain element abundances need to be modified.
          enddo
       endif
       if (num .ne. 5) then
-         write (nf1out,1004)
+c         write (nf1out,1004)
          xmetals = abscale + abfactor(isynth)
          if (ninetynineflag .eq. 1) then
             write (nf1out,1005) xmetals

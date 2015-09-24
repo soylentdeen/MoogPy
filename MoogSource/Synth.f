@@ -21,42 +21,45 @@ c*****examine the parameter file
 
 c*****open the files for: standard output, raw spectrum depths, smoothed 
 c     spectra, and (if desired) IRAF-style smoothed spectra
-      nf1out = 20     
-      lscreen = 4
-      array = 'STANDARD OUTPUT'
-      nchars = 15
-      call infile ('output ',nf1out,'formatted  ',0,nchars,
-     .             f1out,lscreen)
-      nf2out = 21               
-      lscreen = lscreen + 2
-      array = 'RAW SYNTHESIS OUTPUT'
-      nchars = 20
-      call infile ('output ',nf2out,'formatted  ',0,nchars,
-     .             f2out,lscreen)
-      if (plotopt .ne. 0) then
-         nf3out = 22               
-         lscreen = lscreen + 2
-         array = 'SMOOTHED SYNTHESES OUTPUT'
-         nchars = 25
-         call infile ('output ',nf3out,'formatted  ',0,nchars,
-     .                f3out,lscreen)
-         if (f5out .ne. 'optional_output_file') then
-            nf5out = 26
-            lscreen = lscreen + 2
-            array = 'POSTSCRIPT PLOT OUTPUT'
-            nchars = 22
-            call infile ('output ',nf5out,'formatted  ',0,nchars,
-     .                   f5out,lscreen)
-         endif
-      endif
-      if (iraf .ne. 0) then
-         nf4out = 23               
-         lscreen = lscreen + 2
-         array = 'IRAF ("rtext") OUTPUT'
-         nchars = 24
-         call infile ('output ',nf4out,'formatted  ',0,nchars,
-     .                f4out,lscreen)
-      endif
+
+c     Commenting out the output files.
+c
+c      nf1out = 20     
+c      lscreen = 4
+c      array = 'STANDARD OUTPUT'
+c      nchars = 15
+c      call infile ('output ',nf1out,'formatted  ',0,nchars,
+c     .             f1out,lscreen)
+c      nf2out = 21               
+c      lscreen = lscreen + 2
+c      array = 'RAW SYNTHESIS OUTPUT'
+c      nchars = 20
+c      call infile ('output ',nf2out,'formatted  ',0,nchars,
+c     .             f2out,lscreen)
+c      if (plotopt .ne. 0) then
+c         nf3out = 22               
+c         lscreen = lscreen + 2
+c         array = 'SMOOTHED SYNTHESES OUTPUT'
+c         nchars = 25
+c         call infile ('output ',nf3out,'formatted  ',0,nchars,
+c     .                f3out,lscreen)
+c         if (f5out .ne. 'optional_output_file') then
+c            nf5out = 26
+c            lscreen = lscreen + 2
+c            array = 'POSTSCRIPT PLOT OUTPUT'
+c            nchars = 22
+c            call infile ('output ',nf5out,'formatted  ',0,nchars,
+c     .                   f5out,lscreen)
+c         endif
+c      endif
+c      if (iraf .ne. 0) then
+c         nf4out = 23               
+c         lscreen = lscreen + 2
+c         array = 'IRAF ("rtext") OUTPUT'
+c         nchars = 24
+c         call infile ('output ',nf4out,'formatted  ',0,nchars,
+c     .                f4out,lscreen)
+c      endif
 
 
 c*****open and read the model atmosphere file
@@ -67,7 +70,7 @@ c*****open and read the model atmosphere file
       call infile ('input  ',nfmodel,'formatted  ',0,nchars,
      .             fmodel,lscreen)
       call inmodel
-      write (*,*) "Read in the Model"
+c      write (*,*) "Read in the Model"
 
 
 c*****open the line list file and the strong line list file
@@ -120,58 +123,59 @@ c*****now plot the spectrum
 
 c*****if the syntheses need to be redone: first rewind the output files,
 c     then close/reopen line list(s), then rewrite model atmosphere output
-      if (choice .eq. 'n') then
-         call chabund
-c         if (choice .eq. 'x') go to 20
-         rewind nf1out
-         rewind nf2out
-         if (nflines .ne. 0) then
-            close (unit=nflines)
-            open (unit=nflines,file=flines,access='sequential',
-     .            form='formatted',blank='null',status='old',
-     .            iostat=jstat,err=10)
-         endif
-         if (nfslines .ne. 0) then
-            close (unit=nfslines)
-            open (unit=nfslines,file=fslines,access='sequential',
-     .            form='formatted',blank='null',status='old',
-     .            iostat=jstat,err=10)
-         endif
-         if (plotopt .ne. 0) then
-            rewind nf3out
-         endif
-         write (nf1out,1002) modtype
-         if (modprintopt .ge. 1) then
-            if (modtype .eq. 'begn      ' .or.
-     .          modtype .eq. 'BEGN      ') write (nf1out,1003)
-            write (nf1out,1102) moditle
-            do i=1,ntau
-               dummy1(i) = dlog10(pgas(i))
-               dummy2(i) = dlog10(ne(i)*1.38054d-16*t(i))
-            enddo
-            write (nf1out,1103) wavref,(i,xref(i),tauref(i),t(i),
-     .                          dummy1(i), pgas(i),dummy2(i),ne(i),
-     .                          vturb(i),i=1,ntau)
-            write (nf1out,1104)
-            do i=1,95
-               dummy1(i) = dlog10(xabund(i)) + 12.0
-            enddo
-            write (nf1out,1105) (names(i),i,dummy1(i),i=1,95)
-            write (nf1out,1106) modprintopt, molopt, linprintopt, 
-     .                          fluxintopt
-            write (nf1out,1107) (kapref(i),i=1,ntau)
-         endif
-         linprintopt = linprintalt
-         ncall = 2
-         choice = '1'
-         go to 10
+c      if (choice .eq. 'n') then
+c         call chabund
+cc         if (choice .eq. 'x') go to 20
+c         rewind nf1out
+c         rewind nf2out
+c         if (nflines .ne. 0) then
+c            close (unit=nflines)
+c            open (unit=nflines,file=flines,access='sequential',
+c     .            form='formatted',blank='null',status='old',
+c     .            iostat=jstat,err=10)
+c         endif
+c         if (nfslines .ne. 0) then
+c            close (unit=nfslines)
+c            open (unit=nfslines,file=fslines,access='sequential',
+c     .            form='formatted',blank='null',status='old',
+c     .            iostat=jstat,err=10)
+c         endif
+c         if (plotopt .ne. 0) then
+c            rewind nf3out
+c         endif
+c         write (nf1out,1002) modtype
+c         if (modprintopt .ge. 1) then
+c            if (modtype .eq. 'begn      ' .or.
+c     .          modtype .eq. 'BEGN      ') write (nf1out,1003)
+c            write (nf1out,1102) moditle
+c            do i=1,ntau
+c               dummy1(i) = dlog10(pgas(i))
+c               dummy2(i) = dlog10(ne(i)*1.38054d-16*t(i))
+c            enddo
+c            write (nf1out,1103) wavref,(i,xref(i),tauref(i),t(i),
+c     .                          dummy1(i), pgas(i),dummy2(i),ne(i),
+c     .                          vturb(i),i=1,ntau)
+c            write (nf1out,1104)
+c            do i=1,95
+c               dummy1(i) = dlog10(xabund(i)) + 12.0
+c            enddo
+c            write (nf1out,1105) (names(i),i,dummy1(i),i=1,95)
+c            write (nf1out,1106) modprintopt, molopt, linprintopt, 
+c     .                          fluxintopt
+c            write (nf1out,1107) (kapref(i),i=1,ntau)
+c         endif
+c         linprintopt = linprintalt
+c         ncall = 2
+c         choice = '1'
+c         go to 10
 
 
 c*****otherwise end the code gracefully
-      else
-         call finish (0)
-      endif
+c      else
+c         call finish (0)
+c      endif
 
+      call finish (0)
 
 c*****format statements
 1002  format (13('-'),'MOOG OUTPUT FILE',10('-'),

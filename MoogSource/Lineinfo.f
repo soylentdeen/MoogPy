@@ -103,7 +103,8 @@ c*****here the line data are output; all drivers use this
 
 c*****here the STRONG line data are output; MOOG assumes that no
 c     molecular line can possibly be in this category
-2     write (nf1out,2001) nstrong
+2     if (linprintopt .lt. 1) return
+      write (nf1out,2001) nstrong
       do j=nlines+1,nlines+nstrong
          ich = idint(charge(j) + 0.1)
          iatom = idint(atom1(j))

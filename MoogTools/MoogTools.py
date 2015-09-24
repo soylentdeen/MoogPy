@@ -82,29 +82,56 @@ class Moog( object ):
         self.flux = []
         self.continuum = 1.0
         self.wlShift = 0.0
-        self.resolution = 800000.0
+        self.resolution = 1.0
+        self.nativeResolution = 40000.0
 
-    def setParams(self, parameters):
+    def setSpectrumParameters(self, parameters):
         self.continuum = parameters[-1]
         self.wlShift = parameters[-2]
         self.resolution = parameters[-3]
-        self.lineList.setLogGfs(parameters[:nLines])
-        self.lineList.setVdWs(parameters[nLines:2*nLines])
-        self.lineList.writeLinelists()
+        self.lineList.setLogGfs(parameters[:self.lineList.numLines])
+        self.lineList.setVdWs(
+                parameters[self.lineList.numLines:2*self.lineList.numLines])
+        self.lineList.writeLineLists()
 
     def recorder(self, x, y):
         self.wave.append(x)
         self.flux.append(1.0-y)
     
-    def compute():
+    def compute(self):
         self.wave = []
         self.flux = []
         self.MoogPy.moogsilent()
         newWave, newFlux = SpectralTools.resample(numpy.array(self.wave), 
-                numpy.array(self.flux), self.resolution)
-        return self.solarSpectrum.flux - SpectralTools.interpolate_spectrum(
-                newWave + self.wlShift, self.solarSpectrum.wave, 
-                self.continuum * newFlux, pad=0.0)
+                numpy.array(self.flux), self.nativeResolution*self.resolution)
+        return SpectralTools.interpolate_spectrum(newWave + self.wlShift,
+                self.solarSpectrum.wave, self.continuum * newFlux, pad=0.0)
+
+    def getSpectrumParameters(self):
+        gfs = []
+        VdWs = []
+        for i in range(self.lineList.numLines):
+            gfs.append(self.lineList.getGf(i, log=True))
+            VdWs.append(self.lineList.getVdW(i, log=True))
+        #retval = numpy.append(numpy.array(gfs), numpy.array(VdWs))
+        #retval = numpy.append(retval, self.resolution)
+        #retval = numpy.append(retval, self.wlShift)
+        #retval = numpy.append(retval, self.continuum)
+        retval = gfs + VdWs + [self.resolution, self.wlShift, self.continuum]
+        return retval
+
+    def getInitialParameterSpreads(self):
+        gfs = []
+        VdWs = []
+        for i in range(self.lineList.numLines):
+            gfs.append(0.1)
+            VdWs.append(0.5)
+        retval = gfs + VdWs + [0.01, 0.01, 0.002]
+        return retval
+
+    def getObserved(self):
+        return (self.solarSpectrum.wave, self.solarSpectrum.flux, numpy.ones(len(self.solarSpectrum.wave)*0.002))
+
 
     def run(self):
         self.wave = []
@@ -186,7 +213,7 @@ class ParameterFile( object ):
                       'strong':1, 
                       'atmosphere':1, 
                       'molecules':2,
-                      'lines':1,
+                      'lines':0,
                       'damping':1,
                       'freeform':2,
                       'flux/int':0,
@@ -265,17 +292,29 @@ class LineList( object ):
                self.molecules+'CN_Plez_linelist.dat', self.wlStart, self.wlStop,
                self.Bfield, self.gf_corrections))
 
-    def getGf(self, index):
+    def getGf(self, index, log=False):
         if index < self.nStrong:
-            return 10.0**(self.strongLines[index].loggf)
+            if log:
+                return self.strongLines[index].loggf
+            else:
+                return 10.0**(self.strongLines[index].loggf)
         else:
-            return 10.0**(self.weakLines[index-self.nStrong].loggf)
+            if log:
+                return self.weakLines[index-self.nStrong].loggf
+            else:
+                return 10.0**(self.weakLines[index-self.nStrong].loggf)
         
-    def getVdW(self, index):
+    def getVdW(self, index, log=False):
         if index < self.nStrong:
-            return 10.0**(self.strongLines[index].VdW)
+            if log:
+                return self.strongLines[index].VdW
+            else:
+                return 10.0**(self.strongLines[index].VdW)
         else:
-            return 10.0**(self.weakLines[index-self.nStrong].VdW)
+            if log:
+                return self.weakLines[index-self.nStrong].VdW
+            else:
+                return 10.0**(self.weakLines[index-self.nStrong].VdW)
 
     def perturbGf(self, index, delta):
         if index < self.nStrong:
@@ -388,7 +427,7 @@ class LineList( object ):
             else:
                 self.weakLines[i-self.nStrong].setLogGf(loggfs[i])
     
-    def setLogVdWs(self, VdWs):
+    def setVdWs(self, VdWs):
         for i in range(self.numLines):
             if i < self.nStrong:
                 self.strongLines[i].setVdW(VdWs[i])

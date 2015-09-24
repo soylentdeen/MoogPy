@@ -130,7 +130,7 @@ c  format of linelist (formatted/not)     linfileopt
 c  source function with scat+abs          scatopt
       modprintopt  = 1
       molopt       = 1
-      linprintopt  = 1
+      linprintopt  = 0
       fluxintopt   = 0
       plotopt      = 0
       dampingopt   = 0

@@ -29,11 +29,11 @@ c  close the files
       endif
 
 c  write the closing message
-      if (number .eq. 0) then
-         istat = ivcleof (4,1)
-         write (array,1001) 
-         istat = ivwrite (5,1,array,79)
-      endif
+c      if (number .eq. 0) then
+c         istat = ivcleof (4,1)
+c         write (array,1001) 
+c         istat = ivwrite (5,1,array,79)
+c      endif
       return
 
 

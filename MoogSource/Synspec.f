@@ -16,27 +16,27 @@ cf2py intent(callback, hide) recorder
       external recorder
 
 c*****initialize the synthesis
-      write (nf1out,1101)
-      write (nf2out,1002) moditle(1:73)
-      if (iunits .eq. 1) then
-         write (nf2out,1103) oldstart,oldstop,oldstep,olddelta
-      else
-         write (nf2out,1102) start,sstop,step,delta
-      endif
-      if (iraf .eq. 1) then
-         npoint = (sstop-start)/step
-         write (nf4out,1104) npoint,wave,wave,step,step
-         write (nf4out,1105)
-         write (nf4out,1106) moditle
-         do j=1,93
-            if (pec(j) .gt. 0 ) then
-               dummy1(j) = dlog10(xabund(j)) + 12.0
-               write (nf4out,1107) names(j),dummy1(j)
-            endif
-         enddo
-         write (nf4out,1108) vturb(1)
-         write (nf4out,1109)
-      endif
+c      write (nf1out,1101)
+c      write (nf2out,1002) moditle(1:73)
+c      if (iunits .eq. 1) then
+c         write (nf2out,1103) oldstart,oldstop,oldstep,olddelta
+c      else
+c         write (nf2out,1102) start,sstop,step,delta
+c      endif
+c      if (iraf .eq. 1) then
+c         npoint = (sstop-start)/step
+c         write (nf4out,1104) npoint,wave,wave,step,step
+c         write (nf4out,1105)
+c         write (nf4out,1106) moditle
+c         do j=1,93
+c            if (pec(j) .gt. 0 ) then
+c               dummy1(j) = dlog10(xabund(j)) + 12.0
+c               write (nf4out,1107) names(j),dummy1(j)
+c            endif
+c         enddo
+c         write (nf4out,1108) vturb(1)
+c         write (nf4out,1109)
+c      endif
       n = 1           
       num = 0
       nsteps = 1
@@ -56,16 +56,16 @@ c*****calculate continuum quantities at the spectrum wavelength
 30    if (dabs(wave-wavl)/wave .ge. 0.001) then
          wavl = wave   
          call opacit (2,wave)    
-         if (modprintopt .ge. 2) 
-     .       write (nf1out,1001) wave,(kaplam(i),i=1,ntau)
+c         if (modprintopt .ge. 2) 
+c     .       write (nf1out,1001) wave,(kaplam(i),i=1,ntau)
          call cdcalc (1)  
          first = 0.4343*cd(1)
          flux = rinteg(xref,cd,dummy1,ntau,first)
-         if (iunits .eq. 1) then
-            write (nf1out,1003) 1.d-4*wave,flux
-         else
-            write (nf1out,1004) wave,flux
-         endif
+c         if (iunits .eq. 1) then
+c            write (nf1out,1003) 1.d-4*wave,flux
+c         else
+c            write (nf1out,1004) wave,flux
+c         endif
       endif
 
 
@@ -89,24 +89,23 @@ c*****compute a spectrum depth at this point
       first = 0.4343*cd(1)
       d(n) = rinteg(xref,cd,dummy1,ntau,first)
       call recorder(wave, d(n))
-c      call recorder()
-      if (mod(n,10) .eq. 0) then
-         if (iraf .eq. 1) then
-            do j=1,10
-               dd(num+j) = 1. - d(num+j)
-            enddo
-            write (nf4out,1110) (dd(num+j),j=1,10)
-         endif
-         if (iunits .eq. 1) then
-            wave3 = 1.d-4*(wave - 9.0*step)
-            write (nf1out,1112) wave3,(d(num+j),j=1,10)
-         else
-            wave3 = wave - 9.0*step
-            write (nf1out,1111) wave3,(d(num+j),j=1,10)
-         endif
-         if (nf2out .gt. 0) write (nf2out,1110) (d(num+j),j=1,10)
-         num = num + 10
-      endif
+c      if (mod(n,10) .eq. 0) then
+c         if (iraf .eq. 1) then
+c            do j=1,10
+c               dd(num+j) = 1. - d(num+j)
+c            enddo
+c            write (nf4out,1110) (dd(num+j),j=1,10)
+c         endif
+c         if (iunits .eq. 1) then
+c            wave3 = 1.d-4*(wave - 9.0*step)
+c            write (nf1out,1112) wave3,(d(num+j),j=1,10)
+c         else
+c            wave3 = wave - 9.0*step
+c            write (nf1out,1111) wave3,(d(num+j),j=1,10)
+c         endif
+c         if (nf2out .gt. 0) write (nf2out,1110) (d(num+j),j=1,10)
+c         num = num + 10
+c      endif
 
 
 c*****step in wavelength and try again 
@@ -124,28 +123,28 @@ c      write (*,*) wave, step, nsteps, sstop
 
 c*****finish the synthesis
       else
-         nn = mod(n,10)
-         if (nn .ne. 0) then
-            if (iraf .eq. 1) then
-               do j=1,nn
-                  dd(num+j) = 1. - d(num+j)
-               enddo
-               write (nf4out,1110) (dd(num+j),j=1,nn)
-            endif
-            if (iunits .eq. 1) then
-               wave3 = 1.d-4*(wave - 9.0*step)
-               write (nf1out,1112) wave3,(d(num+j),j=1,nn)
-            else
-               wave3 = wave - 9.0*step
-               write (nf1out,1111) wave3,(d(num+j),j=1,nn)
-            endif
-            if (nf2out .gt. 0) write (nf2out,1110) (d(num+j),j=1,nn)
-         endif
-         if (iunits .eq. 1) then
-            write (nf1out,1113) 1.d-4*wave
-         else
-            write (nf1out,1114) wave
-         endif
+c         nn = mod(n,10)
+c         if (nn .ne. 0) then
+c            if (iraf .eq. 1) then
+c               do j=1,nn
+c                  dd(num+j) = 1. - d(num+j)
+c               enddo
+c               write (nf4out,1110) (dd(num+j),j=1,nn)
+c            endif
+c            if (iunits .eq. 1) then
+c               wave3 = 1.d-4*(wave - 9.0*step)
+c               write (nf1out,1112) wave3,(d(num+j),j=1,nn)
+c            else
+c               wave3 = wave - 9.0*step
+c               write (nf1out,1111) wave3,(d(num+j),j=1,nn)
+c            endif
+c            if (nf2out .gt. 0) write (nf2out,1110) (d(num+j),j=1,nn)
+c         endif
+c         if (iunits .eq. 1) then
+c            write (nf1out,1113) 1.d-4*wave
+c         else
+c            write (nf1out,1114) wave
+c         endif
 c         do j =1,30
 c             write (*,*) "blah - ", j
 c         enddo
