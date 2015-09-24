@@ -80,11 +80,32 @@ class Moog( object ):
         self.MoogPy.recorder = self.recorder
         self.wave = []
         self.flux = []
+        self.continuum = 1.0
+        self.wlShift = 0.0
+        self.resolution = 800000.0
+
+    def setParams(self, parameters):
+        self.continuum = parameters[-1]
+        self.wlShift = parameters[-2]
+        self.resolution = parameters[-3]
+        self.lineList.setLogGfs(parameters[:nLines])
+        self.lineList.setVdWs(parameters[nLines:2*nLines])
+        self.lineList.writeLinelists()
 
     def recorder(self, x, y):
         self.wave.append(x)
         self.flux.append(1.0-y)
     
+    def compute():
+        self.wave = []
+        self.flux = []
+        self.MoogPy.moogsilent()
+        newWave, newFlux = SpectralTools.resample(numpy.array(self.wave), 
+                numpy.array(self.flux), self.resolution)
+        return self.solarSpectrum.flux - SpectralTools.interpolate_spectrum(
+                newWave + self.wlShift, self.solarSpectrum.wave, 
+                self.continuum * newFlux, pad=0.0)
+
     def run(self):
         self.wave = []
         self.flux = []
@@ -152,11 +173,6 @@ class Spectrum( object ):
                         self.wave[i])
 
 
-
-
-
-#class Synth( Configuration ):
-    
 class ParameterFile( object ):
     def __init__(self, parent, config):
         self.parent = parent
@@ -363,18 +379,21 @@ class LineList( object ):
                 self.weakLines[i-self.nStrong].modifyGf(corrections[i], push=True)
                 self.weakLines[i-self.nStrong].modifyVdW(corrections[i+self.numLines], push=True)
 
-        """
-        for i in range(self.numLines):
-            if i < self.nStrong:
-                self.strongLines[i].modifyGf(corrections[i])
-            else:
-                self.weakLines[i-self.nStrong].modifyGf(corrections[i])
-        #"""
         self.writeLineLists()
 
-
-
-
+    def setLogGfs(self, loggfs):
+        for i in range(self.numLines):
+            if i < self.nStrong:
+                self.strongLines[i].setLogGf(loggfs[i])
+            else:
+                self.weakLines[i-self.nStrong].setLogGf(loggfs[i])
+    
+    def setLogVdWs(self, VdWs):
+        for i in range(self.numLines):
+            if i < self.nStrong:
+                self.strongLines[i].setVdW(VdWs[i])
+            else:
+                self.weakLines[i-self.nStrong].setVdW(VdWs[i])
 
 class Spectral_Line( object ):
     def __init__(self):
@@ -407,15 +426,6 @@ class Spectral_Line( object ):
         self.zeeman_splitting()
 
     def modifyVdW(self, delta_VdW, push=False):
-        """
-        if self.VdW:
-            old = self.VdW
-            new = numpy.log10(10.0**self.VdW + delta_VdW)
-            if numpy.isnan(new):
-                self.VdW = old
-            else:
-                self.VdW = new
-        #"""
         if not(self.VdW):
             self.VdW = -7.5  # No damping value currently, try a guess
         if push:
@@ -425,6 +435,13 @@ class Spectral_Line( object ):
             self.VdW = -6.0
         if self.VdW < -8.5:
             self.VdW = -8.5
+
+    def setLogGf(self, loggf):
+        self.loggf = loggf
+        self.zeeman_splitting()
+
+    def setVdW(self, VdW):
+        self.VdW = VdW
 
     def dump(self, **kwargs):
         if "out" in kwargs:
