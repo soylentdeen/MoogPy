@@ -17,6 +17,15 @@ c******************************************************************************
       real*8 az_start, az_stop, daz, az, long, dlong
       real*8 ring_area, cell_area, cell_a, phi_ang, chi_ang, mu
 
+cf2py intent(callback, hide) stokesrecorder
+      external stokesrecorder
+
+cf2py intent(callback, hide) beachball
+      external beachball
+
+cf2py intent(callback, hide) diskoball
+      external diskoball
+
       zeros(1,1) = 0.0
       zeros(1,2) = 0.0
       zeros(1,3) = 0.0
@@ -33,57 +42,57 @@ c*****examine the parameter file
       
 c*****open the files for: standard output, raw spectrum depths, smoothed 
 c     spectra, and (if desired) IRAF-style smoothed spectra
-      nf1out = 20     
-      lscreen = 4
-      array = 'STANDARD OUTPUT'
-      nchars = 15
-      call infile ('output ',nf1out,'formatted  ',0,nchars,
-     .             f1out,lscreen)
-      nf2out = 21               
-c      lscreen = lscreen + 2
-      array = 'RAW SYNTHESIS OUTPUT'
-      nchars = 20
-      call infile ('output ',nf2out,'formatted  ',0,nchars,
-     .             f2out,lscreen)
-
+c      nf1out = 20     
+c      lscreen = 4
+c      array = 'STANDARD OUTPUT'
+c      nchars = 15
+c      call infile ('output ',nf1out,'formatted  ',0,nchars,
+c     .             f1out,lscreen)
+c      nf2out = 21               
+cc      lscreen = lscreen + 2
+c      array = 'RAW SYNTHESIS OUTPUT'
+c      nchars = 20
+c      call infile ('output ',nf2out,'formatted  ',0,nchars,
+c     .             f2out,lscreen)
+c
 c*****Open the output files for the Stokes Output
-      nfAngles = 60               
-c      lscreen = lscreen + 2
-      array = 'ANGLES OUTPUT'
-      nchars = 20
-      call infile ('output ',nfAngles,'formatted  ',0,nchars,
-     .             fAngles,lscreen)
-      nfStokesI = 61               
-c      lscreen = lscreen + 2
-      array = 'Stokes I OUTPUT'
-      nchars = 20
-      call infile ('output ',nfStokesI,'formatted  ',0,nchars,
-     .             fStokesI,lscreen)
-      nfStokesQ = 62               
-c      lscreen = lscreen + 2
-      array = 'Stokes Q OUTPUT'
-      nchars = 20
-      call infile ('output ',nfStokesQ,'formatted  ',0,nchars,
-     .             fStokesQ,lscreen)
-      nfStokesU = 63               
-c      lscreen = lscreen + 2
-      array = 'Stokes U OUTPUT'
-      nchars = 20
-      call infile ('output ',nfStokesU,'formatted  ',0,nchars,
-     .             fStokesU,lscreen)
-      nfStokesV = 64               
-c      lscreen = lscreen + 2
-      array = 'Stokes V OUTPUT'
-      nchars = 20
-      call infile ('output ',nfStokesV,'formatted  ',0,nchars,
-     .             fStokesV,lscreen)
-      nfContinuum = 65               
-c      lscreen = lscreen + 2
-      array = 'Continuum OUTPUT'
-      nchars = 20
-      call infile ('output ',nfContinuum,'formatted  ',0,nchars,
-     .             fContinuum,lscreen)
-
+c      nfAngles = 60               
+cc      lscreen = lscreen + 2
+c      array = 'ANGLES OUTPUT'
+c      nchars = 20
+c      call infile ('output ',nfAngles,'formatted  ',0,nchars,
+c     .             fAngles,lscreen)
+c      nfStokesI = 61               
+cc      lscreen = lscreen + 2
+c      array = 'Stokes I OUTPUT'
+c      nchars = 20
+c      call infile ('output ',nfStokesI,'formatted  ',0,nchars,
+c     .             fStokesI,lscreen)
+c      nfStokesQ = 62               
+cc      lscreen = lscreen + 2
+c      array = 'Stokes Q OUTPUT'
+c      nchars = 20
+c      call infile ('output ',nfStokesQ,'formatted  ',0,nchars,
+c     .             fStokesQ,lscreen)
+c      nfStokesU = 63               
+cc      lscreen = lscreen + 2
+c      array = 'Stokes U OUTPUT'
+c      nchars = 20
+c      call infile ('output ',nfStokesU,'formatted  ',0,nchars,
+c     .             fStokesU,lscreen)
+c      nfStokesV = 64               
+cc      lscreen = lscreen + 2
+c      array = 'Stokes V OUTPUT'
+c      nchars = 20
+c      call infile ('output ',nfStokesV,'formatted  ',0,nchars,
+c     .             fStokesV,lscreen)
+c      nfContinuum = 65               
+cc      lscreen = lscreen + 2
+c      array = 'Continuum OUTPUT'
+c      nchars = 20
+c      call infile ('output ',nfContinuum,'formatted  ',0,nchars,
+c     .             fContinuum,lscreen)
+c
 c*****open and read the model atmosphere file
       nfmodel = 30
 c      lscreen = lscreen + 2
@@ -119,8 +128,8 @@ c         lscreen = lscreen + 2
       B_xyz(3) = 0.0
 
       if (diskflag .eq. 0) then
-          write (nfAngles, 12347) ncells, nrings, inclination,
-     .                               position_angle
+c          write (nfAngles, 12347) ncells, nrings, inclination,
+c     .                               position_angle
           cell_area = 4.0*3.14159262/ncells
           radtodeg = 180.0/3.1459262
           icell = 1
@@ -142,13 +151,14 @@ c         lscreen = lscreen + 2
                    azimuth(icell) = az
                    longitude(icell) = long
                    mus(icell) = mu
-                   write (nfAngles, 12346)icell, az, az_start, az_stop,
-     .                    long, dlong, phi_ang, chi_ang, mu
+c                   write (nfAngles, 12346)icell, az, az_start, az_stop,
+c     .                    long, dlong, phi_ang, chi_ang, mu
                    icell = icell + 1
                 endif
              enddo
           enddo
           icell = icell-1
+          call diskoball
       else
 c*****  Now need to make the simple Stokes I, V disk sampling routine.
           phi_angle(1) = 0.270640041
@@ -174,10 +184,11 @@ c*****  Now need to make the simple Stokes I, V disk sampling routine.
           mus(7) = 0.2673
           icell = 7
           
-          write(nfAngles, 12348) 7
-          do i=1,7
-              write (nfAngles, 12349) i, phi_angle(i), mus(i)
-          enddo
+c          write(nfAngles, 12348) 7
+c          do i=1,7
+c              write (nfAngles, 12349) i, phi_angle(i), mus(i)
+c          enddo
+          call beachball
       endif
 
       start = oldstart
@@ -234,34 +245,35 @@ c*****Perform the Synthesis
       lim1 = lim1line
       lim2 = lim2line
       call calcopacities
-      write (nfStokesI, 6520, advance='no') wave
-      write (nfStokesQ, 6520, advance='no') wave
-      write (nfStokesU, 6520, advance='no') wave
-      write (nfStokesV, 6520, advance='no') wave
-      write (nfContinuum, 6520, advance='no') wave
+c      write (nfStokesI, 6520, advance='no') wave
+c      write (nfStokesQ, 6520, advance='no') wave
+c      write (nfStokesU, 6520, advance='no') wave
+c      write (nfStokesV, 6520, advance='no') wave
+c      write (nfContinuum, 6520, advance='no') wave
       if (testflag .eq. 1) then
          call traceStokes(dble(0.0), dble(0.0), dble(1.0))
 
-         write (nfStokesI, 6521, advance='no') Stokes(1)/continuum
-         write (nfStokesQ, 6521, advance='no') Stokes(2)/continuum
-         write (nfStokesU, 6521, advance='no') Stokes(3)/continuum
-         write (nfStokesV, 6521, advance='no') Stokes(4)/continuum
-         write (nfContinuum, 6521, advance='no') continuum
+c         write (nfStokesI, 6521, advance='no') Stokes(1)/continuum
+c         write (nfStokesQ, 6521, advance='no') Stokes(2)/continuum
+c         write (nfStokesU, 6521, advance='no') Stokes(3)/continuum
+c         write (nfStokesV, 6521, advance='no') Stokes(4)/continuum
+c         write (nfContinuum, 6521, advance='no') continuum
       else
          do i = 1, icell
             call traceStokes(phi_angle(i), chi_angle(i), mus(i))
-            write (nfStokesI, 6521, advance='no') Stokes(1)
-            write (nfStokesQ, 6521, advance='no') Stokes(2)
-            write (nfStokesU, 6521, advance='no') Stokes(3)
-            write (nfStokesV, 6521, advance='no') Stokes(4)
-            write (nfContinuum, 6521, advance='no') continuum
+c            write (nfStokesI, 6521, advance='no') Stokes(1)
+c            write (nfStokesQ, 6521, advance='no') Stokes(2)
+c            write (nfStokesU, 6521, advance='no') Stokes(3)
+c            write (nfStokesV, 6521, advance='no') Stokes(4)
+c            write (nfContinuum, 6521, advance='no') continuum
+            call stokesrecorder(wave, Stokes, continuum)
          enddo
       endif
-      write (nfStokesI, *) ''
-      write (nfStokesQ, *) ''
-      write (nfStokesU, *) ''
-      write (nfStokesV, *) ''
-      write (nfContinuum, *) ''
+c      write (nfStokesI, *) ''
+c      write (nfStokesQ, *) ''
+c      write (nfStokesU, *) ''
+c      write (nfStokesV, *) ''
+c      write (nfContinuum, *) ''
       
 c****      Calculate the distances to the closest strong/weak line
       if (curr_strong .eq. 1) then

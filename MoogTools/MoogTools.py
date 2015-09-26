@@ -70,6 +70,59 @@ class HITRAN_Dictionary( object ):
                 13:{1:108.01160,2:108.01180,3:108.02160}}
         self.DissE = {5:11.10, 13:4.412}
 
+class MoogStokes( object ):
+    def __init__(self, configurationFile):
+        self.config = AstroUtils.parse_config(configurationFile)
+        self.lineList = LineList(self, self.config)
+        self.parameterFile = ParameterFile(self, self.config)
+        self.MoogStokesPy = MoogStokesPy
+        self.MoogStokesPy.stokesrecorder = self.stokesrecorder
+        self.MoogStokesPy.beachball = self.beachball
+        self.MoogStokesPy.diskoball = self.diskoball
+        self.wave = []
+        self.flux = []
+        self.flux_I = []
+        self.flux_Q = []
+        self.flux_U = []
+        self.flux_V = []
+        self.continuum = []
+        self.continuumOffset = 1.0
+        self.wlShift = 0.0
+        self.vsini = 0.0
+        self.resolution = 1.0
+        self.nativeResolution = 80000.0
+
+    def recorder(self, x, y):
+        self.wave.append(x)
+        self.flux.append(1.0-y)
+    
+    def stokesrecorder(self, wave, Stokes, continuum):
+        self.wave.append(wave)
+        self.flux_I.append(Stokes[0])
+        self.flux_Q.append(Stokes[1])
+        self.flux_U.append(Stokes[2])
+        self.flux_V.append(Stokes[3])
+        self.continuum.append(continuum)
+
+    def beachball(self):
+        self.diskflag = 1
+        self.ncells = 7
+        self.cells = numpy.arange(7)
+        self.phi_angle = self.MoogStokesPy.phi_angle.copy()
+        self.mus = self.MoogStokesPy.mus.copy()
+
+    def diskoball(self):
+        self.diskflag = 0
+        self.ncells = self.MoogStokesPy.ncells
+        self.nrings = self.MoogStokesPy.nrings
+        self.inclination = self.MoogStokesPy.inclination
+        self.position_angle = self.MoogStokesPy.position_angle
+        self.phi_angle = self.MoogStokesPy.phi_angle.copy()
+        self.chi_angle = self.MoogStokesPy.chi_angle.copy()
+        self.azimuth = self.MoogStokesPy.azimuth.copy()
+        self.longitude = self.MoogStokesPy.longitude.copy()
+        self.mus = self.MoogStokesPy.mus.copy()
+
 class Moog( object ):
     def __init__(self, configurationFile):
         self.config = AstroUtils.parse_config(configurationFile)
