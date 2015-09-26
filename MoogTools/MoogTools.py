@@ -124,7 +124,7 @@ class Moog( object ):
         gfs = []
         VdWs = []
         for i in range(self.lineList.numLines):
-            gfs.append(0.1)
+            gfs.append(1.0)
             VdWs.append(0.5)
         retval = gfs + VdWs + [0.01, 0.01, 0.002]
         return retval
