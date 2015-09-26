@@ -1,11 +1,10 @@
 
-      program moogsilent
+      subroutine moogstokessilent
 c******************************************************************************
-c     This is the main driver for the non-interactive version of MOOG.  
-c     It reads the parameter file and sends MOOG to various controlling 
-c     subroutines.  In this version of MOOG the parameter file must
-c     be named "batch.par" (because the code cannot stop to ask the
-c     user to name the parameter file)
+c     This is the main driver for MOOG.  It reads the parameter
+c     file and sends MOOG to various controlling subroutines.
+c     This is the normal interactive version of the code; for batch
+c     processing without user decisions, run MOOGSILENT instead.
 c******************************************************************************
 
       include 'Atmos.com'
@@ -13,17 +12,17 @@ c******************************************************************************
 
 
 c$$$$$$$$$$$$$$$$$$$$$$$$ USER SETUP AREA $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-c     in compiling MOOG, here the various machine-specific things are
-c     declared.  First, define the directory where MOOG lives, in order to
-c     be able to pull in auxiliary data files; executing 'make' will
-c     generate a reminder of this
+c*****in compiling MOOG, here the various machine-specific things are 
+c     declared.  First, define the directory where MOOG lives, in order to 
+c     be able to pull in auxiliary data files; executing 'make' will 
+c     generate a reminder of this necessity
       write (moogpath,1001)
       moogpath = 
      .  '/home/deen/Code/Python/MoogPy/MoogSource/'
 
 
 c*****What kind of machine are you using?  Possible ones are:
-c     "mac" = Intel-based Apple Mac
+c     "mac" = Intel-based Apple Mac 
 c     "pcl" = a PC or desktop running some standard linux like Redhat
 c     "uni" = a machine running Unix, specifically Sun Solaris
       machine = "pcl"
@@ -39,7 +38,7 @@ c      write (smt2,1017)
 c$$$$$$$$$$$$$$$$$$$$$$$ END OF USER SETUP $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
-c*****declare this to be the non-interactive version; variable "silent"
+c*****declare this to be the normal interactive version; variable "silent"
 c     will be queried on all occasions that might call for user input;
 c     DON'T CHANGE THIS VARIABLE; 
 c     if silent = 'n', the normal interactive MOOG is run;
@@ -52,10 +51,8 @@ c*****invoke the overall starting routine
       call begin
 
 
-c*****use one of the standard driver routines ("isotop" is obsolete): 
+c*****use one of the standard driver routines ("isotop" is obsolete):
 c      if     (control .eq. 'synplot') then
-c         call plotit
-c      elseif (control .eq. 'isoplot') then
 c         call plotit
       if (control .eq. 'synth  ') then
          call synth
@@ -71,9 +68,6 @@ c      elseif (control .eq. 'cog    ') then
 c         call cog
 c      elseif (control .eq. 'calmod ') then
 c         call calmod
-c      elseif (control .eq. 'isotop ') then
-c         control = 'synth  '
-c         call synth
 c      elseif (control .eq. 'doflux ') then
 c         call doflux   
 c      elseif (control .eq. 'weedout') then
@@ -88,8 +82,6 @@ c      elseif (control .eq. 'abpop  ') then
 c         call abpop
 c      elseif (control .eq. 'synpop ') then
 c         call synpop
-c      elseif (control .eq. 'gridsto') then
-c         call gridstokes
       elseif (control .eq. 'synstok') then
          call synstokes
 
@@ -101,17 +93,22 @@ c         call  mydriver
 
 c*****or else you are out of luck!
       else
-         array = 'THIS IS NOT ONE OF THE DRIVERS. I QUIT!'
-c         istat = ivwrite (4,3,array,49)
-c         stop
+         array = 'THIS IS NOT ONE OF THE DRIVERS.  TRY AGAIN (y/n)?'
       endif
+
+      rewind nfparam
 
 
 c*****format statements
 1001  format (60(' '))
-c1017  format ('x11 -bg black -title MOOGplot -geom 700x800+650+000')
-c1018  format ('x11 -bg black -title MOOGplot -geom 1200x400+20+450')
+1002  format ('The "isotop" driver is obsolete; "synth" does ',
+     .        'its functions now!')
+1003  format (22x,'MOOG IS CONTROLLED BY DRIVER ',a7)
+1017  format ('x11 -bg black -title MOOGplot -geom 700x800+650+000')
+1018  format ('x11 -bg black -title MOOGplot -geom 1200x350+20+450')
 
 
       end
+
+
       
