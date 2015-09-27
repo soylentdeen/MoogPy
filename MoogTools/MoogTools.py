@@ -1561,7 +1561,8 @@ class MoogStokes_IV_Spectrum( object ):
 class MoogStokes_IV_Spectrum( object ):
     #"""
     def __init__(self, name='', memory=False, **kwargs):
-        if memory:
+        self.memory = memory
+        if self.memory:
             self.parent = kwargs["PARENT"]
         else:
             self.name = name
@@ -1600,60 +1601,70 @@ class MoogStokes_IV_Spectrum( object ):
 
 
     def loadAngles(self):
-        df = open(self.angle_file, 'r')
-        for line in df:
-            l = line.split()
-            if len(l) == 1:
-                self.nangles = int(l[0])
-            else:
-                self.phi.append(float(l[1]))
-                self.mu.append(float(l[2]))
+        if self.memory:
+            self.phi = self.parent.phi_angle
+            self.mu = self.parent.mus
+        else:
+            df = open(self.angle_file, 'r')
+            for line in df:
+                l = line.split()
+                if len(l) == 1:
+                    self.nangles = int(l[0])
+                else:
+                    self.phi.append(float(l[1]))
+                    self.mu.append(float(l[2]))
 
-        self.phi = numpy.array(self.phi)
-        self.mu = numpy.array(self.mu)
+            self.phi = numpy.array(self.phi)
+            self.mu = numpy.array(self.mu)
 
     def loadSpectra(self):
-        df_I = open(self.I_file, 'r')
-        df_V = open(self.V_file, 'r')
-        df_C = open(self.continuum_file, 'r')
+        if self.memory:
+            I = self.parent.flux_I
+            V = self.parent.flux_V
+            continuum = self.parent.continuum
+            wl = self.parent.wave
+        else:
+            df_I = open(self.I_file, 'r')
+            df_V = open(self.V_file, 'r')
+            df_C = open(self.continuum_file, 'r')
 
-        continuum = []
-        I = []
-        V = []
-        wl = []
-        for line in df_C:
-            l = line.split()
-            wl.append(float(l[0]))
-            a = []
-            for fluxes in l[1:]:
-                try:
-                    a.append(float(fluxes))
-                except:
-                    print("Warning! Crazy Continuum format!", fluxes)
-                    a.append(float(0.0))
-            continuum.append(a)
+            continuum = []
+            I = []
+            V = []
+            wl = []
+            for line in df_C:
+                l = line.split()
+                wl.append(float(l[0]))
+                a = []
+                for fluxes in l[1:]:
+                    try:
+                        a.append(float(fluxes))
+                    except:
+                        print("Warning! Crazy Continuum format!", fluxes)
+                        a.append(float(0.0))
+                continuum.append(a)
 
-        for line in df_I:
-            l = line.split()
-            a = []
-            for fluxes in l[1:]:
-                try:
-                    a.append(float(fluxes))
-                except:
-                    print("Woah there pardner! Crazy format - Stokes I!", fluxes)
-                    a.append(float(0.0))
-            I.append(a)
+            for line in df_I:
+                l = line.split()
+                a = []
+                for fluxes in l[1:]:
+                    try:
+                        a.append(float(fluxes))
+                    except:
+                        print("Woah there pardner! Crazy format - Stokes I!", fluxes)
+                        a.append(float(0.0))
+                I.append(a)
 
-        for line in df_V:
-            l = line.split()
-            a = []
-            for fluxes in l[1:]:
-                try:
-                    a.append(float(fluxes))
-                except:
-                    print("Woah there pardner! Crazy format - Stokes V!", fluxes)
-                    a.append(float(0.0))
-            V.append(a)
+            for line in df_V:
+                l = line.split()
+                a = []
+                for fluxes in l[1:]:
+                    try:
+                        a.append(float(fluxes))
+                    except:
+                        print("Woah there pardner! Crazy format - Stokes V!", fluxes)
+                        a.append(float(0.0))
+                V.append(a)
 
         self.wl = numpy.array(wl)
         I = numpy.array(I)
