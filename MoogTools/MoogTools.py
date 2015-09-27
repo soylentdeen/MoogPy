@@ -3,6 +3,7 @@ import scipy.interpolate
 import numpy
 import os
 import MoogPy
+import MoogStokesPy
 import SpectralTools
 import AstroUtils
 
@@ -75,10 +76,11 @@ class MoogStokes( object ):
         self.config = AstroUtils.parse_config(configurationFile)
         self.lineList = LineList(self, self.config)
         self.parameterFile = ParameterFile(self, self.config)
-        self.MoogStokesPy = MoogStokesPy
-        self.MoogStokesPy.stokesrecorder = self.stokesrecorder
-        self.MoogStokesPy.beachball = self.beachball
-        self.MoogStokesPy.diskoball = self.diskoball
+        self.MoogPy = MoogStokesPy
+        self.MoogPy.recorder = self.recorder
+        self.MoogPy.stokesrecorder = self.stokesrecorder
+        self.MoogPy.beachball = self.beachball
+        self.MoogPy.diskoball = self.diskoball
         self.wave = []
         self.flux = []
         self.flux_I = []
@@ -96,32 +98,61 @@ class MoogStokes( object ):
         self.wave.append(x)
         self.flux.append(1.0-y)
     
-    def stokesrecorder(self, wave, Stokes, continuum):
-        self.wave.append(wave)
-        self.flux_I.append(Stokes[0])
-        self.flux_Q.append(Stokes[1])
-        self.flux_U.append(Stokes[2])
-        self.flux_V.append(Stokes[3])
-        self.continuum.append(continuum)
+    def stokesrecorder(self, i, wave, Stokes, continuum):
+        print("%3d %.3f %.3f %.3f" % (i, wave, Stokes[0], continuum))
+        if i == 1:
+            self.wave.append(wave)
+        self.flux_I[i-1].append(Stokes[0])
+        self.flux_Q[i-1].append(Stokes[1])
+        self.flux_U[i-1].append(Stokes[2])
+        self.flux_V[i-1].append(Stokes[3])
+        self.continuum[i-1].append(continuum)
+
+    def prepareFluxes(self):
+        for i in range(self.ncells):
+            self.flux_I.append([])
+            self.flux_Q.append([])
+            self.flux_U.append([])
+            self.flux_V.append([])
+            self.continuum.append([])
 
     def beachball(self):
         self.diskflag = 1
         self.ncells = 7
         self.cells = numpy.arange(7)
-        self.phi_angle = self.MoogStokesPy.phi_angle.copy()
-        self.mus = self.MoogStokesPy.mus.copy()
+        self.phi_angle = self.MoogPy.angles.phi_angle.copy()
+        self.mus = self.MoogPy.angles.mus.copy()
+        self.prepareFluxes()
 
     def diskoball(self):
         self.diskflag = 0
-        self.ncells = self.MoogStokesPy.ncells
-        self.nrings = self.MoogStokesPy.nrings
-        self.inclination = self.MoogStokesPy.inclination
-        self.position_angle = self.MoogStokesPy.position_angle
-        self.phi_angle = self.MoogStokesPy.phi_angle.copy()
-        self.chi_angle = self.MoogStokesPy.chi_angle.copy()
-        self.azimuth = self.MoogStokesPy.azimuth.copy()
-        self.longitude = self.MoogStokesPy.longitude.copy()
-        self.mus = self.MoogStokesPy.mus.copy()
+        self.ncells = self.MoogPy.angles.ncells
+        self.nrings = self.MoogPy.angles.nrings
+        self.inclination = self.MoogPy.angles.inclination
+        self.position_angle = self.MoogPy.angles.position_angle
+        self.phi_angle = self.MoogPy.angles.phi_angle.copy()
+        self.chi_angle = self.MoogPy.angles.chi_angle.copy()
+        self.azimuth = self.MoogPy.angles.azimuth.copy()
+        self.longitude = self.MoogPy.angles.longitude.copy()
+        self.mus = self.MoogPy.angles.mus.copy()
+        self.prepareFluxes()
+
+    def computeCompositeSpectrum(self):
+        if self.diskflag== 1:
+            self.integrator = MoogStokes_IV_Spectrum()
+        else:
+            self.integrator = Diskoball()
+        self.integrator.integrate()
+        
+    def run(self):
+        self.wave = []
+        self.flux = []
+        self.MoogPy.moogstokessilent()
+        self.computeCompositeSpectrum()
+        print("I'm Finished!")
+        raw_input()
+        return numpy.array(self.wave), numpy.array(self.flux)
+
 
 class Moog( object ):
     def __init__(self, configurationFile):
@@ -381,17 +412,17 @@ class LineList( object ):
         else:
             self.weakLines[index-self.nStrong].modifyVdW(delta)
 
-    def writeLineLists(self, lineIndex=-1, partial=False):
+    def writeLineLists(self, lineIndex=-1, partial=False, mode="MOOGSCALAR"):
         if lineIndex < 0:     #Normal case, write ALL the lines
             outfile = open(self.sfn, 'w')
             for strongLine in self.strongLines:
-                strongLine.dump(out=outfile, mode='MOOGSCALAR')
+                strongLine.dump(out=outfile, mode=mode)
             outfile.close()
             self.sort_file(self.sfn)
 
             outfile = open(self.wfn, 'w')
             for weakLine in self.weakLines:
-                weakLine.dump(out=outfile, mode='MOOGSCALAR')
+                weakLine.dump(out=outfile, mode=mode)
             outfile.close()
             self.sort_file(self.wfn, weak=True)
             self.parent.parameterFile.writeParFile()
@@ -402,7 +433,7 @@ class LineList( object ):
         elif lineIndex < self.nStrong:   # We want to only print out one line
             #  STRONG LINE
             outfile = open(self.sfn, 'w')
-            self.strongLines[lineIndex].dump(out=outfile, mode='MOOGSCALAR')
+            self.strongLines[lineIndex].dump(out=outfile, mode=mode)
             outfile.close()
             self.sort_file(self.sfn)
 
@@ -443,7 +474,7 @@ class LineList( object ):
             outfile = open(self.wfn, 'w')
             if weakLine.loggf > 0:
                 self.dummyLine.create(weakLine.wl+0.01, outfile)
-            weakLine.dump(out=outfile, mode='MOOGSCALAR')
+            weakLine.dump(out=outfile, mode=mode)
             outfile.close()
             self.sort_file(self.wfn, weak=True)
 
@@ -1523,40 +1554,49 @@ class Diskoball( object ):
         SpectralTools.write_2col_spectrum(outfile+'.C', self.wave, self.flux_C)
 
 
-
 class MoogStokes_IV_Spectrum( object ):
     def __init__(self, name, **kwargs):
-        self.name = name
-        if "DIR" in kwargs.keys():
-            self.directory = kwargs["DIR"]
-        else:
-            self.directory = '../'
-        if "DELTAV" in kwargs.keys():
-            self.deltav = kwargs["DELTAV"]
-        else:
-            self.deltav = 0.1            #  wl spacing in km/s
-        if "VSINI" in kwargs.keys():
-            self.vsini = kwargs["VSINI"]
-        else:
-            self.vsini = 0.0
+        if name == 'MEMORY':
 
-        self.angle_file = self.directory+self.name+'.angles'
-        self.continuum_file = self.directory+self.name+'.continuum'
-        self.I_file = self.directory+self.name+'.spectrum_I'
-        self.V_file = self.directory+self.name+'.spectrum_V'
+class MoogStokes_IV_Spectrum( object ):
+    #"""
+    def __init__(self, name='', memory=False, **kwargs):
+        if memory:
+            self.parent = kwargs["PARENT"]
+        else:
+            self.name = name
+            if "DIR" in kwargs.keys():
+                self.directory = kwargs["DIR"]
+            else:
+                self.directory = '../'
+            if "DELTAV" in kwargs.keys():
+                self.deltav = kwargs["DELTAV"]
+            else:
+                self.deltav = 0.1            #  wl spacing in km/s
+            if "VSINI" in kwargs.keys():
+                self.vsini = kwargs["VSINI"]
+            else:
+                self.vsini = 0.0
 
-        self.nangles = 0
-        self.phi = []
-        self.mu = []
-        self.wl = []
-        self.I = []
-        self.V = []
-        self.continuum = []
+            self.angle_file = self.directory+self.name+'.angles'
+            self.continuum_file = self.directory+self.name+'.continuum'
+            self.I_file = self.directory+self.name+'.spectrum_I'
+            self.V_file = self.directory+self.name+'.spectrum_V'
 
-        self.loadAngles()
-        self.loadSpectra()
+            self.nangles = 0
+            self.phi = []
+            self.mu = []
+            self.wl = []
+            self.I = []
+            self.V = []
+            self.continuum = []
+
+            self.loadAngles()
+            self.loadSpectra()
+
         self.interpolateSpectra()
         self.diskInt()
+    #"""
 
 
     def loadAngles(self):
@@ -1632,6 +1672,9 @@ class MoogStokes_IV_Spectrum( object ):
     def interpolateSpectra(self):
         deltav = self.deltav
         c = 3e5                        #km/s
+        if self.memory:
+            wl_start = numpy.min(self.parent.wl)
+            wl_stop = numpy.max(self.parent.wl)
         wl_start = numpy.min(self.wl)
         wl_max = numpy.max(self.wl)
         new_wl = []

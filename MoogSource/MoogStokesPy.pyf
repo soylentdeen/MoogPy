@@ -12,8 +12,9 @@ python module synspec__user__routines
 end python module synspec__user__routines
 python module synstokes__user__routines 
     interface synstokes_user_interface 
-        subroutine stokesrecorder(wave,stokes,continuum) ! in :MoogStokesPy:SynStokes.f:synstokes:unknown_interface
+        subroutine stokesrecorder(i,wave,stokes,continuum) ! in :MoogStokesPy:SynStokes.f:synstokes:unknown_interface
             intent(callback,hide) stokesrecorder
+            integer :: i
             real*8 :: wave
             real*8 dimension(4) :: stokes
             real*8 :: continuum
@@ -29,6 +30,8 @@ end python module synstokes__user__routines
 python module MoogStokesPy ! in 
     interface  ! in :MoogStokesPy
         subroutine moogstokessilent ! in :MoogStokesPy:MoogStokessilent.f
+            use synspec__user__routines
+            use synstokes__user__routines
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -232,6 +235,14 @@ python module MoogStokesPy ! in
             character*1 :: rotateflag
             character*1 :: lorenflag
             character*1 :: macroflag
+            intent(callback, hide) recorder
+            external recorder
+            intent(callback, hide) stokesrecorder
+            external stokesrecorder
+            intent(callback, hide) beachball
+            external beachball
+            intent(callback, hide) diskoball
+            external diskoball
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt

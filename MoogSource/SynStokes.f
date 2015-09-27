@@ -192,6 +192,8 @@ c          enddo
       endif
 
       start = oldstart
+      isynth = 1
+      write (*,*) isynth
       call wavegrid
 c      write (*,*) "Number of Strong Lines ", ns_lines
 c      write (*,*) "Number of weak Lines ", nw_lines
@@ -266,7 +268,7 @@ c            write (nfStokesQ, 6521, advance='no') Stokes(2)
 c            write (nfStokesU, 6521, advance='no') Stokes(3)
 c            write (nfStokesV, 6521, advance='no') Stokes(4)
 c            write (nfContinuum, 6521, advance='no') continuum
-            call stokesrecorder(wave, Stokes, continuum)
+            call stokesrecorder(i, wave, Stokes, continuum)
          enddo
       endif
 c      write (nfStokesI, *) ''

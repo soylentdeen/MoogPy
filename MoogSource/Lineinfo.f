@@ -27,6 +27,7 @@ c******************************************************************************
 
 c*****here the line data are output; all drivers use this
 1     if (linprintopt .lt. 1) return
+      write (*,*) linprintopt
       write (nf1out,1001) nlines
       if (linprintopt .ge. 2) write (nf1out,1002)
       do j=1,nlines

@@ -85,7 +85,8 @@ c*****divide the lines into keepers and discards
       X=strong(I)
       J=I
    10 J=J-1
-      IF(J.EQ.0 .OR. strong(J).LT.X) GO TO 20
+      IF(J.EQ.0) GO TO 20
+      IF (strong(J).LT.X) GO TO 20
       strong(J+1)=strong(J)
       GO TO 10
    20 strong(J+1)=X
@@ -95,7 +96,8 @@ c*****divide the lines into keepers and discards
       X=weak(I)
       J=I
    40 J=J-1
-      if(J.eq.0 .or. weak(j).LT.X) GO TO 50
+      if(J.eq.0) GO TO 50
+      if(weak(j).LT.X) GO TO 50
       weak(j+1)=weak(J)
       GO TO 40
    50 weak(j+1)=X
