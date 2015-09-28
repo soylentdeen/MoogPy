@@ -119,6 +119,8 @@ class MoogStokes( object ):
     def beachball(self):
         self.diskflag = 1
         self.ncells = 7
+        self.vsini = self.config["vsini"]
+        self.deltav = self.config["deltav"]
         self.cells = numpy.arange(7)
         self.phi_angle = self.MoogPy.angles.phi_angle.copy()
         self.mus = self.MoogPy.angles.mus.copy()
@@ -139,19 +141,18 @@ class MoogStokes( object ):
 
     def computeCompositeSpectrum(self):
         if self.diskflag== 1:
-            self.integrator = MoogStokes_IV_Spectrum()
+            self.integrator = MoogStokes_IV_Spectrum(memory=True, PARENT=self)
         else:
-            self.integrator = Diskoball()
-        self.integrator.integrate()
+            self.integrator = Diskoball(memory=True, PARENT=self)
         
     def run(self):
         self.wave = []
         self.flux = []
         self.MoogPy.moogstokessilent()
         self.computeCompositeSpectrum()
-        print("I'm Finished!")
-        raw_input()
-        return numpy.array(self.wave), numpy.array(self.flux)
+        #self.wave = self.integrator.new_wl
+        self.flux = self.integrator.final_spectrum
+        return self.integrator.new_wl, self.flux
 
 
 class Moog( object ):
@@ -1553,17 +1554,19 @@ class Diskoball( object ):
         SpectralTools.write_2col_spectrum(outfile+'.V', self.wave, self.flux_V)
         SpectralTools.write_2col_spectrum(outfile+'.C', self.wave, self.flux_C)
 
-
+"""
 class MoogStokes_IV_Spectrum( object ):
     def __init__(self, name, **kwargs):
         if name == 'MEMORY':
-
+#"""
 class MoogStokes_IV_Spectrum( object ):
     #"""
     def __init__(self, name='', memory=False, **kwargs):
         self.memory = memory
         if self.memory:
             self.parent = kwargs["PARENT"]
+            self.deltav = self.parent.deltav
+            self.vsini = self.parent.vsini
         else:
             self.name = name
             if "DIR" in kwargs.keys():
@@ -1592,8 +1595,8 @@ class MoogStokes_IV_Spectrum( object ):
             self.V = []
             self.continuum = []
 
-            self.loadAngles()
-            self.loadSpectra()
+        self.loadAngles()
+        self.loadSpectra()
 
         self.interpolateSpectra()
         self.diskInt()
@@ -1602,8 +1605,8 @@ class MoogStokes_IV_Spectrum( object ):
 
     def loadAngles(self):
         if self.memory:
-            self.phi = self.parent.phi_angle
-            self.mu = self.parent.mus
+            self.phi = self.parent.phi_angle[:self.parent.ncells]
+            self.mu = self.parent.mus[:self.parent.ncells]
         else:
             df = open(self.angle_file, 'r')
             for line in df:
@@ -1619,10 +1622,10 @@ class MoogStokes_IV_Spectrum( object ):
 
     def loadSpectra(self):
         if self.memory:
-            I = self.parent.flux_I
-            V = self.parent.flux_V
-            continuum = self.parent.continuum
-            wl = self.parent.wave
+            self.I = numpy.array(self.parent.flux_I)/numpy.array(self.parent.continuum)
+            self.V = numpy.array(self.parent.flux_V)/numpy.array(self.parent.continuum)
+            self.continuum = numpy.array(self.parent.continuum)
+            self.wl = numpy.array(self.parent.wave)
         else:
             df_I = open(self.I_file, 'r')
             df_V = open(self.V_file, 'r')
@@ -1666,13 +1669,13 @@ class MoogStokes_IV_Spectrum( object ):
                         a.append(float(0.0))
                 V.append(a)
 
-        self.wl = numpy.array(wl)
-        I = numpy.array(I)
-        V = numpy.array(V)
-        continuum = numpy.array(continuum)
-        self.continuum = continuum.transpose()
-        self.I = I.transpose()/self.continuum
-        self.V = V.transpose()/self.continuum
+            self.wl = numpy.array(wl)
+            I = numpy.array(I)
+            V = numpy.array(V)
+            continuum = numpy.array(continuum)
+            self.continuum = continuum.transpose()
+            self.I = I.transpose()/self.continuum
+            self.V = V.transpose()/self.continuum
 
         wave = numpy.mean(self.wl)
         if ((1.0/(wave/10000.0)) < 2.4):
@@ -1683,9 +1686,6 @@ class MoogStokes_IV_Spectrum( object ):
     def interpolateSpectra(self):
         deltav = self.deltav
         c = 3e5                        #km/s
-        if self.memory:
-            wl_start = numpy.min(self.parent.wl)
-            wl_stop = numpy.max(self.parent.wl)
         wl_start = numpy.min(self.wl)
         wl_max = numpy.max(self.wl)
         new_wl = []
