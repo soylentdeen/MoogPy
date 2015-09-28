@@ -99,7 +99,7 @@ class MoogStokes( object ):
         self.flux.append(1.0-y)
     
     def stokesrecorder(self, i, wave, Stokes, continuum):
-        print("%3d %.3f %.3f %.3f" % (i, wave, Stokes[0], continuum))
+        #print("%3d %.3f %.3f %.3f" % (i, wave, Stokes[0], continuum))
         if i == 1:
             self.wave.append(wave)
         self.flux_I[i-1].append(Stokes[0])
@@ -145,14 +145,19 @@ class MoogStokes( object ):
         else:
             self.integrator = Diskoball(memory=True, PARENT=self)
         
-    def run(self):
+    def run(self, test=False):
         self.wave = []
         self.flux = []
+        self.MoogPy.atmos.linecount = 0
         self.MoogPy.moogstokessilent()
-        self.computeCompositeSpectrum()
-        #self.wave = self.integrator.new_wl
-        self.flux = self.integrator.final_spectrum
-        return self.integrator.new_wl, self.flux
+        if not(test):
+            self.computeCompositeSpectrum()
+            self.wave = self.integrator.new_wl
+            self.flux = self.integrator.final_spectrum
+        else:
+            print 'hi'
+            self.flux = numpy.array(self.flux_I[0])/numpy.array(self.continuum[0])
+        return self.wave, self.flux
 
 
 class Moog( object ):
@@ -302,7 +307,8 @@ class ParameterFile( object ):
                       'damping':1,
                       'freeform':2,
                       'flux/int':0,
-                      'diskflag':0}
+                      'diskflag':0,
+                      'testflag':0}
         self.file_labels = {'summary_out':'./Output/summary.out',
                             'standard_out':'./Output/out1',
                             'smoothed_out':'./Output/smoothed.out',
@@ -347,7 +353,7 @@ class LineList( object ):
         self.gf_corrections = config['gf_file']
         self.wlStart = config['wlStart']
         self.wlStop = config['wlStop']
-        self.Bfield = config['Bfield']
+        self.Bfield = config['Bfield']/10.0
         self.sfn = config['Strong_FileName']
         self.wfn = config['Weak_FileName']
         self.doMolecules = config['doMolecules']
@@ -1720,9 +1726,11 @@ class MoogStokes_IV_Spectrum( object ):
             self.new_I[i] *= self.limb_darkening[i]
             continuum.append(numpy.ones(len(self.new_I[i]))
                     *self.limb_darkening[i])
+            #continuum.append(numpy.ones(len(self.new_I[i])))
 
         continuum = numpy.array(continuum)
 
+        #raw_input()
         self.final_spectrum = self.rtint(self.mu, self.new_I,
                 continuum, deltav, vsini, 0.0)
         
@@ -1832,7 +1840,7 @@ class MoogStokes_IV_Spectrum( object ):
         #between rmu(i) and rmu(i+1).  The innermost boundary, r(0) is set to 0
         #(Disk center) and the outermost boundary r(nmu) is set to to 1 (limb).
         if ((nmu > 1) | (vsini != 0)):
-            r = numpy.sqrt(0.5*(rmu[0:-1]**2.0+rmu[1:])).tolist()
+            r = numpy.sqrt(0.5*(rmu[0:-1]**2.0+rmu[1:]**2.0)).tolist()
             r.insert(0, 0.0)
             r.append(1.0)
             r = numpy.array(r)
@@ -1946,5 +1954,7 @@ class MoogStokes_IV_Spectrum( object ):
     # Add contribution from current annulus to the running total
             flux += w*yfine
             continuum += w*cfine
+            if i == 7:
+                return w*yfine/cfine
 
         return flux/continuum

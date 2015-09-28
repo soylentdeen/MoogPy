@@ -102,6 +102,8 @@ c      lscreen = lscreen + 2
      .             fmodel,lscreen)
       call inmodel
 
+      write(*,*) fmodel
+
 
 c*****open the line list file and the strong line list file
       nflines = 31
@@ -193,7 +195,6 @@ c          enddo
 
       start = oldstart
       isynth = 1
-      write (*,*) isynth
       call wavegrid
 c      write (*,*) "Number of Strong Lines ", ns_lines
 c      write (*,*) "Number of weak Lines ", nw_lines
@@ -247,35 +248,15 @@ c*****Perform the Synthesis
       lim1 = lim1line
       lim2 = lim2line
       call calcopacities
-c      write (nfStokesI, 6520, advance='no') wave
-c      write (nfStokesQ, 6520, advance='no') wave
-c      write (nfStokesU, 6520, advance='no') wave
-c      write (nfStokesV, 6520, advance='no') wave
-c      write (nfContinuum, 6520, advance='no') wave
       if (testflag .eq. 1) then
-         call traceStokes(dble(0.0), dble(0.0), dble(1.0))
-
-c         write (nfStokesI, 6521, advance='no') Stokes(1)/continuum
-c         write (nfStokesQ, 6521, advance='no') Stokes(2)/continuum
-c         write (nfStokesU, 6521, advance='no') Stokes(3)/continuum
-c         write (nfStokesV, 6521, advance='no') Stokes(4)/continuum
-c         write (nfContinuum, 6521, advance='no') continuum
+         call traceStokes(dble(0.69813), dble(0.0), dble(1.0))
+         call stokesrecorder(1, wave, Stokes, continuum)
       else
          do i = 1, icell
             call traceStokes(phi_angle(i), chi_angle(i), mus(i))
-c            write (nfStokesI, 6521, advance='no') Stokes(1)
-c            write (nfStokesQ, 6521, advance='no') Stokes(2)
-c            write (nfStokesU, 6521, advance='no') Stokes(3)
-c            write (nfStokesV, 6521, advance='no') Stokes(4)
-c            write (nfContinuum, 6521, advance='no') continuum
             call stokesrecorder(i, wave, Stokes, continuum)
          enddo
       endif
-c      write (nfStokesI, *) ''
-c      write (nfStokesQ, *) ''
-c      write (nfStokesU, *) ''
-c      write (nfStokesV, *) ''
-c      write (nfContinuum, *) ''
       
 c****      Calculate the distances to the closest strong/weak line
       if (curr_strong .eq. 1) then
@@ -289,16 +270,8 @@ c****      Calculate the distances to the closest strong/weak line
           weak_blue_distance = dabs(wave - weak(curr_weak-1))
       endif
 
-      if (curr_strong .eq. ns_lines) then
-          strong_red_distance = 1000.0
-      else
-          strong_red_distance = dabs(strong(curr_strong) - wave)
-      endif
-      if (curr_weak .eq. nw_lines) then
-          weak_red_distance = 1000.0
-      else
-          weak_red_distance = dabs(weak(curr_weak) - wave)
-      endif
+      strong_red_distance = dabs(strong(curr_strong) - wave)
+      weak_red_distance = dabs(weak(curr_weak) - wave)
 
 65    if ((wave .ge. strong(curr_strong)).and.
      .          (curr_strong .lt. ns_lines)) then

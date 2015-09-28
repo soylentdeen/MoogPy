@@ -10,7 +10,7 @@ moogPyConfigFile = 'comparison.cfg'
 Moog = MoogTools.MoogStokes(moogPyConfigFile)
 Moog.lineList.writeLineLists(mode="MOOGSTOKES")
 Moog.parameterFile.writeParFile()
-wavelength, flux = Moog.run()
+wavelength, flux = Moog.run(test=True)
 
 ax.plot(wavelength, flux)
 
