@@ -38,6 +38,7 @@ cf2py intent(callback, hide) diskoball
 
 c*****examine the parameter file
       call params
+      linfileopt = 2
       linprintopt = linprintalt
       
 c*****open the files for: standard output, raw spectrum depths, smoothed 
@@ -251,6 +252,7 @@ c*****Perform the Synthesis
       if (testflag .eq. 1) then
          call traceStokes(dble(0.69813), dble(0.0), dble(1.0))
          call stokesrecorder(1, wave, Stokes, continuum)
+c         write (*,*) wave, Stokes, continuum
       else
          do i = 1, icell
             call traceStokes(phi_angle(i), chi_angle(i), mus(i))
@@ -270,8 +272,17 @@ c****      Calculate the distances to the closest strong/weak line
           weak_blue_distance = dabs(wave - weak(curr_weak-1))
       endif
 
-      strong_red_distance = dabs(strong(curr_strong) - wave)
-      weak_red_distance = dabs(weak(curr_weak) - wave)
+      if (curr_strong .eq. ns_lines) then
+          strong_red_distance = 1000.0
+      else
+          strong_red_distance = dabs(strong(curr_strong) - wave)
+      endif
+          
+      if (curr_weak .eq. nw_lines) then
+          weak_red_distance = 1000.0
+      else
+          weak_red_distance = dabs(weak(curr_weak) - wave)
+      endif
 
 65    if ((wave .ge. strong(curr_strong)).and.
      .          (curr_strong .lt. ns_lines)) then
@@ -290,11 +301,12 @@ c****      Calculate the next wavelength step
       weak_distance = MIN(weak_red_distance, 
      .           weak_blue_distance)
 
-      strong_step = 0.25 - 0.24/(1.0+exp(beta_strong*
+      strong_step = 0.15 - 0.14/(1.0+exp(beta_strong*
      .          (strong_distance/R_strong-1.0)))
-      weak_step = 0.25 - 0.24/(1.0+exp(beta_weak*
+      weak_step = 0.15 - 0.14/(1.0+exp(beta_weak*
      .          (weak_distance/R_weak-1.0)))
-
+      
+c      write (*,*) wave, strong_step, weak_step
       wave = wave + MIN(strong_step, weak_step)
 
       if (wave .le. sstop) then

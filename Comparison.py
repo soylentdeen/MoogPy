@@ -12,7 +12,7 @@ Moog.lineList.writeLineLists(mode="MOOGSTOKES")
 Moog.parameterFile.writeParFile()
 wavelength, flux = Moog.run(test=True)
 
-ax.plot(wavelength, flux)
+ax.plot(wavelength, flux, marker='o')
 
 fig.show()
 

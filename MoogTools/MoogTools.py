@@ -155,7 +155,6 @@ class MoogStokes( object ):
             self.wave = self.integrator.new_wl
             self.flux = self.integrator.final_spectrum
         else:
-            print 'hi'
             self.flux = numpy.array(self.flux_I[0])/numpy.array(self.continuum[0])
         return self.wave, self.flux
 
@@ -970,10 +969,12 @@ class VALD_Line( Spectral_Line ):
                                             (2*self.J_hi*(self.J_hi+1)))
                                 else:
                                     self.g_hi = 0.0
+                    print asdf
                 except:
                     self.g_lo = 0.0
                     self.g_hi = 0.0
-                    if self.verbose:
+                    #if self.verbose:
+                    if True:
                         print("Parsing VALD Transition Failed! %f" % self.wl)
                         print("%s\n" % self.transition)
             else:

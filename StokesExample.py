@@ -11,7 +11,7 @@ moogPyConfigFile = 'moogStokesPy.cfg'
 Moog = MoogTools.MoogStokes(moogPyConfigFile)
 Moog.lineList.writeLineLists(mode="MOOGSTOKES")
 Moog.parameterFile.writeParFile()
-wavelength, flux = Moog.run()
+wavelength, flux = Moog.run(test=False)
 
 ax.plot(wavelength, flux)
 
