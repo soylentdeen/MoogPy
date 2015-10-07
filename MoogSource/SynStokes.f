@@ -307,6 +307,7 @@ c****      Calculate the next wavelength step
      .          (weak_distance/R_weak-1.0)))
       
 c      write (*,*) wave, strong_step, weak_step
+      write (*,*) wave
       wave = wave + MIN(strong_step, weak_step)
 
       if (wave .le. sstop) then

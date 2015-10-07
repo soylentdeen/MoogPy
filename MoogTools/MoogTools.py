@@ -71,16 +71,27 @@ class HITRAN_Dictionary( object ):
                 13:{1:108.01160,2:108.01180,3:108.02160}}
         self.DissE = {5:11.10, 13:4.412}
 
-class MoogStokes( object ):
-    def __init__(self, configurationFile):
+class MoogStokesSpectrum( object ):
+    def __init__(self, configurationFile, fileBase, **kwargs):
         self.config = AstroUtils.parse_config(configurationFile)
         self.lineList = LineList(self, self.config)
         self.parameterFile = ParameterFile(self, self.config)
-        self.MoogPy = MoogStokesPy
-        self.MoogPy.recorder = self.recorder
-        self.MoogPy.stokesrecorder = self.stokesrecorder
-        self.MoogPy.beachball = self.beachball
-        self.MoogPy.diskoball = self.diskoball
+        self.T = self.config["Teff"]
+        self.logg = self.config["logg"]
+        self.B = self.config["Bfield"]
+        self.vsini = self.config["vsini"]
+        
+        if "DELTA_T" in kwargs:
+            self.T += kwargs["DELTA_T"]
+        if "DELTA_G" in kwargs:
+            self.logg += kwargs["DELTA_G"]
+        if "DELTA_B" in kwargs:
+            self.B += kwargs["DELTA_B"]
+        if "DELTA_VSINI" in kwargs:
+            self.vsini += kwargs["DELTA_VSINI"]
+
+        self.fileName = fileBase+'.par'
+        self.fileBase = fileBase
         self.wave = []
         self.flux = []
         self.flux_I = []
@@ -88,18 +99,18 @@ class MoogStokes( object ):
         self.flux_U = []
         self.flux_V = []
         self.continuum = []
-        self.continuumOffset = 1.0
-        self.wlShift = 0.0
-        self.vsini = 0.0
-        self.resolution = 1.0
-        self.nativeResolution = 80000.0
+        self.MoogPy = MoogStokesPy
+        self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
+        self.MoogPy.recorder = self.recorder
+        self.MoogPy.stokesrecorder = self.stokesrecorder
+        self.MoogPy.beachball = self.beachball
+        self.MoogPy.diskoball = self.diskoball
 
     def recorder(self, x, y):
         self.wave.append(x)
         self.flux.append(1.0-y)
     
     def stokesrecorder(self, i, wave, Stokes, continuum):
-        #print("%3d %.3f %.3f %.3f" % (i, wave, Stokes[0], continuum))
         if i == 1:
             self.wave.append(wave)
         self.flux_I[i-1].append(Stokes[0])
@@ -119,8 +130,10 @@ class MoogStokes( object ):
     def beachball(self):
         self.diskflag = 1
         self.ncells = 7
-        self.vsini = self.config["vsini"]
-        self.deltav = self.config["deltav"]
+        try:
+            self.deltav = self.config["deltav"]
+        except:
+            self.deltav = 0.1
         self.cells = numpy.arange(7)
         self.phi_angle = self.MoogPy.angles.phi_angle.copy()
         self.mus = self.MoogPy.angles.mus.copy()
@@ -144,20 +157,59 @@ class MoogStokes( object ):
             self.integrator = MoogStokes_IV_Spectrum(memory=True, PARENT=self)
         else:
             self.integrator = Diskoball(memory=True, PARENT=self)
-        
+
     def run(self, test=False):
         self.wave = []
         self.flux = []
+        self.lineList.setBfield(self.B)
+        self.lineList.writeLineLists(parent=self, mode="MOOGSTOKES")
+        self.parameterFile.setName(self.fileBase)
+        self.parameterFile.setModel(self.T, self.logg)
+        self.parameterFile.writeParFile()
         self.MoogPy.atmos.linecount = 0
         self.MoogPy.moogstokessilent()
-        if not(test):
-            self.computeCompositeSpectrum()
-            self.wave = self.integrator.new_wl
-            self.flux = self.integrator.final_spectrum
-        else:
-            self.flux = numpy.array(self.flux_I[0])/numpy.array(self.continuum[0])
+        self.computeCompositeSpectrum()
+        self.wave = self.integrator.new_wl
+        self.flux = self.integrator.final_spectrum
         return self.wave, self.flux
 
+class MoogStokes( object ):
+    def __init__(self, configurationFile):
+        self.config = AstroUtils.parse_config(configurationFile)
+        self.grid = self.config["grid"]   # True = restrict T, G to grid points, False = allow to wander
+        self.lineList = LineList(self, self.config)
+        self.parameterFile = ParameterFile(self, self.config)
+        self.fiducial = MoogStokesSpectrum(self, self.config, 'fiducial')
+        self.partials = []
+        self.nPartials = len(self.partials)
+
+    def addPartial(self, **kwargs):
+        self.partials.append(MoogStokesSpectrum(self, self.config, 'partial_'+str(self.nPartials), **kwargs))
+        self.nPartials += 1
+
+    def generatePartials(self, dT = 100, dG = 0.5, dB = 0.5, dVSINI = 5.0):
+        if self.grid:
+            if self.config["Teff"] > 3900.0:
+                dT = 250.0
+            else:
+                dT = 100.0
+            self.addPartial(DELTA_T = dT)
+            self.addPartial(DELTA_G = 0.5)
+            self.addPartial(DELTA_B = 0.5)
+            self.addPartial(DELTA_VSINI = 5.0)
+        else:
+            self.addPartial(DELTA_T = dT)
+            self.addPartial(DELTA_G = dG)
+            self.addPartial(DELTA_B = dB)
+            self.addPartial(DELTA_VSINI = dVSINI)
+		
+    def getFiducial(self):
+        return self.fiducial.wave, self.fiducial.flux
+        
+    def run(self):
+        self.fiducial.run()
+        for partial in self.partials:
+            partial.run()
 
 class Moog( object ):
     def __init__(self, configurationFile):
@@ -228,7 +280,6 @@ class Moog( object ):
         self.MoogPy.moogsilent()
         return numpy.array(self.wave), numpy.array(self.flux)
 
-
 class Spectrum( object ):
     def __init__(self, config, spectrumName):
         self.name = spectrumName
@@ -290,13 +341,17 @@ class Spectrum( object ):
 
 
 class ParameterFile( object ):
-    def __init__(self, parent, config):
+    def __init__(self, parent, config, **kwargs):
         self.parent = parent
+        self.config = config
         self.moogParCfgFile = config['moog_Parameters']
         self.moogPars = AstroUtils.parse_config(self.moogParCfgFile)
         self.synlimits = numpy.array([config['wlStart'], config['wlStop'], 
                 self.moogPars['synlimits_c'], self.moogPars['synlimits_d']])
-        self.parFileName = self.moogPars['parFileName']
+        if "PARFILENAME" in kwargs:
+            self.parFileName = kwargs["PARFILENAME"]
+        else:
+            self.parFileName = self.moogPars['parFileName']
         self.mode = self.moogPars['mode']
         self.labels = {'terminal':'x11',
                       'strong':1, 
@@ -324,6 +379,13 @@ class ParameterFile( object ):
             if fl in self.moogPars:
                 self.file_labels[fl] = self.moogPars[fl]
 
+    def setName(self, name):
+        self.file_labels['lines_in'] = self.config['Weak_FileName']+'_'+name
+        self.file_labels['stronglines_in'] = self.config['Strong_FileName']+'_'+name
+        self.parfilename = name+'.par'
+        
+    def setModel(self, Temp, Grav):
+        self.file_labels["model_in"] = 'MARCS_T'+ str(int(Temp))+'_G'+str(Grav)+'_M0.0_t1.0.md'
 
     def writeParFile(self):
         pf = open(self.parFileName, 'w')
@@ -361,6 +423,13 @@ class LineList( object ):
         self.nStrong = len(self.strongLines)
         self.numLines = self.nStrong+len(self.weakLines)
         self.dummyLine = dummy_Line()
+
+    def setBfield(self, B):
+        self.Bfield = B/10.0
+        for i in range(self.nStrong):
+            self.strongLines[i].zeeman_splitting(B=self.Bfield)
+        for i in range(self.numLines - self.nStrong):
+            self.weakLines[i].zeeman_splitting(B=self.Bfield)
 
     def readInLineLists(self):
         self.strongLines, self.weakLines = parse_VALD(self.VALD_list,
@@ -418,35 +487,52 @@ class LineList( object ):
         else:
             self.weakLines[index-self.nStrong].modifyVdW(delta)
 
-    def writeLineLists(self, lineIndex=-1, partial=False, mode="MOOGSCALAR"):
+    def writeLineLists(self, lineIndex=-1, partial=False, mode="MOOGSCALAR", parent=None):
+        if parent:
+            strongFile = self.sfn + '_' + parent.fileBase
+            weakFile = self.wfn + '_' + parent.fileBase
+            moogPointer = parent.MoogPy
+        else:
+            strongFile = self.sfn
+            weakFile = self.wfn
+            moogPointer = self.parent.MoogPy
         if lineIndex < 0:     #Normal case, write ALL the lines
-            outfile = open(self.sfn, 'w')
+            outfile = open(strongFile, 'w')
             for strongLine in self.strongLines:
                 strongLine.dump(out=outfile, mode=mode)
             outfile.close()
-            self.sort_file(self.sfn)
+            self.sort_file(strongFile)
 
-            outfile = open(self.wfn, 'w')
-            for weakLine in self.weakLines:
-                weakLine.dump(out=outfile, mode=mode)
+            outfile = open(weakFile, 'w')
+            if len(self.weakLines) == 0:
+                self.dummyLine.create(self.strongLines[lineIndex].wl, outfile)
+            else:
+                for weakLine in self.weakLines:
+                    weakLine.dump(out=outfile, mode=mode)
             outfile.close()
-            self.sort_file(self.wfn, weak=True)
+            self.sort_file(weakFile, weak=True)
+            """    This worked previously
             self.parent.parameterFile.writeParFile()
             self.parent.MoogPy.linex.start = self.wlStart
             self.parent.MoogPy.linex.sstop = self.wlStop
             self.parent.MoogPy.linex.nlines = len(self.strongLines)
             self.parent.MoogPy.linex.nstrong = len(self.weakLines)
+            """
+            moogPointer.linex.start = self.wlStart
+            moogPointer.linex.sstop = self.wlStop
+            moogPointer.linex.nlines = len(self.strongLines)  #Do I need to count lines or components?
+            moogPointer.linex.nstrong = len(self.weakLines)
         elif lineIndex < self.nStrong:   # We want to only print out one line
             #  STRONG LINE
-            outfile = open(self.sfn, 'w')
+            outfile = open(strongFile, 'w')
             self.strongLines[lineIndex].dump(out=outfile, mode=mode)
             outfile.close()
-            self.sort_file(self.sfn)
+            self.sort_file(strongFile)
 
-            outfile = open(self.wfn, 'w')
+            outfile = open(weakFile, 'w')
             self.dummyLine.create(self.strongLines[lineIndex].wl, outfile)
             outfile.close()
-            self.sort_file(self.wfn, weak=True)
+            self.sort_file(weakFile, weak=True)
 
             # Set Moog varibles
             self.parent.MoogPy.linex.start = self.wlStart
@@ -458,7 +544,7 @@ class LineList( object ):
             # WEAK LINE
             index = lineIndex-self.nStrong
             # Write empty strong line file
-            outfile = open(self.sfn, 'w')
+            outfile = open(strongFile, 'w')
             outfile.close()
 
             weakLine = self.weakLines[index]
@@ -477,12 +563,12 @@ class LineList( object ):
                 self.parent.MoogPy.linex.sstop = self.wlStop
             self.parent.MoogPy.linex.nlines = 1
             self.parent.MoogPy.linex.nstrong = 0
-            outfile = open(self.wfn, 'w')
+            outfile = open(weakFile, 'w')
             if weakLine.loggf > 0:
                 self.dummyLine.create(weakLine.wl+0.01, outfile)
             weakLine.dump(out=outfile, mode=mode)
             outfile.close()
-            self.sort_file(self.wfn, weak=True)
+            self.sort_file(weakFile, weak=True)
 
     def sort_file(self, name, weak=False):
         data = open(name, 'r').readlines()
@@ -969,12 +1055,10 @@ class VALD_Line( Spectral_Line ):
                                             (2*self.J_hi*(self.J_hi+1)))
                                 else:
                                     self.g_hi = 0.0
-                    print asdf
                 except:
                     self.g_lo = 0.0
                     self.g_hi = 0.0
-                    #if self.verbose:
-                    if True:
+                    if self.verbose:
                         print("Parsing VALD Transition Failed! %f" % self.wl)
                         print("%s\n" % self.transition)
             else:

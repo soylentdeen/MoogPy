@@ -144,6 +144,34 @@ def diff_spectra(x1, y1, x2, y2, pad=False):
     else:
         return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
     
+def merge_spectra(x1, y1, x2, y2):
+    x1 = numpy.array(x1)
+    y1 = numpy.array(y1)
+    x2 = numpy.array(x2)
+    y2 = numpy.array(y2)
+    y1[numpy.isnan(y1)] = 0.0
+    y2[numpy.isnan(y2)] = 0.0
+    if len(x1) == 0:
+        return x2, y2
+    overlap_start = numpy.max([numpy.min(x1), numpy.min(x2)])
+    overlap_stop = numpy.min([numpy.max(x1), numpy.max(x2)])
+    overlap = scipy.where((x1 >= overlap_start) & (x1 <= overlap_stop))
+    if (len(overlap[0]) > 1):
+        unique1 = scipy.where((x1 < overlap_start) | (x1 > overlap_stop))
+        unique2 = scipy.where((x2 < overlap_start) | (x2 > overlap_stop))
+
+        y = scipy.interpolate.splrep(x2, y2)
+
+        new_x = numpy.append(x1, x2[unique2])
+        yinterp = scipy.interpolate.splev(x1[overlap], y)
+        merged = y1[overlap] + yinterp
+        new_y = numpy.append(numpy.append(y1[unique1], merged), y2[unique2])
+    else:
+        new_x = numpy.append(x1, x2)
+        new_y = numpy.append(y1, y2)
+
+    return new_x, new_y
+
 
 def interpolate_spectrum(x1, x2, y1, pad=None):
     overlap_start = numpy.max([numpy.min(x1), numpy.min(x2)])
@@ -242,6 +270,19 @@ def read_3col_spectrum(filename):
     z = numpy.array(z)
     
     return x, y, z
+
+def read_IGRINS_spectrum(starFile, A0VFile):
+    star_Hdu = pyfits.open(starFile, ignore_missing_end=True)
+    A0V_Hdu = pyfits.open(A0VFile, ignore_missing_end=True)
+    
+    star_hdr = star_Hdu[0].header
+    star = star_Hdu[0].data
+    
+    A0V_hdr = A0V_Hdu[0].header
+    A0V = A0V_Hdu[0].header
+    
+    
+    
 
 def read_fits_spectrum(filename):
     hdulist = pyfits.open(filename, ignore_missing_end=True)

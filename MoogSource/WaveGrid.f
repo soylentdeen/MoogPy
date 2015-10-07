@@ -34,7 +34,6 @@ c*****compute the line opacities
 
 c*****calculate continuum quantities at the line list wavelength middle
       mode = 3
-      write (*,*) nlines
       wave = (wave1(1)+wave1(nlines))/2.
       call opacit (2,wave)
       call linlimit
