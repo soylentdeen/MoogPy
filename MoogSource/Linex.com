@@ -20,7 +20,7 @@ c******************************************************************************
       real*8       d(5000), dellam(400), w(100),
      .             rwtab(3000), gftab(3000), gfhold
       real*8       delta, start, sstop, step,
-     .             oldstart, oldstop, oldstep, olddelta
+     .             oldstart, oldstop, oldstep, olddelta, dipstickwave
       real*8       rwlow, rwhigh, rwstep, wavestep, cogatom,
      .             delwave, wave, waveold, st1
       real*8       gammatot, gammav, gammas, gammar, viewang
@@ -41,7 +41,7 @@ c******************************************************************************
      .             d, dellam, w,
      .             rwtab, gftab, gfhold,
      .             delta, start, sstop, step,   
-     .             oldstart, oldstop, oldstep, olddelta,
+     .             oldstart, oldstop, oldstep, olddelta, dipstickwave,
      .             rwlow, rwhigh, rwstep, wavestep, cogatom,
      .             delwave, wave, waveold, st1,
      .             gammatot, gammav, gammas, gammar, viewang,

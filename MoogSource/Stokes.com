@@ -19,7 +19,7 @@ c******************************************************************************
      .             tlam(10000), tlam_knots(10000), tlam_coeffs(10000),
      .             ttot(10000), ttot_knots(10000), ttot_coeffs(10000),
      .             zdepth(10000), z_knots(10000), z_coeffs(10000),
-     .             strong(25000), weak(25000), beta_strong, beta_weak,
+     .             strong(50000), weak(50000), beta_strong, beta_weak,
      .             R_strong, R_weak
       integer      nz, n_phiI_knots, n_phiQ_knots, n_phiU_knots,
      .             n_phiV_knots, n_psiQ_knots, n_psiU_knots,

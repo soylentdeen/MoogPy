@@ -12,9 +12,9 @@ python module synspec__user__routines
 end python module synspec__user__routines
 python module synstokes__user__routines 
     interface synstokes_user_interface 
-        subroutine stokesrecorder(i,wave,stokes,continuum) ! in :MoogStokesPy:SynStokes.f:synstokes:unknown_interface
+        subroutine stokesrecorder(e_1_err,wave,stokes,continuum) ! in :MoogStokesPy:SynStokes.f:synstokes:unknown_interface
             intent(callback,hide) stokesrecorder
-            integer :: i
+            integer :: e_1_err
             real*8 :: wave
             real*8 dimension(4) :: stokes
             real*8 :: continuum
@@ -27,11 +27,23 @@ python module synstokes__user__routines
         end subroutine diskoball
     end interface synstokes_user_interface
 end python module synstokes__user__routines
+python module stokesdipstick__user__routines 
+    interface stokesdipstick_user_interface 
+        subroutine fluxtracer(logtau,dtau,stokes,continuum) ! in :MoogStokesPy:StokesDipStick.f:stokesdipstick:unknown_interface
+            intent(callback,hide) fluxtracer
+            real*8 :: logtau
+            real*8 :: dtau
+            real*8 dimension(4) :: stokes
+            real*8 :: continuum
+        end subroutine fluxtracer
+    end interface stokesdipstick_user_interface
+end python module stokesdipstick__user__routines
 python module MoogStokesPy ! in 
     interface  ! in :MoogStokesPy
         subroutine moogstokessilent ! in :MoogStokesPy:MoogStokessilent.f
             use synspec__user__routines
             use synstokes__user__routines
+            use stokesdipstick__user__routines
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -237,12 +249,14 @@ python module MoogStokesPy ! in
             character*1 :: macroflag
             intent(callback, hide) recorder
             external recorder
-            intent(callback, hide) stokesrecorder
-            external stokesrecorder
             intent(callback, hide) beachball
             external beachball
             intent(callback, hide) diskoball
             external diskoball
+            intent(callback, hide) stokesrecorder
+            external stokesrecorder
+            intent(callback, hide) fluxtracer
+            external fluxtracer
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
@@ -1517,8 +1531,8 @@ python module MoogStokesPy ! in
             real*8 dimension(10000) :: zdepth
             real*8 dimension(10000) :: z_knots
             real*8 dimension(10000) :: z_coeffs
-            real*8 dimension(25000) :: strong
-            real*8 dimension(25000) :: weak
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
             real*8 :: beta_strong
             real*8 :: beta_weak
             real*8 :: r_strong
@@ -1868,7 +1882,7 @@ python module MoogStokesPy ! in
             character*3 :: machine
             character*1 :: silent
             character dimension(2500,7),intent(c) :: damptype
-            intent(callback) recorder
+            intent(callback, hide) recorder
             external recorder
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /dummy/ dummy1,dummy2,dummy3,dummy4
@@ -5979,8 +5993,8 @@ python module MoogStokesPy ! in
             real*8 dimension(10000) :: zdepth
             real*8 dimension(10000) :: z_knots
             real*8 dimension(10000) :: z_coeffs
-            real*8 dimension(25000) :: strong
-            real*8 dimension(25000) :: weak
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
             real*8 :: beta_strong
             real*8 :: beta_weak
             real*8 :: r_strong
@@ -6419,8 +6433,8 @@ python module MoogStokesPy ! in
             real*8 dimension(10000) :: zdepth
             real*8 dimension(10000) :: z_knots
             real*8 dimension(10000) :: z_coeffs
-            real*8 dimension(25000) :: strong
-            real*8 dimension(25000) :: weak
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
             real*8 :: beta_strong
             real*8 :: beta_weak
             real*8 :: r_strong
@@ -8195,6 +8209,7 @@ python module MoogStokesPy ! in
         end subroutine lineinfo
         subroutine synstokes ! in :MoogStokesPy:SynStokes.f
             use synstokes__user__routines
+            use stokesdipstick__user__routines
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -8569,8 +8584,8 @@ python module MoogStokesPy ! in
             real*8 dimension(10000) :: zdepth
             real*8 dimension(10000) :: z_knots
             real*8 dimension(10000) :: z_coeffs
-            real*8 dimension(25000) :: strong
-            real*8 dimension(25000) :: weak
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
             real*8 :: beta_strong
             real*8 :: beta_weak
             real*8 :: r_strong
@@ -8604,12 +8619,14 @@ python module MoogStokesPy ! in
             character*80 :: fstokesu
             character*80 :: fstokesv
             character*80 :: fcontinuum
-            intent(callback) beachball
+            intent(callback, hide) beachball
             external beachball
-            intent(callback) stokesrecorder
+            intent(callback, hide) stokesrecorder
             external stokesrecorder
-            intent(callback) diskoball
+            intent(callback, hide) diskoball
             external diskoball
+            intent(callback, hide) fluxtracer
+            external fluxtracer
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
@@ -8977,8 +8994,8 @@ python module MoogStokesPy ! in
             real*8 dimension(10000) :: zdepth
             real*8 dimension(10000) :: z_knots
             real*8 dimension(10000) :: z_coeffs
-            real*8 dimension(25000) :: strong
-            real*8 dimension(25000) :: weak
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
             real*8 :: beta_strong
             real*8 :: beta_weak
             real*8 :: r_strong
@@ -9343,8 +9360,8 @@ python module MoogStokesPy ! in
             real*8 dimension(10000) :: zdepth
             real*8 dimension(10000) :: z_knots
             real*8 dimension(10000) :: z_coeffs
-            real*8 dimension(25000) :: strong
-            real*8 dimension(25000) :: weak
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
             real*8 :: beta_strong
             real*8 :: beta_weak
             real*8 :: r_strong
@@ -9773,8 +9790,8 @@ python module MoogStokesPy ! in
             real*8 dimension(10000) :: zdepth
             real*8 dimension(10000) :: z_knots
             real*8 dimension(10000) :: z_coeffs
-            real*8 dimension(25000) :: strong
-            real*8 dimension(25000) :: weak
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
             real*8 :: beta_strong
             real*8 :: beta_weak
             real*8 :: r_strong
@@ -9964,8 +9981,8 @@ python module MoogStokesPy ! in
             real*8 dimension(10000) :: zdepth
             real*8 dimension(10000) :: z_knots
             real*8 dimension(10000) :: z_coeffs
-            real*8 dimension(25000) :: strong
-            real*8 dimension(25000) :: weak
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
             real*8 :: beta_strong
             real*8 :: beta_weak
             real*8 :: r_strong
@@ -10300,8 +10317,8 @@ python module MoogStokesPy ! in
             real*8 dimension(10000) :: zdepth
             real*8 dimension(10000) :: z_knots
             real*8 dimension(10000) :: z_coeffs
-            real*8 dimension(25000) :: strong
-            real*8 dimension(25000) :: weak
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
             real*8 :: beta_strong
             real*8 :: beta_weak
             real*8 :: r_strong
@@ -10346,6 +10363,717 @@ python module MoogStokesPy ! in
             complex :: z
             complex :: w4
         end function w4
+        subroutine stokestrace ! in :MoogStokesPy:StokesTrace.f
+            use stokesdipstick__user__routines
+            real*8 :: xxm1
+            real*8 :: xxb1
+            real*8 :: xxr1
+            real*8 :: xxm2
+            real*8 :: xxb2
+            real*8 :: xxr2
+            real*8 :: xxm3
+            real*8 :: xxb3
+            real*8 :: xxr3
+            real*8 :: deltaep
+            real*8 :: deltarw
+            real*8 :: deltawv
+            real*8 dimension(1000) :: p
+            real*8 dimension(1000) :: prot
+            real*8 dimension(1000) :: pmac
+            real*8 :: vsini
+            real*8 :: limbdark
+            real*8 :: vmac
+            real*8 :: fwhmgauss
+            real*8 :: fwhmloren
+            real*8 :: oldvsini
+            real*8 :: oldlimbdark
+            real*8 :: oldvmac
+            real*8 :: oldfwhmgauss
+            real*8 :: oldfwhmloren
+            real*8 :: origvsini
+            real*8 :: origlimbdark
+            real*8 :: origvmac
+            real*8 :: origfwhmgauss
+            real*8 :: origfwhmloren
+            real*8 :: half
+            real*8 :: power
+            real*8 :: powerrot
+            real*8 :: powermac
+            real*8 :: average
+            real*8 :: deviate
+            real*8 :: oldhalf
+            real*4 dimension(100000) :: xobs
+            real*4 dimension(100000) :: yobs
+            real*4 :: xlo
+            real*4 :: xhi
+            real*4 :: ylo
+            real*4 :: yhi
+            real*4 :: origxlo
+            real*4 :: origxhi
+            real*4 :: origylo
+            real*4 :: origyhi
+            real*4 :: oldxlo
+            real*4 :: oldxhi
+            real*4 :: oldylo
+            real*4 :: oldyhi
+            real*4 :: xadd
+            real*4 :: yadd
+            real*4 :: ymult
+            real*4 :: veladd
+            real*4 :: deltavel
+            real*4 :: origxadd
+            real*4 :: origyadd
+            real*4 :: origymult
+            real*4 :: origveladd
+            real*4 :: oldxadd
+            real*4 :: oldyadd
+            real*4 :: oldymult
+            real*4 :: oldveladd
+            real*4 :: bigxtic
+            real*4 :: bigytic
+            real*4 :: smlxtic
+            real*4 :: smlytic
+            real*4 :: xplotpos
+            real*4 :: yplotpos
+            real*4 :: addflux
+            real*4 :: ydelta
+            integer :: lount
+            integer :: kount
+            integer :: nsyn
+            integer :: lim1obs
+            integer :: lim2obs
+            integer :: iterm
+            integer :: iscale
+            integer :: maxline
+            integer :: histoyes
+            integer :: deviations
+            integer :: syncount
+            integer :: kounter
+            integer :: maxshift
+            character*400 :: abitle
+            character*240 :: isoitle
+            character*80 :: smterm
+            character*80 :: smtotalterm
+            character*80 :: smt1
+            character*80 :: smt2
+            character*80 :: moditle
+            character*80 :: obsitle
+            character*80 :: linitle
+            character*80 :: smitle
+            character*80 :: array
+            character*80 :: chinfo
+            character*80 :: errmess
+            character*80 :: plotroutine
+            character*4 :: whichwin
+            character*4 :: origwhichwin
+            character*4 :: oldwhichwin
+            character*1 :: choice
+            character*1 :: smtype
+            character*1 :: oldsmtype
+            character*1 :: origsmtype
+            character*1 :: gaussflag
+            character*1 :: rotateflag
+            character*1 :: lorenflag
+            character*1 :: macroflag
+            real*8 dimension(2500,100) :: a
+            real*8 dimension(2500,100) :: dopp
+            real*8 dimension(2500,100) :: kapnu0
+            real*8 dimension(2500) :: deltamj
+            real*8 dimension(2500) :: crad
+            real*8 dimension(2500) :: c4
+            real*8 dimension(2500) :: gf
+            real*8 dimension(2500) :: wave1
+            real*8 dimension(2500) :: atom1
+            real*8 dimension(2500,2) :: e
+            real*8 dimension(2500,3) :: chi
+            real*8 dimension(2500) :: amass
+            real*8 dimension(2500) :: charge
+            real*8 dimension(2500) :: d0
+            real*8 dimension(2500) :: dampnum
+            real*8 dimension(2500) :: gf1
+            real*8 dimension(2500) :: width
+            real*8 dimension(2500) :: abundout
+            real*8 dimension(2500) :: widout
+            real*8 dimension(2500) :: strength
+            real*8 dimension(2500) :: rdmass
+            real*8 dimension(2500) :: gambark
+            real*8 dimension(2500) :: alpbark
+            real*8 dimension(2500) :: wid1comp
+            real*8 dimension(100) :: kapnu
+            real*8 dimension(100) :: taunu
+            real*8 dimension(100) :: cd
+            real*8 dimension(100) :: sline
+            real*8 dimension(5000) :: d
+            real*8 dimension(400) :: dellam
+            real*8 dimension(100) :: w
+            real*8 dimension(3000) :: rwtab
+            real*8 dimension(3000) :: gftab
+            real*8 :: gfhold
+            real*8 :: delta
+            real*8 :: start
+            real*8 :: sstop
+            real*8 :: step
+            real*8 :: oldstart
+            real*8 :: oldstop
+            real*8 :: oldstep
+            real*8 :: olddelta
+            real*8 :: rwlow
+            real*8 :: rwhigh
+            real*8 :: rwstep
+            real*8 :: wavestep
+            real*8 :: cogatom
+            real*8 :: delwave
+            real*8 :: wave
+            real*8 :: waveold
+            real*8 :: st1
+            real*8 :: gammatot
+            real*8 :: gammav
+            real*8 :: gammas
+            real*8 :: gammar
+            real*8 :: viewang
+            integer :: lim1
+            integer :: lim2
+            integer :: mode
+            integer :: ndepths
+            integer :: ncurve
+            integer :: nlines
+            integer :: nstrong
+            integer :: lim1line
+            integer :: iaa
+            integer :: ibb
+            integer :: lim2line
+            integer :: ntabtot
+            integer dimension(2500) :: group
+            integer :: iabatom
+            integer :: molflag
+            integer :: dostrong
+            integer :: gfstyle
+            real*8 dimension(110) :: amol
+            real*8 dimension(7,110) :: datmol
+            real*8 :: const
+            real*8 dimension(95,5) :: pecabund
+            real*8 dimension(95,5) :: newpecabund
+            real*8 dimension(5) :: abfactor
+            integer dimension(95) :: pec
+            integer dimension(95) :: newpec
+            integer :: numpecatom
+            integer :: newnumpecatom
+            integer :: numatomsyn
+            integer :: newnumatomsyn
+            integer :: isynth
+            integer :: ninetynineflag
+            real*8 dimension(100) :: t
+            real*8 dimension(100) :: theta
+            real*8 dimension(100) :: tkev
+            real*8 dimension(100) :: tlog
+            real*8 dimension(100) :: pgas
+            real*8 dimension(100) :: ne
+            real*8 dimension(100) :: nhtot
+            real*8 dimension(8,2,100) :: numdens
+            real*8 dimension(100) :: molweight
+            real*8 dimension(100) :: vturb
+            real*8 dimension(100) :: scont
+            real*8 dimension(100) :: kapref
+            real*8 dimension(100) :: kaplam
+            real*8 dimension(100) :: tauref
+            real*8 dimension(100) :: taulam
+            real*8 dimension(100) :: kaplamabs
+            real*8 dimension(100) :: kaplamsca
+            real*8 dimension(100) :: rho
+            real*8 dimension(100) :: rhox
+            real*8 dimension(100) :: xref
+            real*8 dimension(100) :: xdepth
+            real*8 dimension(95) :: elem
+            real*8 dimension(95) :: xabund
+            real*8 dimension(95) :: xabu
+            real*8 dimension(95,4,100) :: u
+            real*8 :: flux
+            real*8 :: fudge
+            real*8 :: wavref
+            real*8 :: abscale
+            real*8 :: deltaabund
+            integer :: ntau
+            integer :: jtau5
+            integer :: iunits
+            integer :: itru
+            integer :: iraf
+            integer :: modelnum
+            integer :: nfparam
+            integer :: nfmodel
+            integer :: nflines
+            integer :: nfslines
+            integer :: nfobs
+            integer :: nftable
+            integer :: nf1out
+            integer :: nf2out
+            integer :: nf3out
+            integer :: nf4out
+            integer :: nf5out
+            integer :: nf6out
+            integer :: nf7out
+            integer :: nf8out
+            integer :: nf9out
+            integer :: nf10out
+            integer :: nfbarklem
+            integer :: nfbarklemuv
+            integer :: modprintopt
+            integer :: molopt
+            integer :: linprintopt
+            integer :: linprintalt
+            integer :: fluxintopt
+            integer :: plotopt
+            integer :: dampingopt
+            integer :: specfileopt
+            integer :: linfileopt
+            integer :: printstrong
+            integer :: linecount
+            integer :: oldcount
+            integer :: scatopt
+            real*8 dimension(20) :: isotope
+            real*8 dimension(20) :: newisotope
+            real*8 dimension(20,5) :: isoabund
+            real*8 dimension(20,5) :: newisoabund
+            integer :: numiso
+            integer :: newnumiso
+            integer :: numisosyn
+            integer :: newnumisosyn
+            integer :: isorun
+            real*8 :: inclination
+            real*8 :: clocking
+            real*8 :: position_angle
+            real*8 dimension(1000) :: azimuth
+            real*8 dimension(1000) :: longitude
+            real*8 dimension(3) :: b_sph
+            real*8 dimension(3) :: b_xyz
+            real*8 dimension(3,3) :: t_rho
+            real*8 dimension(3,3) :: t_eta
+            real*8 dimension(3,3) :: t_i
+            real*8 dimension(3,3) :: rotation_matrix
+            real*8 dimension(3,3) :: zeros
+            real*8 dimension(1000) :: chi_angle
+            real*8 dimension(1000) :: phi_angle
+            real*8 dimension(1000) :: mus
+            integer :: nrings
+            integer :: ncells
+            integer :: testflag
+            integer :: diskflag
+            real*8 dimension(110) :: pmol
+            real*8 dimension(110,100) :: xmol
+            real*8 dimension(30) :: xatom
+            real*8 dimension(30) :: patom
+            real*8 dimension(30,100) :: xamol
+            integer :: neq
+            integer :: lev
+            integer :: nmol
+            integer :: natoms
+            integer dimension(30) :: iorder
+            character*80 :: f1out
+            character*80 :: f2out
+            character*80 :: f3out
+            character*80 :: f4out
+            character*80 :: f5out
+            character*80 :: f6out
+            character*80 :: f7out
+            character*80 :: f8out
+            character*80 :: f9out
+            character*80 :: f10out
+            character*80 :: fparam
+            character*80 :: fmodel
+            character*80 :: flines
+            character*80 :: fslines
+            character*80 :: fobs
+            character*80 :: ftable
+            character*80 :: fbarklem
+            character*80 :: fbarklemuv
+            character*80 :: atmosdir
+            character*80 :: outdir
+            character*60 :: moogpath
+            character dimension(95,2),intent(c) :: names
+            character*10 :: modtype
+            character*7 :: control
+            character*3 :: machine
+            character*1 :: silent
+            character dimension(2500,7),intent(c) :: damptype
+            real*8 dimension(100,3) :: phi_opacity
+            real*8 dimension(100,3) :: psi_opacity
+            real*8 dimension(4) :: stokes
+            real*8 :: continuum
+            real*8 dimension(100) :: emission
+            real*8 dimension(100) :: kref_knots
+            real*8 dimension(100) :: kref_coeffs
+            real*8 dimension(100) :: klam_knots
+            real*8 dimension(100) :: klam_coeffs
+            real*8 dimension(100) :: kaptot
+            real*8 dimension(100) :: ktot_knots
+            real*8 dimension(100) :: ktot_coeffs
+            real*8 dimension(100) :: phii
+            real*8 dimension(100) :: phii_knots
+            real*8 dimension(100) :: phii_coeffs
+            real*8 dimension(100) :: phiq
+            real*8 dimension(100) :: phiq_knots
+            real*8 dimension(100) :: phiq_coeffs
+            real*8 dimension(100) :: phiu
+            real*8 dimension(100) :: phiu_knots
+            real*8 dimension(100) :: phiu_coeffs
+            real*8 dimension(100) :: phiv
+            real*8 dimension(100) :: phiv_knots
+            real*8 dimension(100) :: phiv_coeffs
+            real*8 dimension(100) :: psiq
+            real*8 dimension(100) :: psiq_knots
+            real*8 dimension(100) :: psiq_coeffs
+            real*8 dimension(100) :: psiu
+            real*8 dimension(100) :: psiu_knots
+            real*8 dimension(100) :: psiu_coeffs
+            real*8 dimension(100) :: psiv
+            real*8 dimension(100) :: psiv_knots
+            real*8 dimension(100) :: psiv_coeffs
+            real*8 dimension(100) :: e_knots
+            real*8 dimension(100) :: e_coeffs
+            real*8 dimension(10000) :: taus
+            real*8 dimension(10000) :: tlam
+            real*8 dimension(10000) :: tlam_knots
+            real*8 dimension(10000) :: tlam_coeffs
+            real*8 dimension(10000) :: ttot
+            real*8 dimension(10000) :: ttot_knots
+            real*8 dimension(10000) :: ttot_coeffs
+            real*8 dimension(10000) :: zdepth
+            real*8 dimension(10000) :: z_knots
+            real*8 dimension(10000) :: z_coeffs
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
+            real*8 :: beta_strong
+            real*8 :: beta_weak
+            real*8 :: r_strong
+            real*8 :: r_weak
+            integer :: nz
+            integer :: n_phii_knots
+            integer :: n_phiq_knots
+            integer :: n_phiu_knots
+            integer :: n_phiv_knots
+            integer :: n_psiq_knots
+            integer :: n_psiu_knots
+            integer :: n_psiv_knots
+            integer :: n_kref_knots
+            integer :: n_klam_knots
+            integer :: n_ktot_knots
+            integer :: n_e_knots
+            integer :: n_z_knots
+            integer :: n_tlam_knots
+            integer :: n_ttot_knots
+            integer :: nfangles
+            integer :: nfstokesi
+            integer :: nfstokesq
+            integer :: nfstokesu
+            integer :: nfstokesv
+            integer :: nfcontinuum
+            integer :: nw_lines
+            integer :: ns_lines
+            character*80 :: fangles
+            character*80 :: fstokesi
+            character*80 :: fstokesq
+            character*80 :: fstokesu
+            character*80 :: fstokesv
+            character*80 :: fcontinuum
+            intent(callback,hide) fluxtracer
+            external fluxtracer
+            common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
+            common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
+            common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
+            common /eqdata/ amol,datmol,const
+            common /newfact/ pecabund,newpecabund,abfactor,pec,newpec,numpecatom,newnumpecatom,numatomsyn,newnumatomsyn,isynth,ninetynineflag
+            common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
+            common /iso/ isotope,newisotope,isoabund,newisoabund,numiso,newnumiso,numisosyn,newnumisosyn,isorun
+            common /angles/ inclination,clocking,position_angle,azimuth,longitude,b_sph,b_xyz,t_rho,t_eta,t_i,rotation_matrix,zeros,chi_angle,phi_angle,mus,nrings,ncells,testflag,diskflag
+            common /mol/ pmol,xmol,xatom,patom,xamol,neq,lev,nmol,natoms,iorder
+            common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
+            common /lindamp/ damptype
+            common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
+        end subroutine stokestrace
+        subroutine stokesdipstick(phi_ang,chi_ang,mu) ! in :MoogStokesPy:StokesTracer.f
+            use stokesdipstick__user__routines
+            real*8 :: phi_ang
+            real*8 :: chi_ang
+            real*8 :: mu
+            real*8 dimension(100) :: dummy1
+            real*8 dimension(100) :: dummy2
+            real*8 dimension(5000) :: dummy3
+            real*8 dimension(5000) :: dummy4
+            real*8 dimension(2500,100) :: a
+            real*8 dimension(2500,100) :: dopp
+            real*8 dimension(2500,100) :: kapnu0
+            real*8 dimension(2500) :: deltamj
+            real*8 dimension(2500) :: crad
+            real*8 dimension(2500) :: c4
+            real*8 dimension(2500) :: gf
+            real*8 dimension(2500) :: wave1
+            real*8 dimension(2500) :: atom1
+            real*8 dimension(2500,2) :: e
+            real*8 dimension(2500,3) :: chi
+            real*8 dimension(2500) :: amass
+            real*8 dimension(2500) :: charge
+            real*8 dimension(2500) :: d0
+            real*8 dimension(2500) :: dampnum
+            real*8 dimension(2500) :: gf1
+            real*8 dimension(2500) :: width
+            real*8 dimension(2500) :: abundout
+            real*8 dimension(2500) :: widout
+            real*8 dimension(2500) :: strength
+            real*8 dimension(2500) :: rdmass
+            real*8 dimension(2500) :: gambark
+            real*8 dimension(2500) :: alpbark
+            real*8 dimension(2500) :: wid1comp
+            real*8 dimension(100) :: kapnu
+            real*8 dimension(100) :: taunu
+            real*8 dimension(100) :: cd
+            real*8 dimension(100) :: sline
+            real*8 dimension(5000) :: d
+            real*8 dimension(400) :: dellam
+            real*8 dimension(100) :: w
+            real*8 dimension(3000) :: rwtab
+            real*8 dimension(3000) :: gftab
+            real*8 :: gfhold
+            real*8 :: delta
+            real*8 :: start
+            real*8 :: sstop
+            real*8 :: step
+            real*8 :: oldstart
+            real*8 :: oldstop
+            real*8 :: oldstep
+            real*8 :: olddelta
+            real*8 :: rwlow
+            real*8 :: rwhigh
+            real*8 :: rwstep
+            real*8 :: wavestep
+            real*8 :: cogatom
+            real*8 :: delwave
+            real*8 :: wave
+            real*8 :: waveold
+            real*8 :: st1
+            real*8 :: gammatot
+            real*8 :: gammav
+            real*8 :: gammas
+            real*8 :: gammar
+            real*8 :: viewang
+            integer :: lim1
+            integer :: lim2
+            integer :: mode
+            integer :: ndepths
+            integer :: ncurve
+            integer :: nlines
+            integer :: nstrong
+            integer :: lim1line
+            integer :: iaa
+            integer :: ibb
+            integer :: lim2line
+            integer :: ntabtot
+            integer dimension(2500) :: group
+            integer :: iabatom
+            integer :: molflag
+            integer :: dostrong
+            integer :: gfstyle
+            real*8 dimension(100) :: t
+            real*8 dimension(100) :: theta
+            real*8 dimension(100) :: tkev
+            real*8 dimension(100) :: tlog
+            real*8 dimension(100) :: pgas
+            real*8 dimension(100) :: ne
+            real*8 dimension(100) :: nhtot
+            real*8 dimension(8,2,100) :: numdens
+            real*8 dimension(100) :: molweight
+            real*8 dimension(100) :: vturb
+            real*8 dimension(100) :: scont
+            real*8 dimension(100) :: kapref
+            real*8 dimension(100) :: kaplam
+            real*8 dimension(100) :: tauref
+            real*8 dimension(100) :: taulam
+            real*8 dimension(100) :: kaplamabs
+            real*8 dimension(100) :: kaplamsca
+            real*8 dimension(100) :: rho
+            real*8 dimension(100) :: rhox
+            real*8 dimension(100) :: xref
+            real*8 dimension(100) :: xdepth
+            real*8 dimension(95) :: elem
+            real*8 dimension(95) :: xabund
+            real*8 dimension(95) :: xabu
+            real*8 dimension(95,4,100) :: u
+            real*8 :: flux
+            real*8 :: fudge
+            real*8 :: wavref
+            real*8 :: abscale
+            real*8 :: deltaabund
+            integer :: ntau
+            integer :: jtau5
+            integer :: iunits
+            integer :: itru
+            integer :: iraf
+            integer :: modelnum
+            integer :: nfparam
+            integer :: nfmodel
+            integer :: nflines
+            integer :: nfslines
+            integer :: nfobs
+            integer :: nftable
+            integer :: nf1out
+            integer :: nf2out
+            integer :: nf3out
+            integer :: nf4out
+            integer :: nf5out
+            integer :: nf6out
+            integer :: nf7out
+            integer :: nf8out
+            integer :: nf9out
+            integer :: nf10out
+            integer :: nfbarklem
+            integer :: nfbarklemuv
+            integer :: modprintopt
+            integer :: molopt
+            integer :: linprintopt
+            integer :: linprintalt
+            integer :: fluxintopt
+            integer :: plotopt
+            integer :: dampingopt
+            integer :: specfileopt
+            integer :: linfileopt
+            integer :: printstrong
+            integer :: linecount
+            integer :: oldcount
+            integer :: scatopt
+            real*8 :: inclination
+            real*8 :: clocking
+            real*8 :: position_angle
+            real*8 dimension(1000) :: azimuth
+            real*8 dimension(1000) :: longitude
+            real*8 dimension(3) :: b_sph
+            real*8 dimension(3) :: b_xyz
+            real*8 dimension(3,3) :: t_rho
+            real*8 dimension(3,3) :: t_eta
+            real*8 dimension(3,3) :: t_i
+            real*8 dimension(3,3) :: rotation_matrix
+            real*8 dimension(3,3) :: zeros
+            real*8 dimension(1000) :: chi_angle
+            real*8 dimension(1000) :: phi_angle
+            real*8 dimension(1000) :: mus
+            integer :: nrings
+            integer :: ncells
+            integer :: testflag
+            integer :: diskflag
+            character*80 :: f1out
+            character*80 :: f2out
+            character*80 :: f3out
+            character*80 :: f4out
+            character*80 :: f5out
+            character*80 :: f6out
+            character*80 :: f7out
+            character*80 :: f8out
+            character*80 :: f9out
+            character*80 :: f10out
+            character*80 :: fparam
+            character*80 :: fmodel
+            character*80 :: flines
+            character*80 :: fslines
+            character*80 :: fobs
+            character*80 :: ftable
+            character*80 :: fbarklem
+            character*80 :: fbarklemuv
+            character*80 :: atmosdir
+            character*80 :: outdir
+            character*60 :: moogpath
+            character dimension(95,2),intent(c) :: names
+            character*10 :: modtype
+            character*7 :: control
+            character*3 :: machine
+            character*1 :: silent
+            character dimension(2500,7),intent(c) :: damptype
+            real*8 dimension(100,3) :: phi_opacity
+            real*8 dimension(100,3) :: psi_opacity
+            real*8 dimension(4) :: stokes
+            real*8 :: continuum
+            real*8 dimension(100) :: emission
+            real*8 dimension(100) :: kref_knots
+            real*8 dimension(100) :: kref_coeffs
+            real*8 dimension(100) :: klam_knots
+            real*8 dimension(100) :: klam_coeffs
+            real*8 dimension(100) :: kaptot
+            real*8 dimension(100) :: ktot_knots
+            real*8 dimension(100) :: ktot_coeffs
+            real*8 dimension(100) :: phii
+            real*8 dimension(100) :: phii_knots
+            real*8 dimension(100) :: phii_coeffs
+            real*8 dimension(100) :: phiq
+            real*8 dimension(100) :: phiq_knots
+            real*8 dimension(100) :: phiq_coeffs
+            real*8 dimension(100) :: phiu
+            real*8 dimension(100) :: phiu_knots
+            real*8 dimension(100) :: phiu_coeffs
+            real*8 dimension(100) :: phiv
+            real*8 dimension(100) :: phiv_knots
+            real*8 dimension(100) :: phiv_coeffs
+            real*8 dimension(100) :: psiq
+            real*8 dimension(100) :: psiq_knots
+            real*8 dimension(100) :: psiq_coeffs
+            real*8 dimension(100) :: psiu
+            real*8 dimension(100) :: psiu_knots
+            real*8 dimension(100) :: psiu_coeffs
+            real*8 dimension(100) :: psiv
+            real*8 dimension(100) :: psiv_knots
+            real*8 dimension(100) :: psiv_coeffs
+            real*8 dimension(100) :: e_knots
+            real*8 dimension(100) :: e_coeffs
+            real*8 dimension(10000) :: taus
+            real*8 dimension(10000) :: tlam
+            real*8 dimension(10000) :: tlam_knots
+            real*8 dimension(10000) :: tlam_coeffs
+            real*8 dimension(10000) :: ttot
+            real*8 dimension(10000) :: ttot_knots
+            real*8 dimension(10000) :: ttot_coeffs
+            real*8 dimension(10000) :: zdepth
+            real*8 dimension(10000) :: z_knots
+            real*8 dimension(10000) :: z_coeffs
+            real*8 dimension(50000) :: strong
+            real*8 dimension(50000) :: weak
+            real*8 :: beta_strong
+            real*8 :: beta_weak
+            real*8 :: r_strong
+            real*8 :: r_weak
+            integer :: nz
+            integer :: n_phii_knots
+            integer :: n_phiq_knots
+            integer :: n_phiu_knots
+            integer :: n_phiv_knots
+            integer :: n_psiq_knots
+            integer :: n_psiu_knots
+            integer :: n_psiv_knots
+            integer :: n_kref_knots
+            integer :: n_klam_knots
+            integer :: n_ktot_knots
+            integer :: n_e_knots
+            integer :: n_z_knots
+            integer :: n_tlam_knots
+            integer :: n_ttot_knots
+            integer :: nfangles
+            integer :: nfstokesi
+            integer :: nfstokesq
+            integer :: nfstokesu
+            integer :: nfstokesv
+            integer :: nfcontinuum
+            integer :: nw_lines
+            integer :: ns_lines
+            character*80 :: fangles
+            character*80 :: fstokesi
+            character*80 :: fstokesq
+            character*80 :: fstokesu
+            character*80 :: fstokesv
+            character*80 :: fcontinuum
+            intent(callback, hide) fluxtracer
+            external fluxtracer
+            common /dummy/ dummy1,dummy2,dummy3,dummy4
+            common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
+            common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
+            common /angles/ inclination,clocking,position_angle,azimuth,longitude,b_sph,b_xyz,t_rho,t_eta,t_i,rotation_matrix,zeros,chi_angle,phi_angle,mus,nrings,ncells,testflag,diskflag
+            common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,names,modtype,control,machine,silent
+            common /lindamp/ damptype
+            common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
+        end subroutine stokesdipstick
     end interface 
 end python module MoogStokesPy
 

@@ -159,6 +159,7 @@ c   -1.0 just to be sure we dont have floating point problems with 0.0
 c  INITIALIZE SOME VARIABLES: spectrum run parameters
       start = 0.
       sstop = 0.
+      dipstickwave = 0.
       step = 0.
       delta = 0.
       cogatom = 0.
@@ -745,6 +746,9 @@ c                       for line opacity calculations
       elseif (keyword .eq. 'synlimits') then
          read (nfparam,*) start, sstop, step, delta
          linecount = linecount + 1
+
+      elseif (keyword .eq. 'dipstick') then
+         read (array,*) dipstickwave
 
 
 c  keyword 'fluxlimits' gives the wavelength parameters for flux curves;

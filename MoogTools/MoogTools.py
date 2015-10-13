@@ -6,6 +6,7 @@ import MoogPy
 import MoogStokesPy
 import SpectralTools
 import AstroUtils
+import pyfits
 
 class Atmosphere( object ):
     def __init__(self, df):
@@ -72,7 +73,16 @@ class HITRAN_Dictionary( object ):
         self.DissE = {5:11.10, 13:4.412}
 
 class MoogStokesSpectrum( object ):
-    def __init__(self, configurationFile, fileBase, **kwargs):
+    def __init__(self, configurationFile, fileBase="moogstokes", **kwargs):
+        """
+        MoogStokesSpectrum:  A python wrapper for MoogStokes
+
+        Input:
+            configurationFile : The name of a file containing configuration parameters
+            fileBase : the base name for the MoogStokes parameter file/linelists
+
+        Member
+        """
         self.config = AstroUtils.parse_config(configurationFile)
         self.lineList = LineList(self, self.config)
         self.parameterFile = ParameterFile(self, self.config)
@@ -81,15 +91,6 @@ class MoogStokesSpectrum( object ):
         self.B = self.config["Bfield"]
         self.vsini = self.config["vsini"]
         
-        if "DELTA_T" in kwargs:
-            self.T += kwargs["DELTA_T"]
-        if "DELTA_G" in kwargs:
-            self.logg += kwargs["DELTA_G"]
-        if "DELTA_B" in kwargs:
-            self.B += kwargs["DELTA_B"]
-        if "DELTA_VSINI" in kwargs:
-            self.vsini += kwargs["DELTA_VSINI"]
-
         self.fileName = fileBase+'.par'
         self.fileBase = fileBase
         self.wave = []
@@ -99,12 +100,21 @@ class MoogStokesSpectrum( object ):
         self.flux_U = []
         self.flux_V = []
         self.continuum = []
+        self.logtau = []
         self.MoogPy = MoogStokesPy
-        self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
         self.MoogPy.recorder = self.recorder
         self.MoogPy.stokesrecorder = self.stokesrecorder
         self.MoogPy.beachball = self.beachball
         self.MoogPy.diskoball = self.diskoball
+        self.MoogPy.fluxtracer = self.fluxtracer
+
+    def fluxtracer(self, logtau, dtau, Stokes, continuum):
+        self.logtau.append(logtau)
+        self.flux_I.append(Stokes[0])
+        self.flux_Q.append(Stokes[1])
+        self.flux_U.append(Stokes[2])
+        self.flux_V.append(Stokes[3])
+        self.continuum.append(continuum)
 
     def recorder(self, x, y):
         self.wave.append(x)
@@ -158,7 +168,7 @@ class MoogStokesSpectrum( object ):
         else:
             self.integrator = Diskoball(memory=True, PARENT=self)
 
-    def run(self, test=False):
+    def run(self, save=False):
         self.wave = []
         self.flux = []
         self.lineList.setBfield(self.B)
@@ -166,13 +176,43 @@ class MoogStokesSpectrum( object ):
         self.parameterFile.setName(self.fileBase)
         self.parameterFile.setModel(self.T, self.logg)
         self.parameterFile.writeParFile()
+        self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
         self.MoogPy.atmos.linecount = 0
         self.MoogPy.moogstokessilent()
         self.computeCompositeSpectrum()
         self.wave = self.integrator.new_wl
         self.flux = self.integrator.final_spectrum
+        if save:
+            out = pyfits.PrimaryHDU([self.wave, self.flux])
+            out.header.set('WLSTART', self.config["wlStart"])
+            out.header.set('WLSTOP', self.config["wlStop"])
+            out.header.set('BFIELD', self.config["Bfield"])
+            out.header.set('TEFF', self.config["Teff"])
+            out.header.set('LOGG', self.config["logg"])
+            out.header.set('VSINI', self.config["vsini"])
+            out.writeto(self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_V%.1f.fits' % 
+                    (self.config["Teff"], self.config["logg"], self.config["Bfield"], self.config["vsini"]), clobber=True)
         return self.wave, self.flux
 
+    def trace(self, save=False):
+        self.lineList.setBfield(self.B)
+        self.lineList.writeLineLists(parent=self, mode="MOOGSTOKES")
+        self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
+        self.parameterFile.setName(self.fileBase)
+        self.parameterFile.setModel(self.T, self.logg)
+        self.parameterFile.writeParFile()
+        self.MoogPy.atmos.linecount = 0
+        self.MoogPy.moogstokessilent()
+        if save:
+            out = pyfits.PrimaryHDU([self.logtau, self.flux_I, self.flux_Q, self.flux_U, self.flux_V, self.continuum])
+            out.header.set('WAVE', self.config["wlProbe"])
+            out.header.set('BFIELD', self.config["Bfield"])
+            out.header.set('TEFF', self.config["Teff"])
+            out.header.set('LOGG', self.config["logg"])
+            out.writeto(self.config["outdir"]+self.config["outbase"]+'_'+str(self.config["wlProbe"])+'.fits', clobber=True)
+        return self.logtau, self.flux_I, self.flux_Q, self.flux_U, self.flux_V, self.continuum
+
+"""
 class MoogStokes( object ):
     def __init__(self, configurationFile):
         self.config = AstroUtils.parse_config(configurationFile)
@@ -210,6 +250,7 @@ class MoogStokes( object ):
         self.fiducial.run()
         for partial in self.partials:
             partial.run()
+"""
 
 class Moog( object ):
     def __init__(self, configurationFile):
@@ -348,6 +389,10 @@ class ParameterFile( object ):
         self.moogPars = AstroUtils.parse_config(self.moogParCfgFile)
         self.synlimits = numpy.array([config['wlStart'], config['wlStop'], 
                 self.moogPars['synlimits_c'], self.moogPars['synlimits_d']])
+        if "wlProbe" in self.config.keys():
+            self.wlProbe = self.config["wlProbe"]
+        else:
+            self.wlProbe = None
         if "PARFILENAME" in kwargs:
             self.parFileName = kwargs["PARFILENAME"]
         else:
@@ -382,7 +427,7 @@ class ParameterFile( object ):
     def setName(self, name):
         self.file_labels['lines_in'] = self.config['Weak_FileName']+'_'+name
         self.file_labels['stronglines_in'] = self.config['Strong_FileName']+'_'+name
-        self.parfilename = name+'.par'
+        self.parFileName = name+'.par'
         
     def setModel(self, Temp, Grav):
         self.file_labels["model_in"] = 'MARCS_T'+ str(int(Temp))+'_G'+str(Grav)+'_M0.0_t1.0.md'
@@ -395,6 +440,9 @@ class ParameterFile( object ):
             pf.write(fl+'   \''+self.file_labels[fl]+'\'\n')
         for l in self.labels:
             pf.write(l+'    '+str(self.labels[l])+'\n')
+
+        if self.wlProbe:
+            pf.write('dipstick  %.3f\n' % self.wlProbe)
 
         pf.write('synlimits\n')
         pf.write('               %.2f %.2f %.3f %.2f\n' % 
@@ -429,7 +477,8 @@ class LineList( object ):
         for i in range(self.nStrong):
             self.strongLines[i].zeeman_splitting(B=self.Bfield)
         for i in range(self.numLines - self.nStrong):
-            self.weakLines[i].zeeman_splitting(B=self.Bfield)
+            if not(self.weakLines[i].DissE):
+                self.weakLines[i].zeeman_splitting(B=self.Bfield)
 
     def readInLineLists(self):
         self.strongLines, self.weakLines = parse_VALD(self.VALD_list,

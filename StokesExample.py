@@ -6,12 +6,9 @@ fig = pyplot.figure(0)
 fig.clear()
 ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
-#moogPyConfigFile = 'moogPy.cfg'
-moogPyConfigFile = 'moogStokesPy.cfg'
-Moog = MoogTools.MoogStokes(moogPyConfigFile)
-Moog.lineList.writeLineLists(mode="MOOGSTOKES")
-Moog.parameterFile.writeParFile()
-wavelength, flux = Moog.run(test=False)
+moogPyConfigFile = 'StokesExample.cfg'
+Moog = MoogTools.MoogStokesSpectrum(moogPyConfigFile, fileBase = 'example')
+wavelength, flux = Moog.run(save=True)
 
 ax.plot(wavelength, flux)
 

@@ -104,11 +104,11 @@ c      istat = ivwrite (2,1,array,79)
       nchars = 15
       nfparam = 50     
       lscreen = 4
-      if (silent .eq. 'y') then
-         fparam = 'batch.par'
-      else
-         fparam = 'no_filename_given'     
-      endif
+c      if (silent .eq. 'y') then
+c         fparam = 'batch.par'
+c      else
+c         fparam = 'no_filename_given'     
+c      endif
       call infile ('input  ',nfparam,'formatted  ',0,nchars,
      .             fparam,lscreen)
       read (nfparam,1002) control

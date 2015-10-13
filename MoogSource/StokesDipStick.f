@@ -1,5 +1,5 @@
 
-      subroutine traceStokes (phi_ang, chi_ang, mu)
+      subroutine stokesdipstick (phi_ang, chi_ang, mu)
 c**********************************************************************
 c     This routine performs the DELO integration routine through the 
 c     photosphere
@@ -25,7 +25,12 @@ c**********************************************************************
       parameter (LDA=4, LWORK=64*LDA)
       double precision WORK(LWORK)
 
+cf2py intent(callback, hide) fluxtracer
+      external fluxtracer
+
 c*****Sets up constants
+
+c      write (*,*) phi_ang, chi_ang, mu
 
       bgfl = dble(2e30)
 
@@ -204,8 +209,6 @@ c      continuum = Stokes(1)
          dtau = (tau_interp(emiss_order(1))-tau_interp(emiss_order(2)))
          etau = dexp(-dtau)
 
-c         write (*,*) tau_interp
-c         read (*,*)
 
          alph = dble(1.0-etau)
          bet =dble((1.0-(1.0+dtau)*etau)/dtau)
@@ -301,83 +304,8 @@ c         continuum=etau*continuum+alph*emiss_interp(1,emiss_order(3))+
              emiss_order(2) = 2
              emiss_order(3) = 3
          endif
-c         write (*,*) logtau, dtau, Stokes(1), continuum
+c         write (*,*) logtau, dtau, Stokes, continuum
+         call fluxtracer(logtau, dtau, Stokes, continuum)
       enddo
-c      read (*,*)
-      return
-      end
-
-      subroutine interp_opacities(logtau, k_interp,
-     .   k_ord, e_interp, e_ord, tau_interp, tau_interp_c, mu, deltau)
-c**********************************************************************
-c     interp_opacities interpolates the following quantities relevant
-c        to the DELO method:
-c      kapp_interp(kap_ord) - kappa matrix interpolated at
-c                      tau = 10.0**logtau
-c      emiss_interp(emiss_ord) - emission matrix interpolated at
-c                      tau = 10.0**(logtau+dtau)
-c      tau_interp(emiss_ord) - total line opacity calculated at:
-c                      tau = 10.0**(logtau+dtau) (reference tau)
-c      tau_interp_c(emiss_ord) - continuum opacity calculated at:
-c                      tau = 10.0**(logtau+dtau) (reference tau)
-c***********************************************************************
-      implicit real*8 (a-h,o-z)
-      include 'Atmos.com'
-      include 'Stokes.com'
-      real*8 k_interp(4,4,2), e_interp(4,3)
-      real*8 tau_interp(3), tau_interp_c(3), logtau
-      real*8 t_tot, t_lam, deltau, mu
-      real*8 phQ, phU, phV, psQ, psU, psV
-      integer k_ord, e_ord
-
-      t_lam=spl_ev(tlam_knots,n_tlam_knots,tlam_coeffs,logtau+deltau)
-      t_tot=spl_ev(ttot_knots,n_ttot_knots,ttot_coeffs,logtau+deltau)
-
-      phQ=spl_ev(phiQ_knots,n_phiQ_knots,phiQ_coeffs,logtau)
-      phU=spl_ev(phiU_knots,n_phiU_knots,phiU_coeffs,logtau)
-      phV=spl_ev(phiV_knots,n_phiV_knots,phiV_coeffs,logtau)
-      psQ=spl_ev(psiQ_knots,n_psiQ_knots,psiQ_coeffs,logtau)
-      psU=spl_ev(psiU_knots,n_psiU_knots,psiU_coeffs,logtau)
-      psV=spl_ev(psiV_knots,n_psiV_knots,psiV_coeffs,logtau)
-
-      k_interp(1,1,k_ord)=0.0
-      k_interp(1,2,k_ord)=phQ
-      k_interp(1,3,k_ord)=phU
-      k_interp(1,4,k_ord)=phV
-      k_interp(2,1,k_ord)=phQ
-      k_interp(2,2,k_ord)=0.0
-      k_interp(2,3,k_ord)=psV
-      k_interp(2,4,k_ord)=-psU
-      k_interp(3,1,k_ord)=phU
-      k_interp(3,2,k_ord)=-psV
-      k_interp(3,3,k_ord)=0.0
-      k_interp(3,4,k_ord)=psQ
-      k_interp(4,1,k_ord)=phV
-      k_interp(4,2,k_ord)=psU
-      k_interp(4,3,k_ord)=-psQ
-      k_interp(4,4,k_ord)=0.0
-
-      phQ=spl_ev(phiQ_knots,n_phiQ_knots,phiQ_coeffs,logtau+deltau)
-      phU=spl_ev(phiU_knots,n_phiU_knots,phiU_coeffs,logtau+deltau)
-      phV=spl_ev(phiV_knots,n_phiV_knots,phiV_coeffs,logtau+deltau)
-
-      emiss = spl_ev(e_knots,n_e_knots,e_coeffs,logtau+deltau)
-
-      e_interp(1,e_ord) = emiss/mu
-      e_interp(2,e_ord) = emiss*phQ/mu
-      e_interp(3,e_ord) = emiss*phU/mu
-      e_interp(4,e_ord) = emiss*phV/mu
-
-      tau_interp(e_ord) = t_tot
-      tau_interp_c(e_ord) = t_lam
-
-      return
-      end
-
-      real*8 function Planck(temperature)
-      implicit real*8 (a-h,o-z)
-      include 'Linex.com'
-      Planck = ((1.19089d+25/wave**2)*1.0d+10)/(wave**3*
-     .     (dexp(1.43879d+08/(wave*temperature))-1.0d+00))
       return
       end

@@ -82,6 +82,8 @@ c      elseif (control .eq. 'abpop  ') then
 c         call abpop
 c      elseif (control .eq. 'synpop ') then
 c         call synpop
+      elseif (control .eq. 'stoktra') then
+          call stokestrace
       elseif (control .eq. 'synstok') then
          call synstokes
 
