@@ -2,7 +2,6 @@ import scipy
 import scipy.interpolate
 import numpy
 import os
-import MoogPy
 import MoogStokesPy
 import SpectralTools
 import AstroUtils
@@ -51,7 +50,7 @@ class Atmosphere( object ):
 class periodicTable( object ):
     def __init__(self):
         self.Zsymbol_table = {}
-        df = open('MOOGConstants.dat', 'r')
+        df = open(os.path.dirname(os.path.realpath(__file__))+'/MOOGConstants.dat', 'r')
         for line in df.readlines():
             l = line.split('-')
             self.Zsymbol_table[int(l[0])] = l[1].strip()
@@ -376,6 +375,9 @@ class ParameterFile( object ):
             self.parFileName = kwargs["PARFILENAME"]
         else:
             self.parFileName = self.moogPars['parFileName']
+        if "atmos_dir" in self.moogPars.keys():
+            atmos_dir = self.moogPars["atmos_dir"]
+            self.moogPars["atmos_dir"] = os.environ.get('MOOGPYDATAPATH')+atmos_dir
         self.mode = self.moogPars['mode']
         self.labels = {'terminal':'x11',
                       'strong':1, 
@@ -435,10 +437,11 @@ class LineList( object ):
     def __init__(self, parent, config):
         # Load in configuration file
         self.parent = parent
-        self.strong_file = config['strong_file']
-        self.molecules = config['molecules']
-        self.VALD_list = config['VALD_file']
-        self.gf_corrections = config['gf_file']
+        self.MoogPyDataPath = os.environ.get('MOOGPYDATAPATH')
+        self.strong_file = self.MoogPyDataPath+config['strong_file']
+        self.molecules = self.MoogPyDataPath+config['molecules']
+        self.VALD_list = self.MoogPyDataPath+config['VALD_file']
+        self.gf_corrections = self.MoogPyDataPath+config['gf_file']
         self.wlStart = config['wlStart']
         self.wlStop = config['wlStop']
         self.Bfield = config['Bfield']/10.0
