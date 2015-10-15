@@ -81,7 +81,19 @@ class MoogStokesSpectrum( object ):
             configurationFile : The name of a file containing configuration parameters
             fileBase : the base name for the MoogStokes parameter file/linelists
 
-        Member
+        Member variables
+            config - a dictionary created from lines contained in the configuration file
+            lineList - a LineList object containing lines within the defined wavelength range
+            parameterFile - a ParameterFile object useful for writing Moog-Readable parameter files
+            T - Temperature in Kelvin
+            logg - Surface gravity
+            B - Magnetic field strength in kG
+            vsini - rotational velocity in km/sec
+
+            fileName - name of the MoogStokes parameter file
+            fileBase - base of the filename
+            wave = array containing wavelengths of the spectrum
+            flux = array containing the flux of the composite emergent spectrum
         """
         self.config = AstroUtils.parse_config(configurationFile)
         self.lineList = LineList(self, self.config)
@@ -212,46 +224,6 @@ class MoogStokesSpectrum( object ):
             out.writeto(self.config["outdir"]+self.config["outbase"]+'_'+str(self.config["wlProbe"])+'.fits', clobber=True)
         return self.logtau, self.flux_I, self.flux_Q, self.flux_U, self.flux_V, self.continuum
 
-"""
-class MoogStokes( object ):
-    def __init__(self, configurationFile):
-        self.config = AstroUtils.parse_config(configurationFile)
-        self.grid = self.config["grid"]   # True = restrict T, G to grid points, False = allow to wander
-        self.lineList = LineList(self, self.config)
-        self.parameterFile = ParameterFile(self, self.config)
-        self.fiducial = MoogStokesSpectrum(self, self.config, 'fiducial')
-        self.partials = []
-        self.nPartials = len(self.partials)
-
-    def addPartial(self, **kwargs):
-        self.partials.append(MoogStokesSpectrum(self, self.config, 'partial_'+str(self.nPartials), **kwargs))
-        self.nPartials += 1
-
-    def generatePartials(self, dT = 100, dG = 0.5, dB = 0.5, dVSINI = 5.0):
-        if self.grid:
-            if self.config["Teff"] > 3900.0:
-                dT = 250.0
-            else:
-                dT = 100.0
-            self.addPartial(DELTA_T = dT)
-            self.addPartial(DELTA_G = 0.5)
-            self.addPartial(DELTA_B = 0.5)
-            self.addPartial(DELTA_VSINI = 5.0)
-        else:
-            self.addPartial(DELTA_T = dT)
-            self.addPartial(DELTA_G = dG)
-            self.addPartial(DELTA_B = dB)
-            self.addPartial(DELTA_VSINI = dVSINI)
-		
-    def getFiducial(self):
-        return self.fiducial.wave, self.fiducial.flux
-        
-    def run(self):
-        self.fiducial.run()
-        for partial in self.partials:
-            partial.run()
-"""
-
 class Moog( object ):
     def __init__(self, configurationFile):
         self.config = AstroUtils.parse_config(configurationFile)
@@ -324,25 +296,32 @@ class Moog( object ):
 class Spectrum( object ):
     def __init__(self, config, spectrumName):
         self.name = spectrumName
-        self.df = config[spectrumName+'_datafile']
+        self.df = config[spectrumName]
         self.wlStart = config['wlStart']
         self.wlStop = config['wlStop']
         self.wave = []
         self.flux = []
         self.loadSpectrum()
+        self.header = None
 
     def loadSpectrum(self):
-        spectrum=open(self.df, 'r').read().split('\n')
-        for line in spectrum:
-            if len(line) > 0:
-                l = line.split()
-                wave = float(l[0])
-                if ((wave > self.wlStart) & (wave <= self.wlStop)):
-                    self.wave.append(wave)
-                    self.flux.append(float(l[1]))
-
-        self.wave = numpy.array(self.wave)
-        self.flux = numpy.array(self.flux)
+        if self.df[-5:] == '.fits':
+            data = pyfits.getdata(self.df)
+            self.header = pyfits.getheader(self.df)
+            self.wave = data[0]
+            self.flux = data[1]
+        else:
+            spectrum=open(self.df, 'r').read().split('\n')
+            for line in spectrum:
+                if len(line) > 0:
+                    l = line.split()
+                    wave = float(l[0])
+                    if ((wave > self.wlStart) & (wave <= self.wlStop)):
+                        self.wave.append(wave)
+                        self.flux.append(float(l[1]))
+    
+            self.wave = numpy.array(self.wave)
+            self.flux = numpy.array(self.flux)
 
     def flipWavelength(self):
         self.wave = self.wave[::-1]

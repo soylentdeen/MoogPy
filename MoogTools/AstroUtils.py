@@ -1,6 +1,23 @@
 import os
 import glob
 
+def write_config(filename, config):
+    """ 
+        Write options to a configuration file
+        
+        filename    the configuration filename
+        config      a dictionary of config parameters
+
+        The entries in the dictionary are written as a text file
+    """
+
+    fh = open(filename, 'w')
+    for key in config.keys():
+        fh.write("%s = %s\n" % (key, config[key]))
+
+    fh.close()
+
+
 def parse_config(filename, defaults=None):
     """ Read options for a configuration file.
         
