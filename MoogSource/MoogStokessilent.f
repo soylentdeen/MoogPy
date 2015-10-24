@@ -7,6 +7,9 @@ c     This is the normal interactive version of the code; for batch
 c     processing without user decisions, run MOOGSILENT instead.
 c******************************************************************************
 
+c     MoogStokesSilent - version 0.95
+c         Friday 23 Oct 2015
+
       include 'Atmos.com'
       include 'Pstuff.com'
 
@@ -16,9 +19,10 @@ c*****in compiling MOOG, here the various machine-specific things are
 c     declared.  First, define the directory where MOOG lives, in order to 
 c     be able to pull in auxiliary data files; executing 'make' will 
 c     generate a reminder of this necessity
-      write (moogpath,1001)
-      moogpath = 
-     .  '/home/deen/Code/Python/MoogPy/MoogSource/'
+c      write (moogpath,1001)
+c      moogpath = 
+c     .  '/home/deen/Code/Python/MoogPy/MoogSource/'
+      write (*,*) moogpath
 
 
 c*****What kind of machine are you using?  Possible ones are:

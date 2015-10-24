@@ -9,6 +9,12 @@ class Player( object ):
         self.datafile = datafile
         self.ID = ID
         self.resolvingPower = resolvingPower
+        info = pyfits.info(self.datafile, output='')
+        for i in range(len(info)-1):
+            hdr = pyfits.getheader(self.datafile, ext=i+1)
+            self.wavestart.append(hdr.get('WLSTART'))
+            self.wavestop.append(hdr.get('WLSTOP'))
+
         data = pyfits.getdata(self.datafile)
         self.wave, self.flux = SpectralTools.resample(data[0], data[1], 
                 self.resolvingPower)

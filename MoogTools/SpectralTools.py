@@ -153,6 +153,8 @@ def merge_spectra(x1, y1, x2, y2):
     y2[numpy.isnan(y2)] = 0.0
     if len(x1) == 0:
         return x2, y2
+    if len(x2) == 0:
+        return x1, y1
     overlap_start = numpy.max([numpy.min(x1), numpy.min(x2)])
     overlap_stop = numpy.min([numpy.max(x1), numpy.max(x2)])
     overlap = scipy.where((x1 >= overlap_start) & (x1 <= overlap_stop))

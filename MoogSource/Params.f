@@ -16,7 +16,7 @@ c******************************************************************************
       include 'Stokes.com'
       real*8 deltalogab(5), temp
       character keyword*20, sandbox*80
-      character arrayz*80, stokes_base*80
+      character arrayz*100, stokes_base*80, blankstring*80
       integer kk
       data newcount, linecount /0, 0/
 
@@ -311,20 +311,19 @@ c  created previously, that will be read in for plotting purposes
 c  keyword 'smoothed_out' controls the name of the smoothed synthesis output
       elseif (keyword .eq. 'smoothed_out') then
          read (array,*) f3out
-c         sandbox = Jtrim(OutDir)//Jtrim(stokes_base)
-c         f3out = Jtrim(sandbox)//'.moog'
 
 c  keyword 'atmos_dir' specifies the location of the model atmosphere'
       elseif (keyword .eq. 'atmos_dir') then
          read (array,*) sandbox
-         l = len(sandbox)
-         AtmosDir = sandbox(1:l)
+         l = len_trim(sandbox)
+         AtmosDir(1:l) = sandbox(1:l)
          atmosflag = 1
 
 c  keyword 'out_dir' specifies the location of the model atmosphere'
       elseif (keyword .eq. 'out_dir') then
          read (array,*) sandbox
-         OutDir = sandbox(1:len_trim(sandbox))
+         l = len_trim(sandbox)
+         OutDir(1:l) = sandbox(1:l)
          outflag = 1
 
 c  keyword 'stokes_out' controls the base name of all the Stokes-related output
@@ -413,13 +412,21 @@ c  keyword 'iraf_out' controls the name of the optional IRAF output
 c  keyword 'model_in' controls the name of input model atmosphere file
       elseif (keyword .eq. 'model_in') then
          read (array,*) fmodel
-         if (atmosflag .eq. 1) then
-             sandbox = AtmosDir(1:len_trim(AtmosDir))//
-     .          fmodel(1:len_trim(fmodel))
-         else
-             sandbox = fmodel(1:len_trim(fmodel))
-         endif
-         fmodel = sandbox
+c         write (*,*) fmodel
+c         if (atmosflag .eq. 1) then
+c             sandbox = AtmosDir(1:len_trim(AtmosDir))//
+c     .          fmodel(1:len_trim(fmodel))
+c             write (*,*) AtmosDir, 'blah'
+c             write (*,*) sandbox, 'XXX'
+c             write (*,*) fmodel(1:len_trim(fmodel))
+c             write (*,*) len_trim(fmodel)
+c         else
+c             sandbox = fmodel(1:len_trim(fmodel))
+c         endif
+c         fmodel(1:len_trim(sandbox)) = sandbox
+c         write (*,*) len(fmodel)
+c         write (*,*) '_', fmodel, 'x'
+c         read (*,*)
 
 
 c  keyword 'lines_in' controls the name of the input line list
@@ -882,7 +889,7 @@ c  exit normally
 
 
 c*****format statements
-1001  format (a80)
+1001  format (a100)
 1002  format ('# OF ABUNDANCE (',i1,') AND ISOTOPIC (',i1,')',
      .        ' SYNTHESES DO NOT AGREE!   I QUIT!       ')
 1006  format ('THIS OPTION IS UNKNOWN TO MOOG: ', a10, ' I QUIT!')

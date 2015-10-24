@@ -10,6 +10,7 @@ moogPyConfigFile = 'StokesExample.cfg'
 Moog = MoogTools.MoogStokesSpectrum(moogPyConfigFile, fileBase = 'example')
 wavelength, flux = Moog.run(save=True)
 
+
 ax.plot(wavelength, flux)
 
 fig.show()

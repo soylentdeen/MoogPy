@@ -6,6 +6,7 @@ import MoogStokesPy
 import SpectralTools
 import AstroUtils
 import pyfits
+import time
 
 class Atmosphere( object ):
     def __init__(self, df):
@@ -50,15 +51,23 @@ class Atmosphere( object ):
 class periodicTable( object ):
     def __init__(self):
         self.Zsymbol_table = {}
+        self.DissE_table = {}
         df = open(os.path.dirname(os.path.realpath(__file__))+'/MOOGConstants.dat', 'r')
         for line in df.readlines():
             l = line.split('-')
             self.Zsymbol_table[int(l[0])] = l[1].strip()
             self.Zsymbol_table[l[1].strip()] = int(l[0])
+            if len(l) > 3:
+                self.DissE_table[int(l[0])] = float(l[3])
+                self.DissE_table[l[1].strip()] = float(l[3])
         df.close()
 
     def translate(self, ID):
         retval = self.Zsymbol_table[ID]
+        return retval
+
+    def DissE(self, ID):
+        retval = self.DissE_table[ID]
         return retval
 
 class HITRAN_Dictionary( object ):
@@ -112,7 +121,12 @@ class MoogStokesSpectrum( object ):
         self.flux_V = []
         self.continuum = []
         self.logtau = []
+
+
         self.MoogPy = MoogStokesPy
+        #self.MoogStokesVersion = self.MoogPy.charstuff
+        self.MoogStokesVersion = os.environ.get('MOOGSTOKESVERSION')
+        self.MoogPy.charstuff.moogpath = '%-60s'%os.environ.get('MOOGSTOKESSOURCE')
         self.MoogPy.recorder = self.recorder
         self.MoogPy.stokesrecorder = self.stokesrecorder
         self.MoogPy.beachball = self.beachball
@@ -194,15 +208,59 @@ class MoogStokesSpectrum( object ):
         self.wave = self.integrator.new_wl
         self.flux = self.integrator.final_spectrum
         if save:
-            out = pyfits.PrimaryHDU([self.wave, self.flux])
-            out.header.set('WLSTART', self.config["wlStart"])
-            out.header.set('WLSTOP', self.config["wlStop"])
-            out.header.set('BFIELD', self.config["Bfield"])
-            out.header.set('TEFF', self.config["Teff"])
-            out.header.set('LOGG', self.config["logg"])
-            out.header.set('VSINI', self.config["vsini"])
-            out.writeto(self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_V%.1f.fits' % 
-                    (self.config["Teff"], self.config["logg"], self.config["Bfield"], self.config["vsini"]), clobber=True)
+            filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_V%.1f.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"], self.config["vsini"])
+            if os.path.exists(filename):
+                HDUList = pyfits.open(filename, mode='update')
+                found = False
+                for spectrum in HDUList:
+                    if ((spectrum.header.get('WLSTART') == self.config["wlStart"]) & 
+                        (spectrum.header.get('WLSTOP') == self.config["wlStop"])):
+                        spectrum.column['Wavelength'] = self.wave
+                        spectrum.column['Stokes_I'] = self.flux
+                        spectrum.header.set('CREATION_TIME', time.ctime())
+                        spectrum.header.set('CREATION_USER', os.getlogin())
+                        spectrum.header.set('CREATION_MACHINE', os.uname()[1])
+                        spectrum.header.set('MOOGVERSION', self.MoogStokesVersion)
+                        found = True
+                        break
+                if not(found):
+                    wave = pyfits.Column(name='Wavelength', format='E', array=self.wave)
+                    flux = pyfits.Column(name='Stokes_I', format='E', array=self.flux)
+                    cols = pyfits.ColDefs([wave, flux])
+                    out = pyfits.TableHDU.from_columns(cols)
+                    out.header.set('WLSTART', self.config["wlStart"])
+                    out.header.set('WLSTOP', self.config["wlStop"])
+                    out.header.set('CREATION_TIME', time.ctime())
+                    out.header.set('CREATION_USER', os.getlogin())
+                    out.header.set('CREATION_MACHINE', os.uname()[1])
+                    out.header.set('MOOGVERSION', self.MoogStokesVersion)
+                    HDUList.append(out)
+
+                HDUList.update_extend()
+                HDUList.close()
+            else:
+                HDUList = pyfits.HDUList()
+                primary = pyfits.PrimaryHDU()
+                primary.header.set('BFIELD', self.config["Bfield"])
+                primary.header.set('TEFF', self.config["Teff"])
+                primary.header.set('LOGG', self.config["logg"])
+                primary.header.set('VSINI', self.config["vsini"])
+                HDUList.append(primary)
+
+
+                wave = pyfits.Column(name='Wavelength', format='E', array=self.wave)
+                flux = pyfits.Column(name='Stokes_I', format='E', array=self.flux)
+                cols = pyfits.ColDefs([wave, flux])
+                out = pyfits.TableHDU.from_columns(cols)
+                out.header.set('WLSTART', self.config["wlStart"])
+                out.header.set('WLSTOP', self.config["wlStop"])
+                out.header.set('CREATION_USER', os.getlogin())
+                out.header.set('CREATION_MACHINE', os.uname()[1])
+                out.header.set('MOOGVERSION', self.MoogStokesVersion)
+                HDUList.append(out)
+                HDUList.update_extend()
+                HDUList.verify()
+                HDUList.writeto(filename)
         return self.wave, self.flux
 
     def trace(self, save=False):
@@ -392,7 +450,6 @@ class ParameterFile( object ):
         self.file_labels = {'summary_out':'./Output/summary.out',
                             'standard_out':'./Output/out1',
                             'smoothed_out':'./Output/smoothed.out',
-                            'atmos_dir':'',
                             'model_in':'',
                             'lines_in':config['Weak_FileName'],
                             'stronglines_in':config['Strong_FileName']}
@@ -411,7 +468,7 @@ class ParameterFile( object ):
         self.parFileName = name+'.par'
         
     def setModel(self, Temp, Grav):
-        self.file_labels["model_in"] = 'MARCS_T'+ str(int(Temp))+'_G'+str(Grav)+'_M0.0_t1.0.md'
+        self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH')+'Atmospheres/MARCS/MARCS_T'+ str(int(Temp))+'_G'+str(Grav)+'_M0.0_t1.0.md'
 
     def writeParFile(self):
         pf = open(self.parFileName, 'w')
@@ -448,6 +505,7 @@ class LineList( object ):
         self.sfn = config['Strong_FileName']
         self.wfn = config['Weak_FileName']
         self.doMolecules = config['doMolecules']
+        self.applyCorrections = config['applyCorrections']
 
         self.readInLineLists()
         self.nStrong = len(self.strongLines)
@@ -463,10 +521,9 @@ class LineList( object ):
                 self.weakLines[i].zeeman_splitting(B=self.Bfield)
 
     def readInLineLists(self):
-        self.strongLines, self.weakLines = parse_VALD(self.VALD_list,
-                self.strong_file, self.wlStart, self.wlStop, self.Bfield, 
-                self.gf_corrections)
+        self.parse_new_VALD()
 
+        """
         if self.doMolecules:
             #     CO
             self.weakLines = numpy.append(self.weakLines, parse_HITRAN(
@@ -482,6 +539,57 @@ class LineList( object ):
                self.molecules+'CN_Plez_linelist.dat', self.wlStart, self.wlStop,
                self.Bfield, self.gf_corrections))
 
+        #"""
+
+    def parse_new_VALD(self):
+        pt = periodicTable()
+    
+        if self.applyCorrections:
+            self.corrected = []
+            for line in open(self.gf_corrections, 'r'):
+                self.corrected.append(MOOG_Line(line))
+    
+        strong = []
+        for line in open(self.strong_file, 'r'):
+            l = line.split()
+            strong.append([float(l[0]), float(l[1])])
+    
+        vald_in = open(self.VALD_list, 'r')
+        l1 = ''
+        l2 = ''
+        l3 = ''
+        l4 = ''
+        self.strongLines = []
+        self.weakLines = []
+        junk = vald_in.readline()
+        junk = vald_in.readline()
+        linecounter = 0
+        lines = [l1, l2, l3, l4]
+        for line in vald_in:
+            lines[linecounter] = line
+            linecounter += 1
+            if linecounter == 4:
+                linecounter = 0
+                if (lines[0][0] == '\''):
+                    wl = float(lines[0].split(',')[1])
+                    if ( (wl > self.wlStart) & (wl < self.wlStop) ):
+                        current_line = New_VALD_Line(lines, pt)
+                        if self.applyCorrections:
+                            for cl in self.corrected:
+                                if (cl.wl == current_line.wl) & (cl.expot_lo == current_line.expot_lo):
+                                    print "Making a correction!"
+                                    current_line.loggf = cl.loggf
+                                    current_line.zeeman["NOFIELD"][1] = cl.loggf
+                                    current_line.VdW = cl.VdW
+                                    current_line.stark = cl.stark
+                                    current_line.radiative = cl.radiative
+                        current_line.zeeman_splitting(self.Bfield)
+                        species = current_line.species
+                        if ( [wl, species] in strong):
+                            self.strongLines.append(current_line)
+                        else:
+                            self.weakLines.append(current_line)
+    
     def getGf(self, index, log=False):
         if index < self.nStrong:
             if log:
@@ -1101,6 +1209,137 @@ class VALD_Line( Spectral_Line ):
                 self.expot_lo+12400.0/self.wl)
         self.zeeman = {}
         self.zeeman["NOFIELD"] = [self.wl,self.loggf]
+
+class New_VALD_Line( Spectral_Line ):
+    def __init__(self, lines, pt='', **kwargs):
+        l1 = lines[0].split(',')
+        self.ID = l1[0].strip('\'').split()
+        self.element = pt.translate(self.ID[0])
+        self.Bfield = 0.0
+
+        if "verbose" in kwargs:
+            self.verbose = kwargs["verbose"]
+        else:
+            self.verbose = False
+
+        if self.element > 1000:
+            isotopes = lines[3].strip().strip('\'').split()[-1].split('(')
+            A1 = int(isotopes[1].split(')')[0])
+            if len(isotopes) == 2:
+                A2 = 1
+            else:
+                A2 = int(isotopes[2].split(')')[0])
+            heavy = max(A1, A2)
+            light = min(A1, A2)
+            self.species = numpy.float("%4.1f%02d%02d" % (self.element/10., light, heavy))
+            #self.species = "%4.1f%2d%2d" % (self.element/10., (10.0+float(l[10])/10)+0.0001*(10.0+float(l[10])%10)
+            self.wl = float(l1[1])
+            self.loggf = float(l1[2])
+            self.expot_lo = float(l1[3])
+            self.J_lo = float(l1[4])
+            self.expot_hi = float(l1[5])
+            self.J_hi = float(l1[6])
+            self.g_lo = float(l1[7])
+            self.g_hi = float(l1[8])
+            self.g_eff = float(l1[9])
+            self.radiative = float(l1[10])
+            self.stark = float(l1[11])
+            self.VdW = float(l1[12])
+            self.loggfHistory = []
+            self.VdWHistory = []
+            self.DissE = pt.DissE(self.ID[0])
+        else:
+            self.ionization = int(self.ID[1])-1
+            self.species = self.element + self.ionization/10.0
+            self.wl = float(l1[1])             # WL in Air
+            self.loggf = float(l1[2])
+            self.expot_lo = float(l1[3])       # in eV
+            self.J_lo = float(l1[4])
+            self.expot_hi = float(l1[5])
+            self.J_hi = float(l1[6])
+            self.g_lo = float(l1[7])
+            self.g_hi = float(l1[8])
+            self.g_eff = float(l1[9])
+            self.radiative = float(l1[10])
+            self.stark = float(l1[11])
+            self.VdW = float(l1[12])
+            self.loggfHistory = []
+            self.VdWHistory = []
+            self.DissE = None
+            self.upperTerm = lines[1].strip().strip('\'').split()
+            self.lowerTerm = lines[2].strip().strip('\'').split()
+            self.references = lines[3].strip().strip('\'')
+
+            if (self.g_lo == 99.0):
+                # Lower State
+                if self.lowerTerm[0] == 'LS':
+                    self.g_lo = self.parse_LS_coupling(self.lowerTerm[-1], self.J_lo)
+                elif self.lowerTerm[0] == 'JJ':
+                    print("Awww Shucks, the JJ coupling parser isn't ready yet!")
+                    #self.g_lo = self.parse_JJ_coupling(self.lowerTerm[-1])
+                    self.g_lo = 0.0
+                elif self.lowerTerm[0] == 'JK':
+                    print("Awww Shucks, the JK coupling parser isn't ready yet!")
+                    self.g_lo = 0.0
+                elif self.lowerTerm[0] == 'LK':
+                    print("Awww Shucks, the LK coupling parser isn't ready yet!")
+                    self.g_lo = 0.0
+                else:
+                    self.g_lo = 0.0
+    
+                # Upper State
+                if self.upperTerm[0] == 'LS':
+                    self.g_hi = self.parse_LS_coupling(self.upperTerm[-1], self.J_hi)
+                elif self.upperTerm[0] == 'JJ':
+                    print("Awww Shucks, the JJ coupling parser isn't ready yet!")
+                    self.g_hi = 0.0
+                elif self.upperTerm[0] == 'JK':
+                    print("Awww Shucks, the JK coupling parser isn't ready yet!")
+                    self.g_hi = 0.0
+                elif self.upperTerm[0] == 'LK':
+                    print("Awww Shucks, the LK coupling parser isn't ready yet!")
+                    self.g_hi = 0.0
+                else:
+                    self.g_hi = 0.0
+
+        self.lower = Observed_Level(self.J_lo, self.g_lo, self.expot_lo)
+        self.upper = Observed_Level(self.J_hi, self.g_hi,
+                self.expot_lo+12400.0/self.wl)
+        self.zeeman = {}
+        self.zeeman["NOFIELD"] = [self.wl,self.loggf]
+
+    def parse_LS_coupling(self, term, J):
+        if J <= 0:
+            return 0.0
+        angmom = {"S":0, "P":1, "D":2, "F":3, "G":4, "H":5,
+                "I":6, "K":7, "L":8, "M":9}
+        if term[0].isdigit():
+            S = (float(term[0])-1.0)/2.0
+        else:
+            S = (float(term[1])-1.0)/2.0
+        if term[-1] == '*':
+            L = angmom[term[-2]]
+        else:
+            L = angmom[term[-1]]
+        lande_g = (1.5+(S*(S+1.0)-L*(L+1))/
+                (2.0*J*(J+1.0)))
+        return lande_g
+
+    def parse_JJ_coupling(self, term):
+        term = term.strip('*').replace('(','').replace(')','').split(',')
+        J1 = term[0].split('/')
+        if len(J1) == 2:
+            J1 = float(J1[0])/float(J1[1])
+        else:
+            J1 = float(J1[0])
+        J2 = term[1].split('/')
+        if len(J2) == 2:
+            J2 = float(J2[0])/float(J2[1])
+        else:
+            J2 = float(J2[0])
+        lande_g = 0.0
+        return lande_g
+
 
 class Plez_CN_Line( Spectral_Line ):
     def __init__(self, line, **kwargs):
