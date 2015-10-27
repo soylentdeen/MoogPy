@@ -206,37 +206,31 @@ class MoogStokesSpectrum( object ):
         self.MoogPy.moogstokessilent()
         self.computeCompositeSpectrum()
         self.wave = self.integrator.new_wl
-        self.flux = self.integrator.final_spectrum
+        self.stokes_I = self.integrator.final_spectrum_I
+        self.stokes_V = self.integrator.final_spectrum_V
         if save:
             filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_V%.1f.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"], self.config["vsini"])
+            wave = pyfits.Column(name='Wavelength', format='D', array=self.wave)
+            flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.stokes_I)
+            flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.stokes_V)
+            columns = pyfits.ColDefs([wave, flux_I, flux_V])
+            SpectrumHDU = pyfits.BinTableHDU.from_columns(columns)
+            SpectrumHDU.header.set('CREATION_TIME', time.ctime())
+            SpectrumHDU.header.set('CREATION_USER', os.getlogin())
+            SpectrumHDU.header.set('CREATION_MACHINE', os.uname()[1])
+            SpectrumHDU.header.set('MOOGVERSION', self.MoogStokesVersion)
+            SpectrumHDU.header.set('WLSTART', self.config["wlStart"])
+            SpectrumHDU.header.set('WLSTOP', self.config["wlStop"])
+            SpectrumHDU.name = "%.4fA - %.4fA" % (self.config["wlStart"], self.config["wlStop"])
             if os.path.exists(filename):
                 HDUList = pyfits.open(filename, mode='update')
-                found = False
-                for spectrum in HDUList:
+                for spectrum in HDUList[1:]:
                     if ((spectrum.header.get('WLSTART') == self.config["wlStart"]) & 
                         (spectrum.header.get('WLSTOP') == self.config["wlStop"])):
-                        spectrum.column['Wavelength'] = self.wave
-                        spectrum.column['Stokes_I'] = self.flux
-                        spectrum.header.set('CREATION_TIME', time.ctime())
-                        spectrum.header.set('CREATION_USER', os.getlogin())
-                        spectrum.header.set('CREATION_MACHINE', os.uname()[1])
-                        spectrum.header.set('MOOGVERSION', self.MoogStokesVersion)
-                        found = True
-                        break
-                if not(found):
-                    wave = pyfits.Column(name='Wavelength', format='E', array=self.wave)
-                    flux = pyfits.Column(name='Stokes_I', format='E', array=self.flux)
-                    cols = pyfits.ColDefs([wave, flux])
-                    out = pyfits.TableHDU.from_columns(cols)
-                    out.header.set('WLSTART', self.config["wlStart"])
-                    out.header.set('WLSTOP', self.config["wlStop"])
-                    out.header.set('CREATION_TIME', time.ctime())
-                    out.header.set('CREATION_USER', os.getlogin())
-                    out.header.set('CREATION_MACHINE', os.uname()[1])
-                    out.header.set('MOOGVERSION', self.MoogStokesVersion)
-                    HDUList.append(out)
-
+                        HDUList.pop(HDUList.index_of(spectrum.name))
+                HDUList.append(SpectrumHDU)
                 HDUList.update_extend()
+                HDUList.verify()
                 HDUList.close()
             else:
                 HDUList = pyfits.HDUList()
@@ -246,18 +240,7 @@ class MoogStokesSpectrum( object ):
                 primary.header.set('LOGG', self.config["logg"])
                 primary.header.set('VSINI', self.config["vsini"])
                 HDUList.append(primary)
-
-
-                wave = pyfits.Column(name='Wavelength', format='E', array=self.wave)
-                flux = pyfits.Column(name='Stokes_I', format='E', array=self.flux)
-                cols = pyfits.ColDefs([wave, flux])
-                out = pyfits.TableHDU.from_columns(cols)
-                out.header.set('WLSTART', self.config["wlStart"])
-                out.header.set('WLSTOP', self.config["wlStop"])
-                out.header.set('CREATION_USER', os.getlogin())
-                out.header.set('CREATION_MACHINE', os.uname()[1])
-                out.header.set('MOOGVERSION', self.MoogStokesVersion)
-                HDUList.append(out)
+                HDUList.append(SpectrumHDU)
                 HDUList.update_extend()
                 HDUList.verify()
                 HDUList.writeto(filename)
@@ -1275,14 +1258,14 @@ class New_VALD_Line( Spectral_Line ):
                 if self.lowerTerm[0] == 'LS':
                     self.g_lo = self.parse_LS_coupling(self.lowerTerm[-1], self.J_lo)
                 elif self.lowerTerm[0] == 'JJ':
-                    print("Awww Shucks, the JJ coupling parser isn't ready yet!")
+                    #print("Awww Shucks, the JJ coupling parser isn't ready yet!")
                     #self.g_lo = self.parse_JJ_coupling(self.lowerTerm[-1])
                     self.g_lo = 0.0
                 elif self.lowerTerm[0] == 'JK':
-                    print("Awww Shucks, the JK coupling parser isn't ready yet!")
+                    #print("Awww Shucks, the JK coupling parser isn't ready yet!")
                     self.g_lo = 0.0
                 elif self.lowerTerm[0] == 'LK':
-                    print("Awww Shucks, the LK coupling parser isn't ready yet!")
+                    #print("Awww Shucks, the LK coupling parser isn't ready yet!")
                     self.g_lo = 0.0
                 else:
                     self.g_lo = 0.0
@@ -1291,13 +1274,13 @@ class New_VALD_Line( Spectral_Line ):
                 if self.upperTerm[0] == 'LS':
                     self.g_hi = self.parse_LS_coupling(self.upperTerm[-1], self.J_hi)
                 elif self.upperTerm[0] == 'JJ':
-                    print("Awww Shucks, the JJ coupling parser isn't ready yet!")
+                    #print("Awww Shucks, the JJ coupling parser isn't ready yet!")
                     self.g_hi = 0.0
                 elif self.upperTerm[0] == 'JK':
-                    print("Awww Shucks, the JK coupling parser isn't ready yet!")
+                    #print("Awww Shucks, the JK coupling parser isn't ready yet!")
                     self.g_hi = 0.0
                 elif self.upperTerm[0] == 'LK':
-                    print("Awww Shucks, the LK coupling parser isn't ready yet!")
+                    #print("Awww Shucks, the LK coupling parser isn't ready yet!")
                     self.g_hi = 0.0
                 else:
                     self.g_hi = 0.0
@@ -1313,16 +1296,20 @@ class New_VALD_Line( Spectral_Line ):
             return 0.0
         angmom = {"S":0, "P":1, "D":2, "F":3, "G":4, "H":5,
                 "I":6, "K":7, "L":8, "M":9}
-        if term[0].isdigit():
-            S = (float(term[0])-1.0)/2.0
-        else:
-            S = (float(term[1])-1.0)/2.0
-        if term[-1] == '*':
-            L = angmom[term[-2]]
-        else:
-            L = angmom[term[-1]]
-        lande_g = (1.5+(S*(S+1.0)-L*(L+1))/
-                (2.0*J*(J+1.0)))
+        try:
+            if term[0].isdigit():
+                S = (float(term[0])-1.0)/2.0
+            else:
+                S = (float(term[1])-1.0)/2.0
+            if term[-1] == '*':
+                L = angmom[term[-2]]
+            else:
+                L = angmom[term[-1]]
+            lande_g = (1.5+(S*(S+1.0)-L*(L+1))/
+                    (2.0*J*(J+1.0)))
+        except:
+            print("Parsing of LS term at %.3f FAILED!!!" % self.wl)
+            lande_g = 0.0
         return lande_g
 
     def parse_JJ_coupling(self, term):
@@ -2079,18 +2066,19 @@ class MoogStokes_IV_Spectrum( object ):
         continuum = []
         for i in range(len(self.mu)):
             self.new_I[i] *= self.limb_darkening[i]
+            self.new_V[i] *= self.limb_darkening[i]
             continuum.append(numpy.ones(len(self.new_I[i]))
                     *self.limb_darkening[i])
-            #continuum.append(numpy.ones(len(self.new_I[i])))
 
         continuum = numpy.array(continuum)
 
-        #raw_input()
-        self.final_spectrum = self.rtint(self.mu, self.new_I,
+        self.final_spectrum_I = self.rtint(self.mu, self.new_I,
+                continuum, deltav, vsini, 0.0)
+        self.final_spectrum_V = self.rtint(self.mu, self.new_V,
                 continuum, deltav, vsini, 0.0)
         
     def save(self, outfile):
-        SpectralTools.write_2col_spectrum(outfile, self.new_wl, self.final_spectrum)
+        SpectralTools.write_2col_spectrum(outfile, self.new_wl, self.final_spectrum_I)
 
     def rtint(self, mu, inten, cont, deltav, vsini_in, vrt_in, **kwargs):
         """
