@@ -5,6 +5,7 @@ import scipy.integrate
 import numpy
 import pyfits
 import string
+import glob
 
 def fitSawtooth(y, window_len=50):
     """
@@ -272,6 +273,26 @@ def read_3col_spectrum(filename):
     z = numpy.array(z)
     
     return x, y, z
+
+def winnow_MoogStokes_Spectra(directory, wlStart, wlStop, trackedParams=None):
+    files = glob.glob(directory+'*.fits')
+    header_keys = trackedParams.keys()
+    waves = []
+    fluxes = []
+    for f in files:
+        info = pyfits.info(f, output='')
+        nheaders = len(info)-1
+        primary_header = pyfits.getheader(f, ext=0)
+        for i in range(nheaders):
+            hdr = pyfits.getheader(f, ext=i+1)
+            if (hdr.get('WLSTART') < wlStop) and (hdr.get('WLSTOP') > wlStart):
+                data = pyfits.getdata(f, ext=i+1)
+                waves.append(data.field('Wavelength'))
+                fluxes.append(data.field('Stokes_I'))
+                for hk in header_keys:
+                    trackedParams[hk].append(primary_header.get(hk))
+    return trackedParams, waves, fluxes
+
 
 def read_IGRINS_spectrum(starFile, A0VFile):
     star_Hdu = pyfits.open(starFile, ignore_missing_end=True)
