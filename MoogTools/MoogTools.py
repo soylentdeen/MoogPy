@@ -2,11 +2,11 @@ import scipy
 import scipy.interpolate
 import numpy
 import os
-import MoogStokesPy
 import SpectralTools
 import AstroUtils
 import pyfits
 import time
+import fcntl
 
 class Atmosphere( object ):
     def __init__(self, df):
@@ -122,10 +122,25 @@ class MoogStokesSpectrum( object ):
         self.continuum = []
         self.logtau = []
 
-
-        self.MoogPy = MoogStokesPy
-        #self.MoogStokesVersion = self.MoogPy.charstuff
-        self.MoogStokesVersion = os.environ.get('MOOGSTOKESVERSION')
+        if "moogInstance" in kwargs.keys():
+            MoogInstance = kwargs["moogInstance"].upper()
+            if MoogInstance == "ALPHA":
+                import MoogStokesPy_Alpha
+                self.MoogPy = MoogStokesPy_Alpha
+            elif MoogInstance == "BRAVO":
+                import MoogStokesPy_Bravo
+                self.MoogPy = MoogStokesPy_Bravo
+            elif MoogInstance == "CHARLIE":
+                import MoogStokesPy_Charlie
+                self.MoogPy = MoogStokesPy_Charlie
+            elif MoogInstance == "DELTA":
+                import MoogStokesPy_Delta
+                self.MoogPy = MoogStokesPy_Delta
+        else:
+            import MoogStokesPy
+            self.MoogPy = MoogStokesPy
+        self.MoogStokesVersion = self.MoogPy.charstuff.moogversion.tostring()
+        #self.MoogStokesVersion = os.environ.get('MOOGSTOKESVERSION')
         self.MoogPy.charstuff.moogpath = '%-60s'%os.environ.get('MOOGSTOKESSOURCE')
         self.MoogPy.recorder = self.recorder
         self.MoogPy.stokesrecorder = self.stokesrecorder
@@ -218,11 +233,17 @@ class MoogStokesSpectrum( object ):
             SpectrumHDU.header.set('CREATION_TIME', time.ctime())
             SpectrumHDU.header.set('CREATION_USER', os.getlogin())
             SpectrumHDU.header.set('CREATION_MACHINE', os.uname()[1])
-            SpectrumHDU.header.set('MOOGVERSION', self.MoogStokesVersion)
+            SpectrumHDU.header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
+            #SpectrumHDU.header.set('MOOGVERSION', self.MoogStokesVersion)
             SpectrumHDU.header.set('WLSTART', self.config["wlStart"])
             SpectrumHDU.header.set('WLSTOP', self.config["wlStop"])
             SpectrumHDU.name = "%.4fA - %.4fA" % (self.config["wlStart"], self.config["wlStop"])
             if os.path.exists(filename):
+                while os.path.exists(filename+'.lock'):
+                    print "Woah!  File is locked!"
+                    time.sleep(0.1)
+                with open(filename+'.lock', 'w'):
+                    os.utime(filename+'.lock', None)
                 HDUList = pyfits.open(filename, mode='update')
                 for spectrum in HDUList[1:]:
                     if ((spectrum.header.get('WLSTART') == self.config["wlStart"]) & 
@@ -232,6 +253,7 @@ class MoogStokesSpectrum( object ):
                 HDUList.update_extend()
                 HDUList.verify()
                 HDUList.close()
+                os.remove(filename+'.lock')
             else:
                 HDUList = pyfits.HDUList()
                 primary = pyfits.PrimaryHDU()

@@ -26,6 +26,7 @@ c******************************************************************************
      .             fparam, fmodel, flines, fslines, fobs, ftable,
      .             fbarklem, fbarklemUV, AtmosDir, OutDir
       character*60 moogpath
+      character*20 moogversion
       character*2  names(95)
       character*10 modtype
       character*7  control
@@ -54,6 +55,7 @@ c******************************************************************************
      .                  fparam, fmodel, flines, fslines, fobs, ftable,
      .                  fbarklem, fbarklemUV, AtmosDir, OutDir,
      .                  moogpath,
+     .                  moogversion,
      .                  names,
      .                  modtype,
      .                  control,

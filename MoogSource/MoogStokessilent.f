@@ -7,12 +7,12 @@ c     This is the normal interactive version of the code; for batch
 c     processing without user decisions, run MOOGSILENT instead.
 c******************************************************************************
 
-c     MoogStokesSilent - version 0.95
-c         Friday 23 Oct 2015
-
       include 'Atmos.com'
       include 'Pstuff.com'
 
+c     MoogStokesSilent - version 0.95
+c         Friday 23 Oct 2015
+      moogversion='0.95'
 
 c$$$$$$$$$$$$$$$$$$$$$$$$ USER SETUP AREA $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 c*****in compiling MOOG, here the various machine-specific things are 
