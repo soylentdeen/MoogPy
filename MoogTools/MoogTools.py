@@ -172,7 +172,9 @@ class MoogStokesSpectrum( object ):
         if i == 1:
             self.wave.append(wave)
             if self.progressBar != None:
+                print wave
                 self.progressBar.update(wave)
+                raw_input()
         self.flux_I[i-1].append(Stokes[0])
         self.flux_Q[i-1].append(Stokes[1])
         self.flux_U[i-1].append(Stokes[2])
@@ -265,7 +267,7 @@ class MoogStokesSpectrum( object ):
                         HDUList.pop(HDUList.index_of(spectrum.name))
                 HDUList.append(SpectrumHDU)
                 HDUList.update_extend()
-                HDUList.verify()
+                HDUList.verify(option='silentfix')
                 HDUList.close()
                 os.remove(filename+'.lock')
             else:
@@ -278,7 +280,7 @@ class MoogStokesSpectrum( object ):
                 HDUList.append(primary)
                 HDUList.append(SpectrumHDU)
                 HDUList.update_extend()
-                HDUList.verify()
+                HDUList.verify(option='silentfix')
                 HDUList.writeto(filename)
         return self.wave, self.flux
 
