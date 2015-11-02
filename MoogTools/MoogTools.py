@@ -52,6 +52,14 @@ class progressbar( object ):
         self.start = start
         self.stop = stop
 
+    def start(self)
+        self.currentValue = self.start
+
+    def update(self, value):
+        self.currentValue = value
+        self.percentComplete = (self.currentValue-self.start)/(self.stop-self.start)*100
+        print("\r[{0}] {1}%".format('#'*{self.percentComplete/10}, self.percentComplete))
+
 
 class periodicTable( object ):
     def __init__(self):
@@ -155,7 +163,7 @@ class MoogStokesSpectrum( object ):
 
         if "progressBar" in kwargs.keys():
             if kwargs["progressBar"] == True:
-                self.progressBar = progressbar.ProgressBar()
+                self.progressBar = progressBar(self.config["wlStart"], self.config["wlStop"])
             else: self.progressBar = None
         else:
             self.progressBar = None
