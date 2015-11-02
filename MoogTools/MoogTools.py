@@ -2,6 +2,7 @@ import scipy
 import scipy.interpolate
 import numpy
 import os
+import sys
 import SpectralTools
 import AstroUtils
 import pyfits
@@ -47,22 +48,24 @@ class Atmosphere( object ):
         self.mt = float(data.readline().split()[0])
         data.close()
 
-class progressbar( object ):
+class progressBar( object ):
     def __init__(self, start, stop):
-        self.start = start
-        self.stop = stop
+        self.start_value = start
+        self.stop_value = stop
 
-    def start(self)
-        self.currentValue = self.start
+    def start(self):
+        self.currentValue = self.start_value
         self.numBlocks = 0
 
     def update(self, value):
         self.currentValue = value
-        self.percentComplete = (self.currentValue-self.start)/(self.stop-self.start)*100
-        if self.percentComplete/10 > self.numBlocks:
-            print("\r[{0}] {1}%".format('#'*{self.percentComplete/10},
-                self.percentComplete))
-            self.numBlocks = self.percentComplete/10
+        self.percentComplete = (self.currentValue-self.start_value)/(self.stop_value
+                -self.start_value)*100
+        if int(self.percentComplete/5) > self.numBlocks:
+            sys.stdout.write("\r%.2f [%s%s] %.2f - %.2f" % (self.start_value,
+                '#'*int(self.percentComplete/5),' '*(20-int(self.percentComplete/5)),
+                self.stop_value, self.currentValue))
+            self.numBlocks = int(self.percentComplete/5)
 
 
 class periodicTable( object ):
@@ -188,12 +191,7 @@ class MoogStokesSpectrum( object ):
         if i == 1:
             self.wave.append(wave)
             if self.progressBar != None:
-                print wave
-                try:
-                    self.progressBar.update(value=wave)
-                except:
-                    print 'Uh-oh'
-                raw_input()
+                self.progressBar.update(wave)
         self.flux_I[i-1].append(Stokes[0])
         self.flux_Q[i-1].append(Stokes[1])
         self.flux_U[i-1].append(Stokes[2])
@@ -250,12 +248,10 @@ class MoogStokesSpectrum( object ):
         self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
         self.MoogPy.atmos.linecount = 0
         if self.progressBar != None:
-            self.progressBar.min_value = self.config["wlStart"]
-            self.progressBar.max_value = self.config["wlStop"]
-            self.progressBar.value = self.config["wlStart"]+0.01
             self.progressBar.start()
         self.MoogPy.moogstokessilent()
         self.computeCompositeSpectrum()
+        sys.stdout.write('\n')
         self.wave = self.integrator.new_wl
         self.stokes_I = self.integrator.final_spectrum_I
         self.stokes_V = self.integrator.final_spectrum_V
