@@ -173,7 +173,10 @@ class MoogStokesSpectrum( object ):
             self.wave.append(wave)
             if self.progressBar != None:
                 print wave
-                self.progressBar.update(wave)
+                try:
+                    self.progressBar.update(value=wave)
+                except:
+                    print 'Uh-oh'
                 raw_input()
         self.flux_I[i-1].append(Stokes[0])
         self.flux_Q[i-1].append(Stokes[1])
@@ -233,7 +236,8 @@ class MoogStokesSpectrum( object ):
         if self.progressBar != None:
             self.progressBar.min_value = self.config["wlStart"]
             self.progressBar.max_value = self.config["wlStop"]
-            self.progressBar.value = self.config["wlStart"]
+            self.progressBar.value = self.config["wlStart"]+0.01
+            self.progressBar.start()
         self.MoogPy.moogstokessilent()
         self.computeCompositeSpectrum()
         self.wave = self.integrator.new_wl
