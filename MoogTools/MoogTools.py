@@ -7,7 +7,6 @@ import AstroUtils
 import pyfits
 import time
 import threading
-import progressbar
 
 class Atmosphere( object ):
     def __init__(self, df):
@@ -47,6 +46,23 @@ class Atmosphere( object ):
             self.kapref[i] = self.kaprefmass[i] * self.rho[i]
         self.mt = float(data.readline().split()[0])
         data.close()
+
+class progressbar( object ):
+    def __init__(self, start, stop):
+        self.start = start
+        self.stop = stop
+
+    def start(self)
+        self.currentValue = self.start
+        self.numBlocks = 0
+
+    def update(self, value):
+        self.currentValue = value
+        self.percentComplete = (self.currentValue-self.start)/(self.stop-self.start)*100
+        if self.percentComplete/10 > self.numBlocks:
+            print("\r[{0}] {1}%".format('#'*{self.percentComplete/10},
+                self.percentComplete))
+            self.numBlocks = self.percentComplete/10
 
 
 class periodicTable( object ):
@@ -151,7 +167,7 @@ class MoogStokesSpectrum( object ):
 
         if "progressBar" in kwargs.keys():
             if kwargs["progressBar"] == True:
-                self.progressBar = progressbar.ProgressBar()
+                self.progressBar = progressBar(self.config["wlStart"], self.config["wlStop"])
             else: self.progressBar = None
         else:
             self.progressBar = None
