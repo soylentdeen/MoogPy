@@ -54,11 +54,15 @@ class progressbar( object ):
 
     def start(self)
         self.currentValue = self.start
+        self.numBlocks = 0
 
     def update(self, value):
         self.currentValue = value
         self.percentComplete = (self.currentValue-self.start)/(self.stop-self.start)*100
-        print("\r[{0}] {1}%".format('#'*{self.percentComplete/10}, self.percentComplete))
+        if self.percentComplete/10 > self.numBlocks:
+            print("\r[{0}] {1}%".format('#'*{self.percentComplete/10},
+                self.percentComplete))
+            self.numBlocks = self.percentComplete/10
 
 
 class periodicTable( object ):
