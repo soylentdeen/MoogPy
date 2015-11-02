@@ -229,9 +229,9 @@ class MoogStokesSpectrum( object ):
         self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
         self.MoogPy.atmos.linecount = 0
         if self.progressBar != None:
-            self.progressBar.min_value = self.config["wlStart"])
-            self.progressBar.max_value = self.config["wlStop"])
-            self.progressBar.value = self.config["wlStart"])
+            self.progressBar.min_value = self.config["wlStart"]
+            self.progressBar.max_value = self.config["wlStop"]
+            self.progressBar.value = self.config["wlStart"]
         self.MoogPy.moogstokessilent()
         self.computeCompositeSpectrum()
         self.wave = self.integrator.new_wl
