@@ -7,7 +7,6 @@ import AstroUtils
 import pyfits
 import time
 import threading
-import progressbar
 
 class Atmosphere( object ):
     def __init__(self, df):
@@ -47,6 +46,11 @@ class Atmosphere( object ):
             self.kapref[i] = self.kaprefmass[i] * self.rho[i]
         self.mt = float(data.readline().split()[0])
         data.close()
+
+class progressbar( object ):
+    def __init__(self, start, stop):
+        self.start = start
+        self.stop = stop
 
 
 class periodicTable( object ):
