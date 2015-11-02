@@ -237,7 +237,7 @@ class MoogStokesSpectrum( object ):
         else:
             self.integrator = Diskoball(memory=True, PARENT=self)
 
-    def run(self, save=False):
+    def run(self, save=False, saveRaw=False):
         self.wave = []
         self.flux = []
         self.lineList.setBfield(self.B)
@@ -250,6 +250,49 @@ class MoogStokesSpectrum( object ):
         if self.progressBar != None:
             self.progressBar.start()
         self.MoogPy.moogstokessilent()
+        if saveRaw:
+            filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"])
+            wave = pyfits.Column(name='Wavelength', format='D', array=self.wave)
+            flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.stokes_I)
+            flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.stokes_V)
+            columns = pyfits.ColDefs([wave, flux_I, flux_V])
+            SpectrumHDU = pyfits.BinTableHDU.from_columns(columns)
+            SpectrumHDU.header.set('CREATION_TIME', time.ctime())
+            SpectrumHDU.header.set('CREATION_USER', os.getlogin())
+            SpectrumHDU.header.set('CREATION_MACHINE', os.uname()[1])
+            SpectrumHDU.header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
+            #SpectrumHDU.header.set('MOOGVERSION', self.MoogStokesVersion)
+            SpectrumHDU.header.set('WLSTART', self.config["wlStart"])
+            SpectrumHDU.header.set('WLSTOP', self.config["wlStop"])
+            SpectrumHDU.name = "%.4fA - %.4fA" % (self.config["wlStart"], self.config["wlStop"])
+            if os.path.exists(filename):
+                while os.path.exists(filename+'.lock'):
+                    print "Woah!  File is locked!"
+                    time.sleep(0.1)
+                with open(filename+'.lock', 'w'):
+                    os.utime(filename+'.lock', None)
+                HDUList = pyfits.open(filename, mode='update')
+                for spectrum in HDUList[1:]:
+                    if ((spectrum.header.get('WLSTART') == self.config["wlStart"]) & 
+                        (spectrum.header.get('WLSTOP') == self.config["wlStop"])):
+                        HDUList.pop(HDUList.index_of(spectrum.name))
+                HDUList.append(SpectrumHDU)
+                HDUList.update_extend()
+                HDUList.verify(option='silentfix')
+                HDUList.close()
+                os.remove(filename+'.lock')
+            else:
+                HDUList = pyfits.HDUList()
+                primary = pyfits.PrimaryHDU()
+                primary.header.set('BFIELD', self.config["Bfield"])
+                primary.header.set('TEFF', self.config["Teff"])
+                primary.header.set('LOGG', self.config["logg"])
+                primary.header.set('VSINI', self.config["vsini"])
+                HDUList.append(primary)
+                HDUList.append(SpectrumHDU)
+                HDUList.update_extend()
+                HDUList.verify(option='silentfix')
+                HDUList.writeto(filename)
         self.computeCompositeSpectrum()
         sys.stdout.write('\n')
         self.wave = self.integrator.new_wl
