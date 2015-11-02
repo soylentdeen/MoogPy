@@ -156,9 +156,6 @@ class MoogStokesSpectrum( object ):
         else:
             self.progressBar = None
 
-    def showProgress(self):
-
-
     def fluxtracer(self, logtau, dtau, Stokes, continuum):
         self.logtau.append(logtau)
         self.flux_I.append(Stokes[0])
