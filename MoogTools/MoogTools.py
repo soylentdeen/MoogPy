@@ -6,7 +6,8 @@ import SpectralTools
 import AstroUtils
 import pyfits
 import time
-import fcntl
+import threading
+import progressbar
 
 class Atmosphere( object ):
     def __init__(self, df):
@@ -148,6 +149,16 @@ class MoogStokesSpectrum( object ):
         self.MoogPy.diskoball = self.diskoball
         self.MoogPy.fluxtracer = self.fluxtracer
 
+        if "progressBar" in kwargs.keys():
+            if kwargs["progressBar"] == True:
+                self.progressBar = progressbar.ProgressBar()
+            else: self.progressBar = None
+        else:
+            self.progressBar = None
+
+    def showProgress(self):
+
+
     def fluxtracer(self, logtau, dtau, Stokes, continuum):
         self.logtau.append(logtau)
         self.flux_I.append(Stokes[0])
@@ -163,6 +174,8 @@ class MoogStokesSpectrum( object ):
     def stokesrecorder(self, i, wave, Stokes, continuum):
         if i == 1:
             self.wave.append(wave)
+            if self.progressBar != None:
+                self.progressBar.update(wave)
         self.flux_I[i-1].append(Stokes[0])
         self.flux_Q[i-1].append(Stokes[1])
         self.flux_U[i-1].append(Stokes[2])
@@ -218,6 +231,10 @@ class MoogStokesSpectrum( object ):
         self.parameterFile.writeParFile()
         self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
         self.MoogPy.atmos.linecount = 0
+        if self.progressBar != None:
+            self.progressBar.min_value = self.config["wlStart"])
+            self.progressBar.max_value = self.config["wlStop"])
+            self.progressBar.value = self.config["wlStart"])
         self.MoogPy.moogstokessilent()
         self.computeCompositeSpectrum()
         self.wave = self.integrator.new_wl
