@@ -100,10 +100,10 @@ class HITRAN_Dictionary( object ):
                 13:{1:108.01160,2:108.01180,3:108.02160}}
         self.DissE = {5:11.10, 13:4.412}
 
-class MoogStokesSpectrum( object ):
+class MoogStokes( object ):
     def __init__(self, configurationFile, fileBase="moogstokes", **kwargs):
         """
-        MoogStokesSpectrum:  A python wrapper for MoogStokes
+        MoogStokes:  A python wrapper for MoogStokes
 
         Input:
             configurationFile : The name of a file containing configuration parameters
@@ -159,8 +159,6 @@ class MoogStokesSpectrum( object ):
         else:
             import MoogStokesPy
             self.MoogPy = MoogStokesPy
-        self.MoogStokesVersion = self.MoogPy.charstuff.moogversion.tostring()
-        #self.MoogStokesVersion = os.environ.get('MOOGSTOKESVERSION')
         self.MoogPy.charstuff.moogpath = '%-60s'%os.environ.get('MOOGSTOKESSOURCE')
         self.MoogPy.recorder = self.recorder
         self.MoogPy.stokesrecorder = self.stokesrecorder
@@ -233,11 +231,14 @@ class MoogStokesSpectrum( object ):
 
     def computeCompositeSpectrum(self):
         if self.diskflag== 1:
-            self.integrator = MoogStokes_IV_Spectrum(memory=True, PARENT=self)
+            self.integrator = SpectralTools.MoogStokes_IV_Spectrum(memory=True,
+                    PARENT=self)
+            self.integrator.integrate()
         else:
-            self.integrator = Diskoball(memory=True, PARENT=self)
+            self.integrator = SpectralTools.Diskoball(memory=True, PARENT=self)
+            self.integrator.integrate()
 
-    def run(self, save=False, saveRaw=False):
+    def run(self, diskInt=False, save=False, saveRaw=False):
         self.wave = []
         self.flux = []
         self.lineList.setBfield(self.B)
@@ -252,19 +253,25 @@ class MoogStokesSpectrum( object ):
         self.MoogPy.moogstokessilent()
         if saveRaw:
             filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"])
-            wave = pyfits.Column(name='Wavelength', format='D', array=self.wave)
-            flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.stokes_I)
-            flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.stokes_V)
-            columns = pyfits.ColDefs([wave, flux_I, flux_V])
-            SpectrumHDU = pyfits.BinTableHDU.from_columns(columns)
-            SpectrumHDU.header.set('CREATION_TIME', time.ctime())
-            SpectrumHDU.header.set('CREATION_USER', os.getlogin())
-            SpectrumHDU.header.set('CREATION_MACHINE', os.uname()[1])
-            SpectrumHDU.header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
-            #SpectrumHDU.header.set('MOOGVERSION', self.MoogStokesVersion)
-            SpectrumHDU.header.set('WLSTART', self.config["wlStart"])
-            SpectrumHDU.header.set('WLSTOP', self.config["wlStop"])
-            SpectrumHDU.name = "%.4fA - %.4fA" % (self.config["wlStart"], self.config["wlStop"])
+            HDUs = []
+            for i in range(self.ncells):
+                wave = pyfits.Column(name='Wavelength', format='D', array=self.wave[i]))
+                flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.stokes_I[i])
+                flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.stokes_V[i])
+                columns = pyfits.ColDefs([wave, flux_I, flux_V])
+                SpectrumHDU = pyfits.BinTableHDU.from_columns(columns)
+                SpectrumHDU.header.set('CREATION_TIME', time.ctime())
+                SpectrumHDU.header.set('CREATION_USER', os.getlogin())
+                SpectrumHDU.header.set('CREATION_MACHINE', os.uname()[1])
+                SpectrumHDU.header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
+                SpectrumHDU.header.set('WLSTART', self.config["wlStart"])
+                SpectrumHDU.header.set('WLSTOP', self.config["wlStop"])
+                SpectrumHDU.header.set('CELL', self.cel[i])
+                SpectrumHDU.header.set('PHI_ANGLE', self.phi_angle[i])
+                SpectrumHDU.header.set('MU', self.mus[i])
+                SpectrumHDU.header.set('DISKFLAG', self.diskflag)
+                SpectrumHDU.name = "%.4fA - %.4fA mu=%.2f phi=%.2f" % (self.config["wlStart"], self.config["wlStop"], self.mus[i], self.phi_angle[i])
+                HDUs.append(SpectrumHDU)
             if os.path.exists(filename):
                 while os.path.exists(filename+'.lock'):
                     print "Woah!  File is locked!"
@@ -272,11 +279,12 @@ class MoogStokesSpectrum( object ):
                 with open(filename+'.lock', 'w'):
                     os.utime(filename+'.lock', None)
                 HDUList = pyfits.open(filename, mode='update')
-                for spectrum in HDUList[1:]:
-                    if ((spectrum.header.get('WLSTART') == self.config["wlStart"]) & 
-                        (spectrum.header.get('WLSTOP') == self.config["wlStop"])):
-                        HDUList.pop(HDUList.index_of(spectrum.name))
-                HDUList.append(SpectrumHDU)
+                for new_spectrum in HDUs:
+                    try:
+                        HDUList.pop(HDUList.index_of(new_spectrum.name))
+                    except:
+                        pass
+                    HDUList.append(new_spectrum)
                 HDUList.update_extend()
                 HDUList.verify(option='silentfix')
                 HDUList.close()
@@ -287,61 +295,61 @@ class MoogStokesSpectrum( object ):
                 primary.header.set('BFIELD', self.config["Bfield"])
                 primary.header.set('TEFF', self.config["Teff"])
                 primary.header.set('LOGG', self.config["logg"])
-                primary.header.set('VSINI', self.config["vsini"])
                 HDUList.append(primary)
-                HDUList.append(SpectrumHDU)
+                for new_spectrum in HDUs:
+                    HDUList.append(new_spectrum)
                 HDUList.update_extend()
                 HDUList.verify(option='silentfix')
                 HDUList.writeto(filename)
-        self.computeCompositeSpectrum()
         sys.stdout.write('\n')
-        self.wave = self.integrator.new_wl
-        self.stokes_I = self.integrator.final_spectrum_I
-        self.stokes_V = self.integrator.final_spectrum_V
-        if save:
-            filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_V%.1f.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"], self.config["vsini"])
-            wave = pyfits.Column(name='Wavelength', format='D', array=self.wave)
-            flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.stokes_I)
-            flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.stokes_V)
-            columns = pyfits.ColDefs([wave, flux_I, flux_V])
-            SpectrumHDU = pyfits.BinTableHDU.from_columns(columns)
-            SpectrumHDU.header.set('CREATION_TIME', time.ctime())
-            SpectrumHDU.header.set('CREATION_USER', os.getlogin())
-            SpectrumHDU.header.set('CREATION_MACHINE', os.uname()[1])
-            SpectrumHDU.header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
-            #SpectrumHDU.header.set('MOOGVERSION', self.MoogStokesVersion)
-            SpectrumHDU.header.set('WLSTART', self.config["wlStart"])
-            SpectrumHDU.header.set('WLSTOP', self.config["wlStop"])
-            SpectrumHDU.name = "%.4fA - %.4fA" % (self.config["wlStart"], self.config["wlStop"])
-            if os.path.exists(filename):
-                while os.path.exists(filename+'.lock'):
-                    print "Woah!  File is locked!"
-                    time.sleep(0.1)
-                with open(filename+'.lock', 'w'):
-                    os.utime(filename+'.lock', None)
-                HDUList = pyfits.open(filename, mode='update')
-                for spectrum in HDUList[1:]:
-                    if ((spectrum.header.get('WLSTART') == self.config["wlStart"]) & 
-                        (spectrum.header.get('WLSTOP') == self.config["wlStop"])):
-                        HDUList.pop(HDUList.index_of(spectrum.name))
-                HDUList.append(SpectrumHDU)
-                HDUList.update_extend()
-                HDUList.verify(option='silentfix')
-                HDUList.close()
-                os.remove(filename+'.lock')
-            else:
-                HDUList = pyfits.HDUList()
-                primary = pyfits.PrimaryHDU()
-                primary.header.set('BFIELD', self.config["Bfield"])
-                primary.header.set('TEFF', self.config["Teff"])
-                primary.header.set('LOGG', self.config["logg"])
-                primary.header.set('VSINI', self.config["vsini"])
-                HDUList.append(primary)
-                HDUList.append(SpectrumHDU)
-                HDUList.update_extend()
-                HDUList.verify(option='silentfix')
-                HDUList.writeto(filename)
-        return self.wave, self.flux
+        if diskInt:
+            self.computeCompositeSpectrum()
+            self.wave = self.integrator.new_wl
+            self.stokes_I = self.integrator.final_spectrum_I
+            self.stokes_V = self.integrator.final_spectrum_V
+            if save:
+                filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_V%.1f.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"], self.config["vsini"])
+                wave = pyfits.Column(name='Wavelength', format='D', array=self.wave)
+                flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.stokes_I)
+                flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.stokes_V)
+                columns = pyfits.ColDefs([wave, flux_I, flux_V])
+                SpectrumHDU = pyfits.BinTableHDU.from_columns(columns)
+                SpectrumHDU.header.set('CREATION_TIME', time.ctime())
+                SpectrumHDU.header.set('CREATION_USER', os.getlogin())
+                SpectrumHDU.header.set('CREATION_MACHINE', os.uname()[1])
+                SpectrumHDU.header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
+                SpectrumHDU.header.set('WLSTART', self.config["wlStart"])
+                SpectrumHDU.header.set('WLSTOP', self.config["wlStop"])
+                SpectrumHDU.name = "%.4fA - %.4fA" % (self.config["wlStart"], self.config["wlStop"])
+                if os.path.exists(filename):
+                    while os.path.exists(filename+'.lock'):
+                        print "Woah!  File is locked!"
+                        time.sleep(0.1)
+                    with open(filename+'.lock', 'w'):
+                        os.utime(filename+'.lock', None)
+                    HDUList = pyfits.open(filename, mode='update')
+                    for spectrum in HDUList[1:]:
+                        if ((spectrum.header.get('WLSTART') == self.config["wlStart"]) & 
+                            (spectrum.header.get('WLSTOP') == self.config["wlStop"])):
+                            HDUList.pop(HDUList.index_of(spectrum.name))
+                    HDUList.append(SpectrumHDU)
+                    HDUList.update_extend()
+                    HDUList.verify(option='silentfix')
+                    HDUList.close()
+                    os.remove(filename+'.lock')
+                else:
+                    HDUList = pyfits.HDUList()
+                    primary = pyfits.PrimaryHDU()
+                    primary.header.set('BFIELD', self.config["Bfield"])
+                    primary.header.set('TEFF', self.config["Teff"])
+                    primary.header.set('LOGG', self.config["logg"])
+                    primary.header.set('VSINI', self.config["vsini"])
+                    HDUList.append(primary)
+                    HDUList.append(SpectrumHDU)
+                    HDUList.update_extend()
+                    HDUList.verify(option='silentfix')
+                    HDUList.writeto(filename)
+            return self.wave, self.flux
 
     def trace(self, save=False):
         self.lineList.setBfield(self.B)
@@ -360,75 +368,6 @@ class MoogStokesSpectrum( object ):
             out.header.set('LOGG', self.config["logg"])
             out.writeto(self.config["outdir"]+self.config["outbase"]+'_'+str(self.config["wlProbe"])+'.fits', clobber=True)
         return self.logtau, self.flux_I, self.flux_Q, self.flux_U, self.flux_V, self.continuum
-
-class Moog( object ):
-    def __init__(self, configurationFile):
-        self.config = AstroUtils.parse_config(configurationFile)
-        self.lineList = LineList(self, self.config)
-        self.parameterFile = ParameterFile(self, self.config)
-        self.solarSpectrum = Spectrum(self.config, 'solar')
-        self.MoogPy = MoogPy
-        self.MoogPy.recorder = self.recorder
-        self.wave = []
-        self.flux = []
-        self.continuum = 1.0
-        self.wlShift = 0.0
-        self.resolution = 1.0
-        self.nativeResolution = 40000.0
-
-    def setSpectrumParameters(self, parameters):
-        self.continuum = parameters[-1]
-        self.wlShift = parameters[-2]
-        self.resolution = parameters[-3]
-        self.lineList.setLogGfs(parameters[:self.lineList.numLines])
-        self.lineList.setVdWs(
-                parameters[self.lineList.numLines:2*self.lineList.numLines])
-        self.lineList.writeLineLists()
-
-    def recorder(self, x, y):
-        self.wave.append(x)
-        self.flux.append(1.0-y)
-    
-    def compute(self):
-        self.wave = []
-        self.flux = []
-        self.MoogPy.moogsilent()
-        newWave, newFlux = SpectralTools.resample(numpy.array(self.wave), 
-                numpy.array(self.flux), self.nativeResolution*self.resolution)
-        return SpectralTools.interpolate_spectrum(newWave + self.wlShift,
-                self.solarSpectrum.wave, self.continuum * newFlux, pad=0.0)
-
-    def getSpectrumParameters(self):
-        gfs = []
-        VdWs = []
-        for i in range(self.lineList.numLines):
-            gfs.append(self.lineList.getGf(i, log=True))
-            VdWs.append(self.lineList.getVdW(i, log=True))
-        #retval = numpy.append(numpy.array(gfs), numpy.array(VdWs))
-        #retval = numpy.append(retval, self.resolution)
-        #retval = numpy.append(retval, self.wlShift)
-        #retval = numpy.append(retval, self.continuum)
-        retval = gfs + VdWs + [self.resolution, self.wlShift, self.continuum]
-        return retval
-
-    def getInitialParameterSpreads(self):
-        gfs = []
-        VdWs = []
-        for i in range(self.lineList.numLines):
-            gfs.append(1.0)
-            VdWs.append(0.5)
-        retval = gfs + VdWs + [0.01, 0.01, 0.002]
-        return retval
-
-    def getObserved(self):
-        return (self.solarSpectrum.wave, self.solarSpectrum.flux, numpy.ones(len(self.solarSpectrum.wave)*0.002))
-
-
-    def run(self):
-        self.wave = []
-        self.flux = []
-        self.MoogPy.moogsilent()
-        return numpy.array(self.wave), numpy.array(self.flux)
 
 class Spectrum( object ):
     def __init__(self, config, spectrumName):
@@ -1999,11 +1938,6 @@ class Diskoball( object ):
         SpectralTools.write_2col_spectrum(outfile+'.V', self.wave, self.flux_V)
         SpectralTools.write_2col_spectrum(outfile+'.C', self.wave, self.flux_C)
 
-"""
-class MoogStokes_IV_Spectrum( object ):
-    def __init__(self, name, **kwargs):
-        if name == 'MEMORY':
-#"""
 class MoogStokes_IV_Spectrum( object ):
     #"""
     def __init__(self, name='', memory=False, **kwargs):
