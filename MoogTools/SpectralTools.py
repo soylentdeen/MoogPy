@@ -274,12 +274,127 @@ def read_3col_spectrum(filename):
     
     return x, y, z
 
+class spectrumUnit( object ):
+    def __init__(self, wl=None, I=None, Q=None, U=None, V=None):
+        self.wl = wl
+        self.flux_I = I
+        self.flux_Q = Q
+        self.flux_U = U
+        self.flux_V = V
+        
+        
+    def bin(self, newWl):
+        """
+            This routine simulates the discrete nature of detector pixels.
+        """
+    
+        if self.flux_I != None:
+            newSpec_I = numpy.zeros(len(newWl))
+        if self.flux_Q != None:
+            newSpec_Q = numpy.zeros(len(newWl))
+        if self.flux_U != None:
+            newSpec_U = numpy.zeros(len(newWl))
+        if self.flux_V != None:
+            newSpec_V = numpy.zeros(len(newWl))
+        for i in range(len(newWl)-1):
+            inBin = scipy.where( (self.wl > newWl[i]) & (
+                self.wl <= newWl[i+1]))[0]
+            if (len(inBin) > 1):
+                denom = self.wl[inBin][-1] - self.wl[inBin][0]
+                if self.flux_I != None:
+                    num=scipy.integrate.simps(self.flux_I[inBin], 
+                            x=self.wl[inBin])
+                    newSpec_I[i] = num/denom
+                if self.flux_Q != None:
+                    num=scipy.integrate.simps(self.flux_Q[inBin], 
+                            x=self.wl[inBin])
+                    newSpec_Q[i] = num/denom
+                if self.flux_U != None:
+                    num=scipy.integrate.simps(self.flux_U[inBin], 
+                            x=self.wl[inBin])
+                    newSpec_U[i] = num/denom
+                if self.flux_V != None:
+                    num=scipy.integrate.simps(self.flux_V[inBin], 
+                            x=self.wl[inBin])
+                    newSpec_V[i] = num/denom
+            elif (len(inBin) == 1):
+                if self.flux_I != None:
+                    newSpec_I[i] = 0.0
+                if self.flux_Q != None:
+                    newSpec_Q[i] = 0.0
+                if self.flux_U != None:
+                    newSpec_U[i] = 0.0
+                if self.flux_V != None:
+                    newSpec_V[i] = 0.0
+            else:
+                if self.flux_I != None:
+                    newSpec_I[i] = 0.0
+                if self.flux_Q != None:
+                    newSpec_Q[i] = 0.0
+                if self.flux_U != None:
+                    newSpec_U[i] = 0.0
+                if self.flux_V != None:
+                    newSpec_V[i] = 0.0
+
+        inBin = scipy.where(self.wl > newWl[-1])[0]
+        if len(inBin) > 1:
+            denom = self.wl[inBin][-1] - self.wl[inBin][0]
+            if self.flux_I != None:
+                num = scipy.integrate.simps(self.flux_I[inBin], 
+                        x=self.wl[inBin])
+                newSpec_I[-1] = num/denom
+            if self.flux_Q != None:
+                num = scipy.integrate.simps(self.flux_Q[inBin], 
+                        x=self.wl[inBin])
+                newSpec_Q[-1] = num/denom
+            if self.flux_U != None:
+                num = scipy.integrate.simps(self.flux_U[inBin], 
+                        x=self.wl[inBin])
+                newSpec_U[-1] = num/denom
+            if self.flux_V != None:
+                num = scipy.integrate.simps(self.flux_V[inBin], 
+                        x=self.wl[inBin])
+                newSpec_V[-1] = num/denom
+        else:
+            if len(inBin) == 1:
+                if self.flux_I != None:
+                    newSpec_I[-1] = self.flux_I[inBin]
+                if self.flux_Q != None:
+                    newSpec_Q[-1] = self.flux_Q[inBin]
+                if self.flux_U != None:
+                    newSpec_U[-1] = self.flux_U[inBin]
+                if self.flux_V != None:
+                    newSpec_V[-1] = self.flux_V[inBin]
+            else:
+                if self.flux_I != None:
+                    newSpec_I[-1] = self.flux_I[-1]
+                if self.flux_Q != None:
+                    newSpec_Q[-1] = self.flux_Q[-1]
+                if self.flux_U != None:
+                    newSpec_U[-1] = self.flux_U[-1]
+                if self.flux_V != None:
+                    newSpec_V[-1] = self.flux_V[-1]
+
+        self.wl = newWl
+        if self.flux_I != None:
+            self.flux_I = newSpec_I
+        if self.flux_Q != None:
+            self.flux_Q = newSpec_Q
+        if self.flux_U != None:
+            self.flux_U = newSpec_U
+        if self.flux_V != None:
+            self.flux_V = newSpec_V
+
+    def __sub__(self, other):
+        return None
+
 class Spectrum( object ):
     def __init__(self, name):
-        self.name = name
-        self.wl = None
-        self.flux_I = None
-        self.flux_V = None
+        self.name = None
+        self.native = spectrumUnit()
+        self.processed = spectrumUnit()
+        self.wlStart = None
+        self.wlStop = None
 
     def resample(self, R, nyquist=False):
         """
@@ -299,57 +414,67 @@ class Spectrum( object ):
             highres.resample(2000)
         """
         subsample = 16.0
-    
-        xstart = x[0]
-        xstop = x[-1]
 
-        newx = [xstart]
-        while newx[-1] < xstop:
-            stepsize = newx[-1]/(R*subsample)
-            newx.append(newx[-1]+stepsize)
+        newWl = [self.wlStart]
+        while newWl[-1] < self.wlStop:
+            stepsize = newWl[-1]/(R*subsample)
+            newWl.append(newWl[-1]+stepsize)
 
-        #xdouble = [xstart]
-        #while xdouble[-1] < xstop:
-
-        f = scipy.interpolate.interpolate.interp1d(x, y, bounds_error=False)
-        newy = f(newx)
-        const = numpy.ones(len(newx))
+        if self.native.flux_I != None:
+            I = scipy.interpolate.interpolate.interp1d(self.native.wl,
+                    self.native.flux_I, bounds_error=False)
+            newI = I(newWl)
+        if self.native.flux_V != None:
+            V = scipy.interpolate.interpolate.interp1d(self.native.wl,
+                    self.native.flux_V bounds_error=False)
+            newV = V(newWl)
+        if self.native.flux_Q != None:
+            Q = scipy.interpolate.interpolate.interp1d(self.native.wl,
+                    self.native.flux_Q bounds_error=False)
+            newQ = Q(newWl)
+        if self.native.flux_U != None:
+            U = scipy.interpolate.interpolate.interp1d(self.native.wl,
+                    self.native.flux_U bounds_error=False)
+            newU = U(newWl)
+        const = numpy.ones(len(newWl))
 
         xk = numpy.array(range(int(4.0*subsample)))
         yk = numpy.exp(-(xk-(2.0*subsample))**2.0/(subsample**2.0/(4.0*numpy.log(2.0))))
     
-        result = scipy.signal.convolve(newy, yk, mode ='valid')
+        newWl = numpy.array(newWl[int(len(xk)/2.0):-int(len(xk)/2.0)])
+
         normal = scipy.signal.convolve(const, yk, mode = 'valid')
+        result_I = scipy.signal.convolve(newI, yk, mode ='valid')
+        goodPoints = numpy.isfinite(result_I)
+        flux_I = numpy.array(result_I[goodPoints]/normal[goodPoints])
+        if self.native_flux_V != None:
+            result_V = scipy.signal.convolve(newV, yk, mode ='valid')
+            flux_V = numpy.array(result_V[goodPoints]/normal[goodPoints])
+        else:
+            flux_V = None
+        if self.native_flux_Q != None:
+            result_Q = scipy.signal.convolve(newQ, yk, mode ='valid')
+            flux_Q = numpy.array(result_Q[goodPoints]/normal[goodPoints])
+        else:
+            flux_Q = None
+        if self.native_flux_U != None:
+            result_U = scipy.signal.convolve(newU, yk, mode ='valid')
+            flux_U = numpy.array(result_U[goodPoints]/normal[goodPoints])
+        else:
+            flux_U = None
 
-        bm = numpy.isfinite(result)
-        xvals = numpy.array(newx[int(len(xk)/2.0):-int(len(xk)/2.0)])
-        yvals = numpy.array(result[bm]/normal[bm])
+        self.processed = SpectrumUnit(newWl, flux_I, flux_Q, flux_U, flux_V)
+
         if nyquist:
-            nyquistx = []
-            delta_x = min(xvals)/(2.0*R)
-            nyquistx.append(min(xvals)+delta_x)
-            while nyquistx[-1] < max(xvals)-delta_x:
-                delta_x = nyquistx[-1]/(2.0*R)
-                nyquistx.append(nyquistx[-1]+delta_x)
-            nyquistx = numpy.array(nyquistx)
-            nyquisty = binSpectrum(yvals, xvals, nyquistx)
-            retval = (nyquistx, nyquisty)
-        else:
-            retval = (xvals, yvals)
-
-        if halt:
-            print len(xvals), len(yvals), len(result)
-            raw_input()
-        return retval
+            nyquistWl = []
+            deltaWl = min(newWl)/(2.0*R)
+            nyquistWl.append(min(newWl) + deltaWl)
+            while nyquistWl[-1] < max(newWl) - deltaWl:
+                deltaWl = nyquistWl[-1]/(2.0*R)
+                nyquistWl.append(nyquistWl[-1] + deltaWl)
+            newWl = numpy.array(nyquistWl)
+            self.processed.binSpectrum(newWl=newWl)
     
-    def bin(self, newWl=None, other=None):
-        if other != None:
-            self.newWl = other.wl
-        else:
-            self.newWl = newWl
-
-    def __sub__(self, other):
-        return None
 
 
 class MoogStokesSpectrum( Spectrum ):
