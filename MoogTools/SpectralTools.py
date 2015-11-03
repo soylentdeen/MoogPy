@@ -274,6 +274,136 @@ def read_3col_spectrum(filename):
     
     return x, y, z
 
+class Spectrum( object ):
+    def __init__(self, name):
+        self.name = name
+        self.wl = None
+        self.flux_I = None
+        self.flux_V = None
+
+    def resample(self, R, nyquist=False):
+        """
+        This routine convolves a given spectrum to a resolution R
+        :INPUTS:
+            R: Desired resolving power
+            nyquist (optional): returns a nyquist-sampled spectrum
+                   (default: False)
+    
+        :RETURNS:
+            new_x: new wavelength array
+            new_y: new flux array
+
+        :EXAMPLE:
+         ::
+            highres = SpectralTools.Spectrum('highres.dat')
+            highres.resample(2000)
+        """
+        subsample = 16.0
+    
+        xstart = x[0]
+        xstop = x[-1]
+
+        newx = [xstart]
+        while newx[-1] < xstop:
+            stepsize = newx[-1]/(R*subsample)
+            newx.append(newx[-1]+stepsize)
+
+        #xdouble = [xstart]
+        #while xdouble[-1] < xstop:
+
+        f = scipy.interpolate.interpolate.interp1d(x, y, bounds_error=False)
+        newy = f(newx)
+        const = numpy.ones(len(newx))
+
+        xk = numpy.array(range(int(4.0*subsample)))
+        yk = numpy.exp(-(xk-(2.0*subsample))**2.0/(subsample**2.0/(4.0*numpy.log(2.0))))
+    
+        result = scipy.signal.convolve(newy, yk, mode ='valid')
+        normal = scipy.signal.convolve(const, yk, mode = 'valid')
+
+        bm = numpy.isfinite(result)
+        xvals = numpy.array(newx[int(len(xk)/2.0):-int(len(xk)/2.0)])
+        yvals = numpy.array(result[bm]/normal[bm])
+        if nyquist:
+            nyquistx = []
+            delta_x = min(xvals)/(2.0*R)
+            nyquistx.append(min(xvals)+delta_x)
+            while nyquistx[-1] < max(xvals)-delta_x:
+                delta_x = nyquistx[-1]/(2.0*R)
+                nyquistx.append(nyquistx[-1]+delta_x)
+            nyquistx = numpy.array(nyquistx)
+            nyquisty = binSpectrum(yvals, xvals, nyquistx)
+            retval = (nyquistx, nyquisty)
+        else:
+            retval = (xvals, yvals)
+
+        if halt:
+            print len(xvals), len(yvals), len(result)
+            raw_input()
+        return retval
+    
+    def bin(self, newWl=None, other=None):
+        if other != None:
+            self.newWl = other.wl
+        else:
+            self.newWl = newWl
+
+    def __sub__(self, other):
+        return None
+
+
+class MoogStokesSpectrum( Spectrum ):
+    def __init__(self, name='', memory=False, **kwargs):
+        self.memory = memory
+        if self.memory:
+            self.parent = kwargs["PARENT"]
+            self.deltav = self.parent.deltav
+            self.vsini = self.parent.vsini
+        else:
+            self.deltav = kwargs["DELTAV"]
+            self.vsini = kwargs["VSINI"]
+
+            self.name = name
+            self.info = pyfits.info(self.name, output='')
+            self.nheaders = len(self.info)-1
+            self.primaryHeader = pyfits.getheader(f, ext=0)
+            self.headers = []
+            self.wavelengthRanges = []
+            for i in range(self.nheaders):
+                self.headers.append(pyfits.getheader(self.name, ext=i+1))
+                self.wavelengthRanges.append([self.headers[-1].get('WLSTART'),
+                    self.headers[-1].get('WLSTOP')])
+
+    def integrate(self, **kwargs):
+        self.loadAngles()
+        self.loadSpectra(kwargs)
+        self.interpolateSpectra()
+        self.diskInt()
+
+    def loadAngles(self):
+        if self.memory:
+            self.phi = self.parent.phi_angle[:self.parent.ncells]
+            self.mu = self.parent.mus[:self.parent.ncells]
+        else:
+            self.phi = []
+            self.mu = []
+            for hdr in self.headers:
+                self.phi.append(hdr.get('PHI_ANGLE'))
+                self.mu.append(hdr.get('MU'))
+
+    def loadSpectra(self, **kwargs):
+        if self.memory:
+            self.I = numpy.array(self.parent.flux_I)/numpy.array(self.parent.continuum)
+            self.V = numpy.array(self.parent.flux_V)/numpy.array(self.parent.continuum)
+            self.continuum = numpy.array(self.parent.continuum)
+            self.wl = numpy.array(self.parent.wave)
+        else:
+            if "wlRange" in kwargs.keys():
+                self.wlStart = kwargs["wlRange"][0]
+                self.wlStop = kwargs["wlRange"][1]
+
+
+
 def winnow_MoogStokes_Spectra(directory, wlStart, wlStop, trackedParams=None):
     files = glob.glob(directory+'*.fits')
     header_keys = trackedParams.keys()
