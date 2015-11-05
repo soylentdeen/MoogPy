@@ -726,7 +726,7 @@ class BeachBall( Integrator ):
 
 
 
-class Diskoball( Integrator ):
+#class Diskoball( Integrator ):
 
 
 class Phrase( object ):
@@ -775,15 +775,15 @@ class Spectrum( object ):
             newI = I(newWl)
         if self.native.flux_V != None:
             V = scipy.interpolate.interpolate.interp1d(self.native.wl,
-                    self.native.flux_V bounds_error=False)
+                    self.native.flux_V, bounds_error=False)
             newV = V(newWl)
         if self.native.flux_Q != None:
             Q = scipy.interpolate.interpolate.interp1d(self.native.wl,
-                    self.native.flux_Q bounds_error=False)
+                    self.native.flux_Q, bounds_error=False)
             newQ = Q(newWl)
         if self.native.flux_U != None:
             U = scipy.interpolate.interpolate.interp1d(self.native.wl,
-                    self.native.flux_U bounds_error=False)
+                    self.native.flux_U, bounds_error=False)
             newU = U(newWl)
         const = numpy.ones(len(newWl))
 
@@ -877,7 +877,7 @@ class MoogStokesSpectrum( Spectrum ):
                 self.wlStart = kwargs["wlRange"][0]
                 self.wlStop = kwargs["wlRange"][1]
 
-    def saveRaw(self):
+    #def saveRaw(self):
 
 
 
