@@ -2329,7 +2329,5 @@ class MoogStokes_IV_Spectrum( object ):
     # Add contribution from current annulus to the running total
             flux += w*yfine
             continuum += w*cfine
-            if i == 7:
-                return w*yfine/cfine
 
         return flux/continuum

@@ -491,6 +491,7 @@ class BeachBall( Integrator ):
         diskInt_I, diskInt_V = self.rtint(vsini_in=vsini)
         
         
+        
     def rtint(self, vsini_in=0.0, vrt_in=0, **kwargs):
         """
     This is a python translation of Jeff Valenti's disk integration routine
@@ -719,8 +720,6 @@ class BeachBall( Integrator ):
             fluxI += w*Ifine
             fluxV += w*Vfine
             continuum += w*cfine
-            if i == 7:
-                return w*Ifine/cfine, w*Vfine/cfine
 
         return fluxI/continuum, fluxV/continuum
 
