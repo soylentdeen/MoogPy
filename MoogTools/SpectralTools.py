@@ -639,9 +639,6 @@ class BeachBall( Integrator ):
         self.convolved.append(integrated.resample(R))
         return 
         
-        
-        
-        
     def rtint(self, vsini_in=0.0, vrt_in=0, **kwargs):
         """
     This is a python translation of Jeff Valenti's disk integration routine
@@ -878,118 +875,6 @@ class BeachBall( Integrator ):
 
 
 #class Diskoball( Integrator ):
-
-
-class MoogStokesPhrase( object ):
-    def __init__(self, rawData=None, diskInt="BEACHBALL"):
-        self.rawData = rawData       # This should be a list of Spectrum objects
-        self.wlStart = rawData[0].header.get("WLSTART")
-        self.wlStop = rawData[0].header.get("WLSTOP")
-        if diskInt == "BEACHBALL":
-            self.processedData = BeachBall(parent=self)
-        elif diskInt == "DISKOBALL":
-            self.processedData = DiskoBall(parent=self)
-
-    def saveRaw(self, filename=None, primaryHeaderKWs=None):
-        HDUs = []
-        for spectrum in self.rawData:
-            SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
-                    header = spectrum.header)
-            SpectrumHDU.name = "%.4fA - %.4fA mu=%.2f phi=%.2f" % (spectrum.header.get("WLSTART"), spectrum.header.get("WLSTOP"), spectrum.header.get('MU'), spectrum.header.get('PHI_ANGLE'))
-            HDUs.append(SpectrumHDU)
-        if filename == None:
-            return HDUs
-        if os.path.exists(filename):
-            while os.path.exists(filename+'.lock'):
-                print("Gnarly Dude!  File is locked!  I'll hang out here and wait")
-                time.sleep(0.1)
-            with open(filename+'.lock', 'w'):
-                os.utime(filename+'.lock', None)
-            HDUList = pyfits.open(filename, mode='update')
-            for new_spectrum in HDUs:
-                try:
-                    HDUList.pop(HDUList.index_of(new_spectrum.name))
-                except:
-                    pass
-                HDUList.append(new_spectrum)
-            HDUList.update_extend()
-            HDUList.verify(option='silentfix')
-            HDUList.close()
-            os.remove(filename+'.lock')
-        else:
-            HDUList = pyfits.HDUList()
-            primary = pyfits.PrimaryHDU()
-            if primaryHeaderKWs != None:
-                for key in primaryHeaderKWs.keys():
-                    primary.header.set(key, primaryHeaderKWs[key])
-            HDUList.append(primary)
-            for new_spectrum in HDUs:
-                HDUList.append(new_spectrum)
-            HDUList.update_extend()
-            HDUList.verify(option='silentfix')
-            HDUList.writeto(filename)
-
-    def save(self, vsini=None, R=None, filename=None, primaryHeaderKWs=None):
-        HDUs = []
-        if vsini == None:
-            vsini = range(len(self.processedData.integrated))
-        for i in vsini:
-            spectrum = self.processedData.integrated[i]:
-            SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
-                    header = spectrum.header)
-            SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.2f km/s" % (spectrum.header.get("WLSTART"), spectrum.header.get("WLSTOP"), spectrum.header.get('VSINI'))
-            HDUs.append(SpectrumHDU)
-
-        if R == None:
-            R = range(len(self.processedData.convolved))
-        for i in R:
-            spectrum = self.processedData.convolved[i]:
-            SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
-                    header = spectrum.header)
-            SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.2f km/s, R=%.1f" % (spectrum.header.get("WLSTART"), spectrum.header.get("WLSTOP"), spectrum.header.get('VSINI'), spectrum.header.get('RESOLVING_POWER'))
-            HDUs.append(SpectrumHDU)
-
-        if filename == None:
-            return HDUs
-        if os.path.exists(filename):
-            while os.path.exists(filename+'.lock'):
-                print("Gnarly Dude!  File is locked!  I'll hang out here and wait")
-                time.sleep(0.1)
-            with open(filename+'.lock', 'w'):
-                os.utime(filename+'.lock', None)
-            HDUList = pyfits.open(filename, mode='update')
-            for new_spectrum in HDUs:
-                try:
-                    HDUList.pop(HDUList.index_of(new_spectrum.name))
-                except:
-                    pass
-                HDUList.append(new_spectrum)
-            HDUList.update_extend()
-            HDUList.verify(option='silentfix')
-            HDUList.close()
-            os.remove(filename+'.lock')
-        else:
-            HDUList = pyfits.HDUList()
-            primary = pyfits.PrimaryHDU()
-            if primaryHeaderKWs != None:
-                for key in primaryHeaderKWs.keys():
-                    primary.header.set(key, primaryHeaderKWs[key])
-            HDUList.append(primary)
-            for new_spectrum in HDUs:
-                HDUList.append(new_spectrum)
-            HDUList.update_extend()
-            HDUList.verify(option='silentfix')
-            HDUList.writeto(filename)
-
-
-
-class MoogStokesMelody( object ):
-    def __init__(self, phrases=[]):
-        self.phrases = phrases
-        self.wlStart
-
-    def addPhrase(self, phrase):
-        self.phrases.append(phrase)
 
 
 

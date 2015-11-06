@@ -7,9 +7,7 @@ import SpectralTools
 import AstroUtils
 import pyfits
 import time
-import threading
-import string
-import random
+import Moog960
 
 class Atmosphere( object ):
     def __init__(self, df):
@@ -58,6 +56,7 @@ class progressBar( object ):
     def start(self):
         self.currentValue = self.start_value
         self.numBlocks = 0
+        print("Starting Synthesis!")
 
     def update(self, value):
         self.currentValue = value
@@ -67,6 +66,7 @@ class progressBar( object ):
             sys.stdout.write("\r%.2f [%s%s] %.2f - %.2f" % (self.start_value,
                 '#'*int(self.percentComplete/5),' '*(20-int(self.percentComplete/5)),
                 self.stop_value, self.currentValue))
+            sys.stdout.flush()
             self.numBlocks = int(self.percentComplete/5)
 
 
@@ -118,7 +118,7 @@ class MoogStokes( object ):
             T - Temperature in Kelvin
             logg - Surface gravity
             B - Magnetic field strength in kG
-            vsini - rotational velocity in km/sec
+            vsini - rotational velocity in km/sec   - Can I get rid of this?
 
             fileName - name of the MoogStokes parameter file
             fileBase - base of the filename
@@ -131,7 +131,7 @@ class MoogStokes( object ):
         self.T = self.config["Teff"]
         self.logg = self.config["logg"]
         self.B = self.config["Bfield"]
-        self.vsini = self.config["vsini"]
+        #self.vsini = self.config["vsini"]
         
         self.fileName = fileBase+'.par'
         self.fileBase = fileBase
@@ -270,13 +270,12 @@ class MoogStokes( object ):
             self.progressBar.start()
         self.MoogPy.moogstokessilent()
         self.finishSpectra()
-        self.Phrase = SpectralTools.MoogStokesPhrase(rawData=self.Spectra,
+        self.Phrase = Moog960.Phrase(rawData=self.Spectra,
                 diskInt="BEACHBALL")
         if saveRaw:
             filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"])
             PHKWs = {"BFIELD":self.config["Bfield"], "TEFF":self.config["Teff"], "LOGG":self.config["logg"]}
-            self.Phrase.saveRaw(filename, primaryHeaderKWs=PHKWs)
-        sys.stdout.write('\n')
+            self.Phrase.saveRaw(filename=filename, primaryHeaderKWs=PHKWs)
         if diskInt:
             self.computeCompositeSpectrum()
             self.wave = self.integrator.new_wl

@@ -4,11 +4,75 @@ import glob
 import MoogTools
 import SpectralTools
 import numpy
+import os
 
-class Track( object ):
+class Phrase( object ):
+    def __init__(self, rawData=None, diskInt = 'BEACHBALL'):
+        self.rawData = rawData
+        if diskInt == 'BEACHBALL':
+            self.processedData = SpectralTools.BeachBall(parent=self)
+        elif diskInt == 'DISKOBALL':
+            self.processedData = SpectralTools.DiskoBall(parent=self)
+
+    def saveRaw(self, filename = None, primaryHeaderKWs={}):
+        HDUs = []
+        for spectrum in self.rawData:
+            hdr = spectrum.header.copy()
+            SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
+                    header=hdr)
+            SpectrumHDU.name = "%.4fA - %.4fA PHI=%.3f MU=%.3f" % (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get("PHI_ANGLE"), hdr.get("MU"))
+
+            HDUs.append(SpectrumHDU)
+
+        if filename == None:
+            return HDUs
+
+        if os.path.exists(filename):    #file exists!  get ready to append!
+            while os.path.exists(filename+'.lock'):
+                print("Gnarly dude!  The file is locked!  I'll just hang out here for a while and wait")
+                time.sleep(0.1)
+            with open(filename+'.lock', 'w'):
+                os.utime(filename+'.lock', None)
+            HDUList = pyfits.open(filename, mode='update')
+            for spectrum in HDUs:
+                try:
+                    HDUList.pop(spectrum.name)
+                except:
+                    pass
+                HDUList.append(spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.close()
+            os.remove(filename+'.lock')
+        else:
+            HDUList = pyfits.HDUList()
+            primaryHeader = pyfits.header(cards=primaryHeaderKWs)
+            primary = pyfits.PrimaryHDU(header=primaryHeader)
+            HDUList.append(primary)
+            for spectrum in HDUs:
+                HDUList.append(spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.writeto(filename)
+
+
+
+class Melody( object ):
+    def __init__(self, phrases = [], filename=None):
+        self.phrases = []
+
+    def addPhrase(self, phrases):
+        for phrase in phrases:
+            self.phrases.append(phrase)
+
+class Score( object ):
     """
     
     """
+    def __init__(self, melodies = [], directory=None):
+        self.melodies = melodies
+        self.directory = directory
+
     def __init__(self, datafile, ID, resolvingPower):
         self.datafile = datafile
         self.ID = ID
