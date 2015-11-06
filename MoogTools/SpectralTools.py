@@ -6,6 +6,9 @@ import numpy
 import pyfits
 import string
 import glob
+import os
+import string
+import random
 
 def fitSawtooth(y, window_len=50):
     """
@@ -276,7 +279,7 @@ def read_3col_spectrum(filename):
 
 class Spectrum( object ):
     def __init__(self, wl=None, I=None, Q=None, U=None, V=None,
-            continuum=None, header=None):
+            continuum=None, header=pyfits.Header(), spectrum_type=None):
         self.wl = wl
         self.flux_I = I
         self.flux_Q = Q
@@ -284,7 +287,126 @@ class Spectrum( object ):
         self.flux_V = V
         self.continuum = continuum
         self.header = header
+        if 'SPECTRUM_ID' in header.iterkeys():
+            self.header.add_history(self.header.get('SPECTRUM_TYPE')+
+                    ' - '+self.header.get('SPECTRUM_ID'))
+        self.header.set('SPECTRUM_ID', ''.join(random.choice(string.ascii_letters)
+            for _ in range(10)))
+        self.header.set('SPECTRUM_TYPE', spectrum_type)
+
         
+    def preserve(self, prepareColumns=True, I=True, Q=False, U=False, V=True, continuum=True):
+        self.wl = numpy.array(self.wl)
+        self.flux_I = numpy.array(self.flux_I)
+        self.flux_Q = numpy.array(self.flux_Q)
+        self.flux_U = numpy.array(self.flux_U)
+        self.flux_V = numpy.array(self.flux_V)
+        self.continuum = numpy.array(self.continuum)
+        
+        if prepareColumns:
+            coldefs = []
+            wave = pyfits.Column(name='Wavelength', format='D', array=self.wl)
+            coldefs.append(wave)
+            if I:
+                flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.flux_I)
+                coldefs.append(flux_I)
+            if Q:
+                flux_Q = pyfits.Column(name='Stokes_Q', format='D', array=self.flux_Q)
+                coldefs.append(flux_Q)
+            if U:
+                flux_U = pyfits.Column(name='Stokes_U', format='D', array=self.flux_U)
+                coldefs.append(flux_U)
+            if V:
+                flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.flux_V)
+                coldefs.append(flux_V)
+            if continuum:
+                continuum = pyfits.Column(name='Continuum', format='D', array=self.continuum)
+                coldefs.append(continuum)
+            self.columns = pyfits.ColDefs(coldefs)
+
+    def resample(self, R, nyquist=False):
+        """
+        This routine convolves a given spectrum to a resolution R
+        :INPUTS:
+            R: Desired resolving power
+            nyquist (optional): returns a nyquist-sampled spectrum
+                   (default: False)
+    
+        :RETURNS:
+            new_x: new wavelength array
+            new_y: new flux array
+
+        :EXAMPLE:
+         ::
+            highres = SpectralTools.Spectrum('highres.dat')
+            highres.resample(2000)
+        """
+        subsample = 16.0
+
+        newWl = [self.wl[0]]
+        while newWl[-1] < self.wl[-1]:
+            stepsize = newWl[-1]/(R*subsample)
+            newWl.append(newWl[-1]+stepsize)
+
+        if self.flux_I != None:
+            I = scipy.interpolate.interpolate.interp1d(self.wl,
+                    self.flux_I, bounds_error=False)
+            newI = I(newWl)
+        if self.flux_V != None:
+            V = scipy.interpolate.interpolate.interp1d(self.wl,
+                    self.flux_V, bounds_error=False)
+            newV = V(newWl)
+        if self.flux_Q != None:
+            Q = scipy.interpolate.interpolate.interp1d(self.wl,
+                    self.flux_Q, bounds_error=False)
+            newQ = Q(newWl)
+        if self.flux_U != None:
+            U = scipy.interpolate.interpolate.interp1d(self.wl,
+                    self.flux_U, bounds_error=False)
+            newU = U(newWl)
+        const = numpy.ones(len(newWl))
+
+        xk = numpy.array(range(int(4.0*subsample)))
+        yk = numpy.exp(-(xk-(2.0*subsample))**2.0/(subsample**2.0/(4.0*numpy.log(2.0))))
+    
+        newWl = numpy.array(newWl[int(len(xk)/2.0):-int(len(xk)/2.0)])
+
+        normal = scipy.signal.convolve(const, yk, mode = 'valid')
+        result_I = scipy.signal.convolve(newI, yk, mode ='valid')
+        goodPoints = numpy.isfinite(result_I)
+        flux_I = numpy.array(result_I[goodPoints]/normal[goodPoints])
+        if self.flux_V != None:
+            result_V = scipy.signal.convolve(newV, yk, mode ='valid')
+            flux_V = numpy.array(result_V[goodPoints]/normal[goodPoints])
+        else:
+            flux_V = None
+        if self.flux_Q != None:
+            result_Q = scipy.signal.convolve(newQ, yk, mode ='valid')
+            flux_Q = numpy.array(result_Q[goodPoints]/normal[goodPoints])
+        else:
+            flux_Q = None
+        if self.flux_U != None:
+            result_U = scipy.signal.convolve(newU, yk, mode ='valid')
+            flux_U = numpy.array(result_U[goodPoints]/normal[goodPoints])
+        else:
+            flux_U = None
+
+        header = self.header.copy()
+        header.set('RESOLVING_POWER', R)
+        processed = Spectrum(wl=newWl, I=flux_I, Q=flux_Q, U=flux_U,
+                V=flux_V, header=header, spectrum_type='RESOLVING POWER=%.1f' % R)
+
+        #if nyquist:
+        #    nyquistWl = []
+        #    deltaWl = min(newWl)/(2.0*R)
+        #    nyquistWl.append(min(newWl) + deltaWl)
+        #    while nyquistWl[-1] < max(newWl) - deltaWl:
+        #        deltaWl = nyquistWl[-1]/(2.0*R)
+        #        nyquistWl.append(nyquistWl[-1] + deltaWl)
+        #    newWl = numpy.array(nyquistWl)
+        #    self.processed.binSpectrum(newWl=newWl)
+        return processed
+    
     def bin(self, newWl):
         """
             This routine simulates the discrete nature of detector pixels.
@@ -442,8 +564,9 @@ class Integrator( object ):
     def __init__(self, parent=None, deltav = 0.1, limb_darkening=None):
         self.parent = parent
         self.deltav = deltav
-        self.vsini = []
-        self.R = []
+        self.interpolated = []        # interpolated to uniform wl grid
+        self.integrated = []          # vsin i - needs interpolated
+        self.convolved = []           # R - needs integrated
         self.limb_darkening = None
         self.loadData()
 
@@ -455,8 +578,8 @@ class BeachBall( Integrator ):
         cell = []
 
         newWl = []
-        newWl.append(self.parent.raw_data[0].wl[0])
-        while newWl[-1] < self.parent.raw_data[0].wl[-1]:
+        newWl.append(self.parent.rawData[0].wl[0])
+        while newWl[-1] < self.parent.rawData[0].wl[-1]:
             dLambda = newWl[-1]*self.deltav/c
             newWl.append(newWl[-1]+dLambda)
         newWl = numpy.array(newWl[0:-1])
@@ -468,17 +591,18 @@ class BeachBall( Integrator ):
             self.alpha = -0.507 + 0.441/(wave/10000.0)
 
         limb_darkening = []
-        self.interpolated = []
-        for raw in self.parent.raw_data:
+        for raw in self.parent.rawData:
             phi.append(raw.header.get('PHI_ANGLE'))
-            limb_darkening.append(1.0-(1.0-self.mu[i]**(self.alpha)))
             mu.append(raw.header.get('MU'))
+            limb_darkening.append(1.0-(1.0-mu[-1]**(self.alpha)))
             cell.append(raw.header.get('CELL'))
-            fI = scipy.interpolate.UnivariateSpline(raw.wl, raw.I/raw.continuum, s=0)
-            fV = scipy.interpolate.UnivariateSpline(raw.wl, raw.V/raw.continuum, s=0)
+            fI = scipy.interpolate.UnivariateSpline(raw.wl, 
+                    raw.flux_I/raw.continuum, s=0)
+            fV = scipy.interpolate.UnivariateSpline(raw.wl, 
+                    raw.flux_V/raw.continuum, s=0)
             self.interpolated.append(Spectrum(wl=newWl, I = fI(newWl), V = fV(newWl),
                 continuum = numpy.ones(len(newWl))*limb_darkening[-1],
-                header = raw.header))
+                header = raw.header.copy(), spectrum_type='INTERPOLATED DELTAV=%.2f' % self.deltav))
 
         self.limb_darkening = numpy.array(limb_darkening)
         self.phi = numpy.array(phi)
@@ -487,8 +611,34 @@ class BeachBall( Integrator ):
         self.ncells = len(self.cell)
 
 
-    def diskInt(self, vsini=0.0, R=0.0):
-        diskInt_I, diskInt_V = self.rtint(vsini_in=vsini)
+    def diskInt(self, vsini=0.0):
+        I, V = self.rtint(vsini_in=vsini)
+        header = self.interpolated[0].header.copy()
+        header.set('VSINI', vsini)
+        header.remove('PHI_ANGLE')
+        header.remove('MU')
+        header.remove('CELL')
+        for interp in self.interpolated[1:]:
+            header.add_history(interp.header.get('SPECTRUM_TYPE')+' - '+interp.header.get('SPECTRUM_ID'))
+
+        self.integrated.append(Spectrum(wl=self.interpolated[0].wl, I=I, V=V, header=header, spectrum_type='DISK INTEGRATED VSINI=%.2f' % vsini))
+
+    def findVsini(self, vsini):
+        for integrated in self.integrated:
+            if numpy.abs(integrated.header.get('VSINI') - vsini) < 0.01:
+                return integrated
+        self.diskInt(vsini=vsini)
+        return self.integrated[-1]
+
+    def resample(self, vsini, R):
+        for convol in self.convolved:
+            if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
+                return 
+
+        integrated = self.findVsini(vsini)
+        self.convolved.append(integrated.resample(R))
+        return 
+        
         
         
         
@@ -570,6 +720,7 @@ class BeachBall( Integrator ):
         #make local copies of various input vars, which will be altered below
         vsini = float(vsini_in)
         vrt = float(vrt_in)
+        mu = self.mu
 
         if "OSAMP" in kwargs:
             os = max(round(kwargs["OSAMP"]), 1)
@@ -729,102 +880,117 @@ class BeachBall( Integrator ):
 #class Diskoball( Integrator ):
 
 
-class Phrase( object ):
+class MoogStokesPhrase( object ):
     def __init__(self, rawData=None, diskInt="BEACHBALL"):
         self.rawData = rawData       # This should be a list of Spectrum objects
+        self.wlStart = rawData[0].header.get("WLSTART")
+        self.wlStop = rawData[0].header.get("WLSTOP")
         if diskInt == "BEACHBALL":
             self.processedData = BeachBall(parent=self)
         elif diskInt == "DISKOBALL":
             self.processedData = DiskoBall(parent=self)
 
-class Spectrum( object ):
-    def __init__(self, name):
-        self.name = None
-        self.native = spectrumUnit()
-        self.processed = spectrumUnit()
-        self.wlStart = None
-        self.wlStop = None
-
-    def resample(self, R, nyquist=False):
-        """
-        This routine convolves a given spectrum to a resolution R
-        :INPUTS:
-            R: Desired resolving power
-            nyquist (optional): returns a nyquist-sampled spectrum
-                   (default: False)
-    
-        :RETURNS:
-            new_x: new wavelength array
-            new_y: new flux array
-
-        :EXAMPLE:
-         ::
-            highres = SpectralTools.Spectrum('highres.dat')
-            highres.resample(2000)
-        """
-        subsample = 16.0
-
-        newWl = [self.wlStart]
-        while newWl[-1] < self.wlStop:
-            stepsize = newWl[-1]/(R*subsample)
-            newWl.append(newWl[-1]+stepsize)
-
-        if self.native.flux_I != None:
-            I = scipy.interpolate.interpolate.interp1d(self.native.wl,
-                    self.native.flux_I, bounds_error=False)
-            newI = I(newWl)
-        if self.native.flux_V != None:
-            V = scipy.interpolate.interpolate.interp1d(self.native.wl,
-                    self.native.flux_V, bounds_error=False)
-            newV = V(newWl)
-        if self.native.flux_Q != None:
-            Q = scipy.interpolate.interpolate.interp1d(self.native.wl,
-                    self.native.flux_Q, bounds_error=False)
-            newQ = Q(newWl)
-        if self.native.flux_U != None:
-            U = scipy.interpolate.interpolate.interp1d(self.native.wl,
-                    self.native.flux_U, bounds_error=False)
-            newU = U(newWl)
-        const = numpy.ones(len(newWl))
-
-        xk = numpy.array(range(int(4.0*subsample)))
-        yk = numpy.exp(-(xk-(2.0*subsample))**2.0/(subsample**2.0/(4.0*numpy.log(2.0))))
-    
-        newWl = numpy.array(newWl[int(len(xk)/2.0):-int(len(xk)/2.0)])
-
-        normal = scipy.signal.convolve(const, yk, mode = 'valid')
-        result_I = scipy.signal.convolve(newI, yk, mode ='valid')
-        goodPoints = numpy.isfinite(result_I)
-        flux_I = numpy.array(result_I[goodPoints]/normal[goodPoints])
-        if self.native_flux_V != None:
-            result_V = scipy.signal.convolve(newV, yk, mode ='valid')
-            flux_V = numpy.array(result_V[goodPoints]/normal[goodPoints])
+    def saveRaw(self, filename=None, primaryHeaderKWs=None):
+        HDUs = []
+        for spectrum in self.rawData:
+            SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
+                    header = spectrum.header)
+            SpectrumHDU.name = "%.4fA - %.4fA mu=%.2f phi=%.2f" % (spectrum.header.get("WLSTART"), spectrum.header.get("WLSTOP"), spectrum.header.get('MU'), spectrum.header.get('PHI_ANGLE'))
+            HDUs.append(SpectrumHDU)
+        if filename == None:
+            return HDUs
+        if os.path.exists(filename):
+            while os.path.exists(filename+'.lock'):
+                print("Gnarly Dude!  File is locked!  I'll hang out here and wait")
+                time.sleep(0.1)
+            with open(filename+'.lock', 'w'):
+                os.utime(filename+'.lock', None)
+            HDUList = pyfits.open(filename, mode='update')
+            for new_spectrum in HDUs:
+                try:
+                    HDUList.pop(HDUList.index_of(new_spectrum.name))
+                except:
+                    pass
+                HDUList.append(new_spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.close()
+            os.remove(filename+'.lock')
         else:
-            flux_V = None
-        if self.native_flux_Q != None:
-            result_Q = scipy.signal.convolve(newQ, yk, mode ='valid')
-            flux_Q = numpy.array(result_Q[goodPoints]/normal[goodPoints])
-        else:
-            flux_Q = None
-        if self.native_flux_U != None:
-            result_U = scipy.signal.convolve(newU, yk, mode ='valid')
-            flux_U = numpy.array(result_U[goodPoints]/normal[goodPoints])
-        else:
-            flux_U = None
+            HDUList = pyfits.HDUList()
+            primary = pyfits.PrimaryHDU()
+            if primaryHeaderKWs != None:
+                for key in primaryHeaderKWs.keys():
+                    primary.header.set(key, primaryHeaderKWs[key])
+            HDUList.append(primary)
+            for new_spectrum in HDUs:
+                HDUList.append(new_spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.writeto(filename)
 
-        self.processed = SpectrumUnit(wl=newWl, I=flux_I, Q=flux_Q, U=flux_U,
-                V=flux_V, R=R)
+    def save(self, vsini=None, R=None, filename=None, primaryHeaderKWs=None):
+        HDUs = []
+        if vsini == None:
+            vsini = range(len(self.processedData.integrated))
+        for i in vsini:
+            spectrum = self.processedData.integrated[i]:
+            SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
+                    header = spectrum.header)
+            SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.2f km/s" % (spectrum.header.get("WLSTART"), spectrum.header.get("WLSTOP"), spectrum.header.get('VSINI'))
+            HDUs.append(SpectrumHDU)
 
-        if nyquist:
-            nyquistWl = []
-            deltaWl = min(newWl)/(2.0*R)
-            nyquistWl.append(min(newWl) + deltaWl)
-            while nyquistWl[-1] < max(newWl) - deltaWl:
-                deltaWl = nyquistWl[-1]/(2.0*R)
-                nyquistWl.append(nyquistWl[-1] + deltaWl)
-            newWl = numpy.array(nyquistWl)
-            self.processed.binSpectrum(newWl=newWl)
-    
+        if R == None:
+            R = range(len(self.processedData.convolved))
+        for i in R:
+            spectrum = self.processedData.convolved[i]:
+            SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
+                    header = spectrum.header)
+            SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.2f km/s, R=%.1f" % (spectrum.header.get("WLSTART"), spectrum.header.get("WLSTOP"), spectrum.header.get('VSINI'), spectrum.header.get('RESOLVING_POWER'))
+            HDUs.append(SpectrumHDU)
+
+        if filename == None:
+            return HDUs
+        if os.path.exists(filename):
+            while os.path.exists(filename+'.lock'):
+                print("Gnarly Dude!  File is locked!  I'll hang out here and wait")
+                time.sleep(0.1)
+            with open(filename+'.lock', 'w'):
+                os.utime(filename+'.lock', None)
+            HDUList = pyfits.open(filename, mode='update')
+            for new_spectrum in HDUs:
+                try:
+                    HDUList.pop(HDUList.index_of(new_spectrum.name))
+                except:
+                    pass
+                HDUList.append(new_spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.close()
+            os.remove(filename+'.lock')
+        else:
+            HDUList = pyfits.HDUList()
+            primary = pyfits.PrimaryHDU()
+            if primaryHeaderKWs != None:
+                for key in primaryHeaderKWs.keys():
+                    primary.header.set(key, primaryHeaderKWs[key])
+            HDUList.append(primary)
+            for new_spectrum in HDUs:
+                HDUList.append(new_spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.writeto(filename)
+
+
+
+class MoogStokesMelody( object ):
+    def __init__(self, phrases=[]):
+        self.phrases = phrases
+        self.wlStart
+
+    def addPhrase(self, phrase):
+        self.phrases.append(phrase)
+
 
 
 class MoogStokesSpectrum( Spectrum ):

@@ -8,6 +8,8 @@ import AstroUtils
 import pyfits
 import time
 import threading
+import string
+import random
 
 class Atmosphere( object ):
     def __init__(self, df):
@@ -133,13 +135,14 @@ class MoogStokes( object ):
         
         self.fileName = fileBase+'.par'
         self.fileBase = fileBase
-        self.wave = []
-        self.flux = []
-        self.flux_I = []
-        self.flux_Q = []
-        self.flux_U = []
-        self.flux_V = []
-        self.continuum = []
+        #self.wave = []
+        #self.flux = []
+        #self.flux_I = []
+        #self.flux_Q = []
+        #self.flux_U = []
+        #self.flux_V = []
+        #self.continuum = []
+        self.Spectra = []
         self.logtau = []
 
         if "moogInstance" in kwargs.keys():
@@ -186,23 +189,34 @@ class MoogStokes( object ):
         self.flux.append(1.0-y)
     
     def stokesrecorder(self, i, wave, Stokes, continuum):
+        index = i-1
+        self.Spectra[index].wl.append(wave)
+        self.Spectra[index].flux_I.append(Stokes[0])
+        self.Spectra[index].flux_Q.append(Stokes[1])
+        self.Spectra[index].flux_U.append(Stokes[2])
+        self.Spectra[index].flux_V.append(Stokes[3])
+        self.Spectra[index].continuum.append(continuum)
         if i == 1:
-            self.wave.append(wave)
             if self.progressBar != None:
                 self.progressBar.update(wave)
-        self.flux_I[i-1].append(Stokes[0])
-        self.flux_Q[i-1].append(Stokes[1])
-        self.flux_U[i-1].append(Stokes[2])
-        self.flux_V[i-1].append(Stokes[3])
-        self.continuum[i-1].append(continuum)
 
     def prepareFluxes(self):
         for i in range(self.ncells):
-            self.flux_I.append([])
-            self.flux_Q.append([])
-            self.flux_U.append([])
-            self.flux_V.append([])
-            self.continuum.append([])
+            header = pyfits.Header()
+            header.set('CREATION_TIME', time.ctime())
+            header.set('CREATION_USER', os.getlogin())
+            header.set('CREATION_MACHINE', os.uname()[1])
+            header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
+            header.set('WLSTART', self.config["wlStart"])
+            header.set('WLSTOP', self.config["wlStop"])
+            header.set('CELL', self.cells[i])
+            header.set('PHI_ANGLE', float('%.4f'% self.phi_angle[i]))
+            header.set('MU', float('%.4f'%self.mus[i]))
+            header.set('DISKFLAG', self.diskflag)
+            header.set('SPECTRUM_TYPE', 'Individual Emergent Spectrum')
+            self.Spectra.append(SpectralTools.Spectrum(wl = [],
+                I = [], Q = [], U = [], V = [], continuum = [], header=header, 
+                spectrum_type='Individual Emergent Spectrum'))
 
     def beachball(self):
         self.diskflag = 1
@@ -238,6 +252,10 @@ class MoogStokes( object ):
             self.integrator = SpectralTools.Diskoball(memory=True, PARENT=self)
             self.integrator.integrate()
 
+    def finishSpectra(self):
+        for spectrum in self.Spectra:
+            spectrum.preserve()
+
     def run(self, diskInt=False, save=False, saveRaw=False):
         self.wave = []
         self.flux = []
@@ -251,57 +269,13 @@ class MoogStokes( object ):
         if self.progressBar != None:
             self.progressBar.start()
         self.MoogPy.moogstokessilent()
+        self.finishSpectra()
+        self.Phrase = SpectralTools.MoogStokesPhrase(rawData=self.Spectra,
+                diskInt="BEACHBALL")
         if saveRaw:
             filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"])
-            HDUs = []
-            for i in range(self.ncells):
-                wave = pyfits.Column(name='Wavelength', format='D', array=self.wave[i]))
-                flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.stokes_I[i])
-                flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.stokes_V[i])
-                continuum = pyfits.Column(name='Continuum', format='D', array=self.continuum[i])
-                columns = pyfits.ColDefs([wave, flux_I, flux_V, continuum])
-                SpectrumHDU = pyfits.BinTableHDU.from_columns(columns)
-                SpectrumHDU.header.set('CREATION_TIME', time.ctime())
-                SpectrumHDU.header.set('CREATION_USER', os.getlogin())
-                SpectrumHDU.header.set('CREATION_MACHINE', os.uname()[1])
-                SpectrumHDU.header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
-                SpectrumHDU.header.set('WLSTART', self.config["wlStart"])
-                SpectrumHDU.header.set('WLSTOP', self.config["wlStop"])
-                SpectrumHDU.header.set('CELL', self.cel[i])
-                SpectrumHDU.header.set('PHI_ANGLE', self.phi_angle[i])
-                SpectrumHDU.header.set('MU', self.mus[i])
-                SpectrumHDU.header.set('DISKFLAG', self.diskflag)
-                SpectrumHDU.name = "%.4fA - %.4fA mu=%.2f phi=%.2f" % (self.config["wlStart"], self.config["wlStop"], self.mus[i], self.phi_angle[i])
-                HDUs.append(SpectrumHDU)
-            if os.path.exists(filename):
-                while os.path.exists(filename+'.lock'):
-                    print "Woah!  File is locked!"
-                    time.sleep(0.1)
-                with open(filename+'.lock', 'w'):
-                    os.utime(filename+'.lock', None)
-                HDUList = pyfits.open(filename, mode='update')
-                for new_spectrum in HDUs:
-                    try:
-                        HDUList.pop(HDUList.index_of(new_spectrum.name))
-                    except:
-                        pass
-                    HDUList.append(new_spectrum)
-                HDUList.update_extend()
-                HDUList.verify(option='silentfix')
-                HDUList.close()
-                os.remove(filename+'.lock')
-            else:
-                HDUList = pyfits.HDUList()
-                primary = pyfits.PrimaryHDU()
-                primary.header.set('BFIELD', self.config["Bfield"])
-                primary.header.set('TEFF', self.config["Teff"])
-                primary.header.set('LOGG', self.config["logg"])
-                HDUList.append(primary)
-                for new_spectrum in HDUs:
-                    HDUList.append(new_spectrum)
-                HDUList.update_extend()
-                HDUList.verify(option='silentfix')
-                HDUList.writeto(filename)
+            PHKWs = {"BFIELD":self.config["Bfield"], "TEFF":self.config["Teff"], "LOGG":self.config["logg"]}
+            self.Phrase.saveRaw(filename, primaryHeaderKWs=PHKWs)
         sys.stdout.write('\n')
         if diskInt:
             self.computeCompositeSpectrum()
