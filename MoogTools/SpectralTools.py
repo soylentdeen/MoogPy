@@ -287,14 +287,39 @@ class Spectrum( object ):
         self.flux_V = V
         self.continuum = continuum
         self.header = header
-        if 'SPECTRUM_ID' in header.iterkeys():
-            self.header.add_history(self.header.get('SPECTRUM_TYPE')+
-                    ' - '+self.header.get('SPECTRUM_ID'))
-        self.header.set('SPECTRUM_ID', ''.join(random.choice(string.ascii_letters)
-            for _ in range(10)))
-        self.header.set('SPECTRUM_TYPE', spectrum_type)
+        if spectrum_type != None:
+            if 'SPECTRUM_ID' in header.iterkeys():
+                self.header.add_history(self.header.get('SPECTRUM_TYPE')+
+                        ' - '+self.header.get('SPECTRUM_ID'))
+            self.header.set('SPECTRUM_ID', ''.join(random.choice(string.ascii_letters)
+                for _ in range(10)))
+            self.header.set('SPECTRUM_TYPE', spectrum_type)
 
-        
+    @classmethod
+    def from_file(self, hdr, data):
+        wl = data.field('Wavelength')
+        try:
+            I = data.field('Stokes_V')
+        except:
+            I = None
+        try:
+            Q = data.field('Stokes_V')
+        except:
+            Q = None
+        try:
+            U = data.field('Stokes_V')
+        except:
+            U = None
+        try:
+            V = data.field('Stokes_V')
+        except:
+            V = None
+        try:
+            continuum = data.field('Continuum')
+        except:
+            continuum = None
+        return self(wl=wl, I=I, Q=Q, U=U, V=V, continuum=continuum, header=hdr)
+
     def preserve(self, prepareColumns=True, I=True, Q=False, U=False, V=True, continuum=True):
         self.wl = numpy.array(self.wl)
         self.flux_I = numpy.array(self.flux_I)
@@ -636,8 +661,11 @@ class BeachBall( Integrator ):
                 return 
 
         integrated = self.findVsini(vsini)
-        self.convolved.append(integrated.resample(R))
-        return 
+        if R > 0:
+            self.convolved.append(integrated.resample(R))
+            return self.convolved[-1]
+        else:
+            return integrated
         
     def rtint(self, vsini_in=0.0, vrt_in=0, **kwargs):
         """
@@ -877,7 +905,7 @@ class BeachBall( Integrator ):
 #class Diskoball( Integrator ):
 
 
-
+"""
 class MoogStokesSpectrum( Spectrum ):
     def __init__(self, name='', memory=False, **kwargs):
         self.memory = memory
@@ -929,7 +957,7 @@ class MoogStokesSpectrum( Spectrum ):
                 self.wlStop = kwargs["wlRange"][1]
 
     #def saveRaw(self):
-
+#"""
 
 
 def winnow_MoogStokes_Spectra(directory, wlStart, wlStop, trackedParams=None):

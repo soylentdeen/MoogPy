@@ -243,20 +243,11 @@ class MoogStokes( object ):
         self.mus = self.MoogPy.angles.mus.copy()
         self.prepareFluxes()
 
-    def computeCompositeSpectrum(self):
-        if self.diskflag== 1:
-            self.integrator = SpectralTools.MoogStokes_IV_Spectrum(memory=True,
-                    PARENT=self)
-            self.integrator.integrate()
-        else:
-            self.integrator = SpectralTools.Diskoball(memory=True, PARENT=self)
-            self.integrator.integrate()
-
     def finishSpectra(self):
         for spectrum in self.Spectra:
             spectrum.preserve()
 
-    def run(self, diskInt=False, save=False, saveRaw=False):
+    def run(self, saveRaw=False):
         self.wave = []
         self.flux = []
         self.lineList.setBfield(self.B)
@@ -276,8 +267,9 @@ class MoogStokes( object ):
             filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"])
             PHKWs = {"BFIELD":self.config["Bfield"], "TEFF":self.config["Teff"], "LOGG":self.config["logg"]}
             self.Phrase.saveRaw(filename=filename, primaryHeaderKWs=PHKWs)
+        """
         if diskInt:
-            self.computeCompositeSpectrum()
+            self.Phrase.integrate.
             self.wave = self.integrator.new_wl
             self.stokes_I = self.integrator.final_spectrum_I
             self.stokes_V = self.integrator.final_spectrum_V
@@ -324,6 +316,7 @@ class MoogStokes( object ):
                     HDUList.verify(option='silentfix')
                     HDUList.writeto(filename)
             return self.wave, self.flux
+        #"""
 
     def trace(self, save=False):
         self.lineList.setBfield(self.B)
@@ -343,6 +336,7 @@ class MoogStokes( object ):
             out.writeto(self.config["outdir"]+self.config["outbase"]+'_'+str(self.config["wlProbe"])+'.fits', clobber=True)
         return self.logtau, self.flux_I, self.flux_Q, self.flux_U, self.flux_V, self.continuum
 
+"""
 class Spectrum( object ):
     def __init__(self, config, spectrumName):
         self.name = spectrumName
@@ -408,7 +402,7 @@ class Spectrum( object ):
                     index += 1
                 self.flux[i] = self.flux[i] + slopes[index] * (origins[index] - 
                         self.wave[i])
-
+#"""
 
 class ParameterFile( object ):
     def __init__(self, parent, config, **kwargs):
