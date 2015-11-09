@@ -257,8 +257,6 @@ class Melody( object ):
         for phrase in self.phrases:
             self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
                 wlStop=wlRange[1]))
-            print self.selectedPhrases[-1]
-            print wlRange
 
     def inParameterRange(self, TeffRange=[], loggRange=[], BfieldRange=[]):
         self.muted = False
@@ -532,12 +530,13 @@ class Moog960( object ):
         labels = []
         for v, r in zip(vsini, R):
             sp, l = self.Score.perform(vsini=v, R = r)
-            print sp
             spectra.append(sp[0])
             labels.append(l[0])
         for sp, l in zip(spectra,labels):
             for s in sp:
-                axes.plot(s.wl, s.flux_I, label=l)
+                line = axes.plot(s.wl, s.flux_I, label=l)
+
+        #axes.figure.legend(lines, labels)
 
 
     def loadMelodies(self):
