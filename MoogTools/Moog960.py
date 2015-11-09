@@ -32,13 +32,16 @@ class Phrase( object ):
         return False
 
     def inWlRange(self, wlStart, wlStop):
-        return ((self.wlStart < wlStop) & (self.wlStop < wlStart))
+        return ((self.wlStart < wlStop) & (self.wlStop > wlStart))
 
-    def integrate(self, vsini=0.0):
-        self.processedData.diskInt(vsini=vsini)
+    #def integrate(self, vsini=0.0):
+    #    self.processedData.diskInt(vsini=vsini)
 
-    def resample(self, vsini=0.0, R=0):
-        return self.processedData.resample(vsini=vsini, R=R)
+    def rehearse(self, vsini=0.0, R=0):
+        self.processedData.resample(vsini=vsini, R=R)
+
+    def perform(self, vsini= 0.0, R = 0.0):
+        return self.processedData.yank(vsini=vsini, R = R)
 
     def saveRaw(self, filename = None, primaryHeaderKWs={}):
         HDUs = []
@@ -218,6 +221,8 @@ class Melody( object ):
         self.phrases = []
         self.filename = filename
         self.loadMelody()
+        self.muted = True
+        self.nPhrases = len(self.phrases)
 
     def loadMelody(self):
         info = pyfits.info(self.filename, output='')
@@ -226,7 +231,6 @@ class Melody( object ):
         self.Teff = self.header.get("TEFF")
         self.logg = self.header.get("LOGG")
         self.B = self.header.get("BFIELD")
-        self.selected = []
 
         for i in range(self.nSpectra):
             added = False
@@ -240,34 +244,59 @@ class Melody( object ):
             if not(added):
                 self.phrases.append(Phrase.fromFile(hdr, data))
 
+        for phrase in self.phrases:
+            phrase.processedData.loadData()
+
     def addPhrase(self, phrases):
         for phrase in phrases:
             self.phrases.append(phrase)
+        self.nPhrases = len(self.phrases)
 
-    def selectPhrases(self, wlStart, wlStop):
-        self.selected = []
+    def selectPhrases(self, wlRange=[]):
+        self.selectedPhrases = []
         for phrase in self.phrases:
-            self.selected.append(phrase.inWlRange(wlStart, wlStop))
+            self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
+                wlStop=wlRange[1]))
+            print self.selectedPhrases[-1]
+            print wlRange
 
-    def inParamterRange(self, Teff=[], logg=[], Bfield=[]):
-        print("blah")
+    def inParameterRange(self, TeffRange=[], loggRange=[], BfieldRange=[]):
+        self.muted = False
         try:
-            if ((self.Teff < Teff[0]) | (self.Teff > Teff[1])):
-                return False:
+            if ((self.Teff < TeffRange[0]) or (self.Teff > TeffRange[1])):
+                self.muted = True
         except:
             pass
         try:
-            if ((self.logg < logg[0]) | (self.logg > logg[1])):
-                return False:
+            if ((self.logg < loggRange[0]) | (self.logg > loggRange[1])):
+                self.muted = True
         except:
             pass
         try:
-            if ((self.B < Bfield[0]) | (self.B > Bfield[1])):
-                return False:
+            if ((self.B < BfieldRange[0]) | (self.B > BfieldRange[1])):
+                self.muted = True
         except:
             pass
-        return True
 
+    def rehearse(self, vsini = 0.0, R = 0):
+        for i in range(self.nPhrases):
+            if self.selectedPhrases[i]:
+                self.phrases[i].rehearse(vsini = vsini, R=R)
+
+    def perform(self, vsini = 0.0, R = 0.0):
+        spectra = []
+        label = "Teff = %d K log g = %.2f Bfield = %.2f kG" % (self.Teff, self.logg, self.B)
+        for i in range(self.nPhrases):
+            if self.selectedPhrases[i]:
+                spectra.append(self.phrases[i].perform(vsini=vsini, R=R))
+
+
+        return spectra, label
+
+    def record(self, filename=''):
+        for i in range(self.nPhrases):
+            if self.selectedPhrases[i]:
+                self.phrases[i].record(filename)
 
 class Score( object ):
     """
@@ -287,17 +316,50 @@ class Score( object ):
         for melody in self.melodies:
             melody.selectPhrases(wlStart, wlStop)
 
-    def rehearse():
-
-    def selectMelodies(self, Teff = [], logg = [], Bfield=[]):
-        self.selected = []
+    #    self.Score.selectMelodies(TeffRange=self.TeffRange, loggRange=self.loggRange,
+    #            BfieldRange=self.BfieldRange, self.wlRange)
+    def selectMelodies(self, TeffRange = [], loggRange = [], BfieldRange=[],
+            wlRange=[]):
         for melody in self.melodies:
-            self.selected.append(melody.inParameterRange(Teff=Teff, logg=logg,
-                Bfield=Bfield))
-        print("blah")
+            melody.inParameterRange(TeffRange=TeffRange,
+                loggRange=loggRange, BfieldRange=BfieldRange)
+            if not(melody.muted):
+                melody.selectPhrases(wlRange=wlRange)
 
-    def rehearse():
-        self.blah = False
+    def rehearse(self, vsini=0.0, R=0.0):
+        '''
+        Score.rehearse(vsini=0.0, R=0.0) - For the melodies and phrases selected by
+             the parameter and wavelength ranges, generate spectra corresponding to
+             the requested vsini and resolving power.
+
+             INPUT:
+                 vsini - rotational broadening - km/s
+                 R - resolving power
+
+             OUTPUT:
+                 none
+
+        The 
+        '''
+        for melody in self.melodies:
+            if not(melody.muted):
+                melody.rehearse(vsini=vsini, R=R)
+
+    def perform(self, vsini = 0.0, R = 0.0):
+        spectra = []
+        labels = []
+        for melody in self.melodies:
+            if not(melody.muted):
+                sp, label = melody.perform(vsini=vsini, R=R)
+                spectra.append(sp)
+                labels.append(label)
+
+        return spectra, labels
+
+    def record(self, outfilename):
+        for melody in self.melodies:
+            if not(melody.muted):
+                melody.record(outfilename)
 
     """
     def __init__(self, datafile, ID, resolvingPower):
@@ -419,23 +481,64 @@ class Moog960( object ):
     def __init__(self, configFile):
         self.config = AstroUtils.parse_config(configFile)
         self.applyConfigFile()
-        #self.loadMelodies()
 
     def applyConfigFile(self):
         self.watchedDir = self.config["watched_dir"]
-        self.wlStart = self.config["wlStart"]
-        self.wlStop = self.config["wlStop"]
-        if 'observed' in self.config.keys():
-            self.resolvingPower = self.config["resolving_power"]
-            self.observed = MoogTools.Spectrum(self.config, 'observed')
+        self.wlRange = numpy.array(self.config["wlRange"].split(), dtype=numpy.int)
+        keys = self.config.keys()
+        if "TeffRange" in keys:
+            self.TeffRange = numpy.array(self.config["TeffRange"].split(),
+                    dtype=numpy.int)
         else:
-            self.observed = None
-            self.resolvingPower = None
-        if 'vsini' in self.config.keys():
+            self.TeffRange = numpy.array([0, 100000])
+        if "loggRange" in keys:
+            self.loggRange = numpy.array(self.config["loggRange"].split(),
+                    dtype=numpy.float32)
+        else:
+            self.loggRange = numpy.array([2.5, 6.0])
+        if "BfieldRange" in keys:
+            self.BfieldRange = numpy.array(self.config["BfieldRange"].split(),
+                    dtype=numpy.float32)
+        else:
+            self.BfieldRange = numpy.array([0.0, 20.0])
+        self.resolvingPower = self.config["resolving_power"]
+        if 'vsini' in keys:
             self.vsini = self.config['vsini']
         else:
             self.vsini = None
         self.Score = Score(directory=self.watchedDir)
+        self.Score.selectMelodies(TeffRange=self.TeffRange, loggRange=self.loggRange,
+                BfieldRange=self.BfieldRange, wlRange=self.wlRange)
+        #, vsini=self.vsini,
+        #        R=self.resolvingPower)
+        #self.Score.setWlRange(self.wlStart, self.wlStop)
+
+    def rehearse(self, vsini = None, R = None):
+        if vsini == None:
+            vsini = [self.vsini]
+        if R == None:
+            R = [self.resolvingPower]
+        for v, r in zip(vsini, R):
+            self.Score.rehearse(vsini=v, R=r)
+
+    def perform(self, vsini=None, R = None, axes= None):
+
+        if vsini == None:
+            vsini = [self.vsini]
+        if R == None:
+            R = [self.resolvingPower]
+        
+        spectra = []
+        labels = []
+        for v, r in zip(vsini, R):
+            sp, l = self.Score.perform(vsini=v, R = r)
+            print sp
+            spectra.append(sp[0])
+            labels.append(l[0])
+        for sp, l in zip(spectra,labels):
+            for s in sp:
+                axes.plot(s.wl, s.flux_I, label=l)
+
 
     def loadMelodies(self):
         spectra = glob.glob(self.watchedDir+'*.fits')

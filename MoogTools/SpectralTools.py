@@ -299,15 +299,15 @@ class Spectrum( object ):
     def from_file(self, hdr, data):
         wl = data.field('Wavelength')
         try:
-            I = data.field('Stokes_V')
+            I = data.field('Stokes_I')
         except:
             I = None
         try:
-            Q = data.field('Stokes_V')
+            Q = data.field('Stokes_Q')
         except:
             Q = None
         try:
-            U = data.field('Stokes_V')
+            U = data.field('Stokes_U')
         except:
             U = None
         try:
@@ -593,7 +593,6 @@ class Integrator( object ):
         self.integrated = []          # vsin i - needs interpolated
         self.convolved = []           # R - needs integrated
         self.limb_darkening = None
-        self.loadData()
 
 class BeachBall( Integrator ):
     def loadData(self):
@@ -625,7 +624,7 @@ class BeachBall( Integrator ):
                     raw.flux_I/raw.continuum, s=0)
             fV = scipy.interpolate.UnivariateSpline(raw.wl, 
                     raw.flux_V/raw.continuum, s=0)
-            self.interpolated.append(Spectrum(wl=newWl, I = fI(newWl), V = fV(newWl),
+            self.interpolated.append(Spectrum(wl=newWl, I = fI(newWl)*limb_darkening[-1], V = fV(newWl)*limb_darkening[-1],
                 continuum = numpy.ones(len(newWl))*limb_darkening[-1],
                 header = raw.header.copy(), spectrum_type='INTERPOLATED DELTAV=%.2f' % self.deltav))
 
@@ -656,17 +655,28 @@ class BeachBall( Integrator ):
         return self.integrated[-1]
 
     def resample(self, vsini, R):
+        found = False
         for convol in self.convolved:
             if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
-                return 
+                found = True
+                break
 
-        integrated = self.findVsini(vsini)
-        if R > 0:
-            self.convolved.append(integrated.resample(R))
-            return self.convolved[-1]
-        else:
-            return integrated
+        if not(found):
+            integrated = self.findVsini(vsini)
+            if R > 0:
+                self.convolved.append(integrated.resample(R))
         
+    def yank(self, vsini=0.0, R=0.0):
+        if R <= 0:
+            return self.findVsini(vsini)
+
+        for convol in self.convolved:
+            if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
+                return convol
+
+        print("ERROR!  Spectrum with vsini=%.2f and R=%.1f NOT FOUND!!!" % (vsini, R))
+
+
     def rtint(self, vsini_in=0.0, vrt_in=0, **kwargs):
         """
     This is a python translation of Jeff Valenti's disk integration routine
