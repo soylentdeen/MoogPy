@@ -9,9 +9,10 @@ import random
 import string
 
 class Symphony(object ):
-    def __init__(self, configFile):
+    def __init__(self, configFile, moogInstance):
         config = AstroUtils.parse_config(configFile)
         self.flavor = ''.join(random.choice(string.ascii_uppercase) for _ in range(4))
+        self.moogInstance = moogInstance
 
         self.baseconfig = {}
         self.gridconfig = {}
@@ -53,4 +54,4 @@ class Symphony(object ):
     def compose(self):
         path_to_MoogSymphony = os.path.dirname(os.path.abspath(__file__))
         for f in self.filenames:
-            os.system('python '+path_to_MoogSymphony+'/generateSpectrum.py '+f+' '+self.flavor)
+            os.system('python '+path_to_MoogSymphony+'/generateSpectrum.py '+f+' '+self.flavor+' '+self.moogInstance)
