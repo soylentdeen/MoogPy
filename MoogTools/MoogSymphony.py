@@ -46,7 +46,7 @@ class Symphony(object ):
                     configFile["Teff"] = temp
                     configFile["logg"] = grav
                     configFile["Bfield"] = b
-                    filename = self.gridconfig["grid_config_directory"]+'Config_T%d_G%.1f_B%.1f_raw.cfg'%(temp, grav, b)
+                    filename = self.gridconfig["grid_config_directory"]+'Config_T%d_G%.1f_B%.1f_raw.%s.cfg'%(temp, grav, b, self.flavor)
                     AstroUtils.write_config(filename, configFile)
                     filenames.append(filename)
         self.filenames = filenames
