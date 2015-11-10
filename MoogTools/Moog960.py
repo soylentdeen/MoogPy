@@ -5,6 +5,7 @@ import MoogTools
 import SpectralTools
 import numpy
 import os
+import matplotlib.lines as Lines
 
 class Phrase( object ):
     def __init__(self, rawData=None, diskInt = 'BEACHBALL'):
@@ -314,8 +315,25 @@ class Score( object ):
         for melody in self.melodies:
             melody.selectPhrases(wlStart, wlStop)
 
-    #    self.Score.selectMelodies(TeffRange=self.TeffRange, loggRange=self.loggRange,
-    #            BfieldRange=self.BfieldRange, self.wlRange)
+    def getMelodyParams(self):
+        Teff = []
+        logg = []
+        B = []
+        for melody in self.melodies:
+            Teff.append(melody.Teff)
+            logg.append(melody.logg)
+            B.append(melody.B)
+
+        return numpy.unique(Teff), numpy.unique(logg), numpy.unique(B)
+
+
+    def selectEnsemble(self, T=[], G=[], B=[]):
+        for melody in self.melodies:
+            if (melody.Teff in T) and (melody.logg in G) and (melody.B in B):
+                melody.muted=False
+            else:
+                melody.muted=True
+
     def selectMelodies(self, TeffRange = [], loggRange = [], BfieldRange=[],
             wlRange=[]):
         for melody in self.melodies:
@@ -354,126 +372,10 @@ class Score( object ):
 
         return spectra, labels
 
-    def record(self, outfilename):
+    def record(self, vsini = 0.0, R = 0.0, filename=''):
         for melody in self.melodies:
             if not(melody.muted):
                 melody.record(outfilename)
-
-    """
-    def __init__(self, datafile, ID, resolvingPower):
-        self.datafile = datafile
-        self.ID = ID
-        self.resolvingPower = resolvingPower
-        info = pyfits.info(self.datafile, output='')
-        self.nSpectra = len(info)-1
-        wavestart = []
-        wavestop = []
-        self.headers = []
-        for i in range(self.nSpectra):
-            self.headers.append(pyfits.getheader(self.datafile, ext=i+1))
-            wavestart.append(self.headers[-1].get('WLSTART'))
-            wavestop.append(self.headers[-1].get('WLSTOP'))
-
-        self.wavestart = numpy.array(wavestart)
-        self.wavestop = numpy.array(wavestop)
-        header = pyfits.getheader(self.datafile)
-        self.Teff = header.get("TEFF")
-        self.logg = header.get("LOGG")
-        self.B = header.get("BFIELD")
-        self.vsini = header.get("VSINI")
-        self.generate_label()
-        self.suppressed = True
-
-    def generate_label(self):
-        self.label = "T%4d G%.1f B%.1f V%.1f" % (self.Teff, self.logg, self.B, self.vsini)
-
-    def print_info(self):
-        if self.suppressed:
-            print("#%d)  %s" % (self.ID, self.label))
-        else:
-            print("#%d)* %s" % (self.ID, self.label))
-
-    def play(self):
-        if self.suppressed:
-            return None
-        else:
-            waves = []
-            fluxes = []
-            self.loadSpectra()
-            # now look for overlaps
-            for w, f in zip(self.wave[self.inWlRange==True], self.flux[self.inWlRange==True]):
-                waves.append(w)
-                fluxes.append(f)
-            overlaps = numpy.intersect1d(self.wavestart[self.inWlRange==True], self.wavestop[self.inWlRange==True])
-            blue_indices = []
-            red_indices = []
-            stitched_waves = []
-            stitched_fluxes = []
-            for overlap in overlaps:
-                blue_index = self.wavestop[self.inWlRange==True] == overlap
-                red_index = self.wavestart[self.inWlRange==True] == overlap
-
-                for b in numpy.arange(self.nWithinRange)[blue_index]:
-
-                    for r in numpy.arange(self.nWithinRange)[red_index]:
-                        stitched_waves.append(numpy.append(waves[b][:-1], waves[r]))
-                        stitched_fluxes.append(numpy.append(fluxes[b][:-1], fluxes[r]))
-                        if len(blue_indices) == 0:
-                            red_indices.append(r)
-                    blue_indices.append(b)
-            new_waves = []
-            new_fluxes = []
-            for i in range(self.nWithinRange):
-                if not(i in red_indices) and (not(i in blue_indices)):
-                    new_waves.append(waves[i])
-                    new_fluxes.append(fluxes[i])
-            for i in range(len(stitched_waves)):
-                new_waves.append(stitched_waves[i])
-                new_fluxes.append(stitched_fluxes[i])
-            return (self.label, new_waves, new_fluxes)
-
-    def __eq__(self, other):
-        try:
-            return int(other) == self.ID
-        except:
-            return self.datafile == other
-
-    def inWlRange(self, wlStart, wlStop):
-        inWlRange = []
-        for wavestart, wavestop in zip(self.wavestart, self.wavestop):
-            if (wavestart < wlStop) & (wavestop > wlStart):
-                inWlRange.append(True)
-            else:
-                inWlRange.append(False)
-        self.inWlRange = numpy.array(inWlRange)
-        self.nWithinRange = numpy.sum(self.inWlRange)
-        if any(self.inWlRange):
-            return True
-        else:
-            return False
-
-    def loadSpectra(self):
-        self.wave = []
-        self.flux = []
-        for i, good in zip(range(self.nSpectra), self.inWlRange):
-            if good:
-                data = pyfits.getdata(self.datafile, ext=i+1)
-                if self.resolvingPower != None:
-                    wave, flux = SpectralTools.resample(data.field('Wavelength'), 
-                        data.field('Stokes_I'), self.resolvingPower)
-                    self.wave.append(wave)
-                    self.flux.append(flux)
-                else:
-                    self.wave.append(data.field('Wavelength'))
-                    self.flux.append(data.field('Stokes_I'))
-            else:
-                self.wave.append([])
-                self.flux.append([])
-        #self.wave, self.flux = SpectralTools.resample(data[0], data[1], 
-        #        self.resolvingPower)
-        self.wave = numpy.array(self.wave)
-        self.flux = numpy.array(self.flux)
-        #"""
 
 class Moog960( object ):
     def __init__(self, configFile):
@@ -526,47 +428,42 @@ class Moog960( object ):
         if R == None:
             R = [self.resolvingPower]
         
-        spectra = []
+
+        # LineStyles = different Vsini/R combinations
+        # colors = different melodies (Teff/Log g/Bfield)
+        keysignatures = []
         labels = []
+        #linestyles = Lines.lineStyles.keys()[3:3+len(vsini)]
+        linestyles = ['-', '--', '-.', ':']
+
         for v, r in zip(vsini, R):
             sp, l = self.Score.perform(vsini=v, R = r)
-            spectra.append(sp[0])
-            labels.append(l[0])
-        for sp, l in zip(spectra,labels):
-            for s in sp:
-                line = axes.plot(s.wl, s.flux_I, label=l)
+            keysignatures.append(sp)
+            labels.append(l)
+
+        if len(keysignatures) < 1:
+            return
+
+        colors = numpy.random.rand(len(keysignatures[0]), 3)
+        for k, lb, ls in zip(keysignatures,labels, linestyles):
+            for spectra, l, c in zip(k, lb, colors):
+                for s in spectra:
+                    line = axes.plot(s.wl, s.flux_I, ls=ls, color=c, label=l)
 
         #axes.figure.legend(lines, labels)
 
+    def selectEnsemble(self, T=[], G=[], B=[]):
+        self.Score.selectEnsemble(T=T, G=G, B=B)
 
-    def loadMelodies(self):
-        spectra = glob.glob(self.watchedDir+'*.fits')
-        for spectrum in spectra:
-            if not(spectrum in self.Score.melodies):
-                track = Player(spectrum, len(self.tracks), self.resolvingPower)
-                if track.inWlRange(self.wlStart, self.wlStop):
-                    self.tracks.append(tracks)
+    def inThePit(self):
+        Teffs, loggs, Bfields = self.Score.getMelodyParams()
+        return Teffs, loggs, Bfields
 
-    def selectTracks(self):
-        self.getTracks()
-        for spectrum in self.tracks:
-            spectrum.print_info()
+    def record(self, vsini=None, R=None):
+        if vsini == None:
+            vsini = [self.vsini]
+        if R == None:
+            R = [self.resolvingPower]
 
-        selection = raw_input("Enter space-separated list of spectra to Toggle :").split()
-
-        for source in selection:
-            for spectrum in self.tracks:
-                if spectrum == source:
-                    spectrum.suppressed = not(spectrum.suppressed)
-
-
-    def getEnsemble(self):
-        spectra = []
-        labels = []
-        for player in self.players:
-            if not(player.suppressed):
-                label, wave, flux = player.play()
-                labels.append(label)
-                spectra.append([wave, flux])
-
-        return spectra, labels
+        for v, r, in zip(vsini, R):
+            self.Score.record(vsini=v, R =r)

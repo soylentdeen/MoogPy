@@ -384,7 +384,7 @@ class Spectrum( object ):
             self.flux[discontinuities-1]))
 
         if plus > minus:
-            print asdf
+            print(asdf)
         else:
             deltaY = self.flux[discontinuities] - self.flux[discontinuities-1]
             deltaX = [self.wave[discontinuities[i]] - self.wave[discontinuities[i+1]] 
@@ -564,7 +564,7 @@ class LineList( object ):
                         if self.applyCorrections:
                             for cl in self.corrected:
                                 if (cl.wl == current_line.wl) & (cl.expot_lo == current_line.expot_lo):
-                                    print "Making a correction!"
+                                    print("Making a correction!")
                                     current_line.loggf = cl.loggf
                                     current_line.zeeman["NOFIELD"][1] = cl.loggf
                                     current_line.VdW = cl.VdW
@@ -1500,7 +1500,7 @@ def parse_VALD(VALD_list, strong_file, wl_start, wl_stop, Bfield,
                     for cl in corrected:
                         if (cl.wl == current_line.wl) & (cl.expot_lo ==
                                 current_line.expot_lo):
-                            print "Making a correction!"
+                            print("Making a correction!")
                             current_line.loggf = cl.loggf
                             current_line.zeeman["NOFIELD"][1] = cl.loggf
                             current_line.VdW = cl.VdW
@@ -1539,7 +1539,7 @@ def parse_HITRAN(HITRAN_file, wl_start, wl_stop, B_field,
                 if current_line.expot_lo < kwargs["weedout"]:
                     lines.append(current_line)
                 else:
-                    print 'Tossed CO line!'
+                    print('Tossed CO line!')
             else:
                 lines.append(current_line)
 
@@ -1754,7 +1754,7 @@ class Diskoball( object ):
                 try:
                     a.append(float(fluxes))
                 except:
-                    print "Warning! I crazy format :", fluxes
+                    print("Warning! I crazy format")
                     a.append(float(0.0))
             
             I.append(a)
@@ -1766,7 +1766,7 @@ class Diskoball( object ):
                 try:
                     a.append(float(fluxes))
                 except:
-                    print "Warning! Q crazy format :", fluxes
+                    print("Warning! Q crazy format")
                     a.append(float(0.0))
 
             Q.append(a)
@@ -1778,7 +1778,7 @@ class Diskoball( object ):
                 try:
                     a.append(float(fluxes))
                 except:
-                    print "Warning! U crazy format :", fluxes
+                    print("Warning! U crazy format")
                     a.append(float(0.0))
 
             U.append(a)
@@ -1790,7 +1790,7 @@ class Diskoball( object ):
                 try:
                     a.append(float(fluxes))
                 except:
-                    print "Warning! V crazy format :", fluxes
+                    print("Warning! V crazy format")
                     a.append(float(0.0))
 
             V.append(a)
@@ -1802,7 +1802,7 @@ class Diskoball( object ):
                 try:
                     a.append(float(fluxes))
                 except:
-                    print "Warning! C crazy format :", fluxes
+                    print("Warning! C crazy format")
                     a.append(float(0.0))
 
             C.append(a)

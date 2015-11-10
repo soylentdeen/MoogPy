@@ -28,7 +28,7 @@ def fitSawtooth(y, window_len=50):
     coeffs = [numpy.mean(y), 0.04, 0.0002, 0.0]
     x = numpy.arange(len(newy))
     pfit, success = scipy.optimize.leastsq(errfunc, coeffs, args=(x,newy) )
-    print pfit, success
+    #print pfit, success
     #raw_input()
     retval = pfit[0]+pfit[1]*scipy.signal.sawtooth(2.*numpy.pi*pfit[2]*x + pfit[3])
     #retval = 0.96-0.04*scipy.signal.sawtooth(2.*numpy.pi*0.0004*x + 0)
@@ -94,8 +94,8 @@ def resample(x, y, R, nyquist=False, halt=False):
         retval = (xvals, yvals)
 
     if halt:
-        print len(xvals), len(yvals), len(result)
-        raw_input()
+        print("%d %d %d" % (len(xvals), len(yvals), len(result)))
+        input()
     return retval
 
 def binSpectrum(spectrum, native_wl, new_wl):
@@ -396,6 +396,7 @@ class Spectrum( object ):
     
         newWl = numpy.array(newWl[int(len(xk)/2.0):-int(len(xk)/2.0)])
 
+        print("%d %d" % (len(const), len(yk)))
         normal = scipy.signal.convolve(const, yk, mode = 'valid')
         result_I = scipy.signal.convolve(newI, yk, mode ='valid')
         goodPoints = numpy.isfinite(result_I)
@@ -561,7 +562,7 @@ class Spectrum( object ):
         '''
         '''
         if self.R != other.R:
-            print "ERROR!  The resolutions of the two spectra are not compatible!"
+            print("ERROR!  The resolutions of the two spectra are not compatible!")
             return
 
         overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
