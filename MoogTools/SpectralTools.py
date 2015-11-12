@@ -10,6 +10,15 @@ import os
 import string
 import random
 
+class SpectrumError( Exception ):
+    def __init__(self, value, errmsg):
+        self.value = value
+        self.message = {}
+        self.message[0] = "Failure loading Raw Data!! %s" % errmsg
+
+    def __str__(self):
+        return repr(self.message[self.value])
+
 def fitSawtooth(y, window_len=50):
     """
     This routine tries to remove a sawtooth wave from the spectrum.
@@ -279,7 +288,8 @@ def read_3col_spectrum(filename):
 
 class Spectrum( object ):
     def __init__(self, wl=None, I=None, Q=None, U=None, V=None,
-            continuum=None, header=pyfits.Header(), spectrum_type=None):
+            continuum=None, header=pyfits.Header(), spectrum_type=None,
+            filename=None, ext=None):
         self.wl = wl
         self.flux_I = I
         self.flux_Q = Q
@@ -287,6 +297,8 @@ class Spectrum( object ):
         self.flux_V = V
         self.continuum = continuum
         self.header = header
+        self.filename = filename
+        self.ext = ext
         if spectrum_type != None:
             if 'SPECTRUM_ID' in header.iterkeys():
                 self.header.add_history(self.header.get('SPECTRUM_TYPE')+
@@ -296,29 +308,56 @@ class Spectrum( object ):
             self.header.set('SPECTRUM_TYPE', spectrum_type)
 
     @classmethod
-    def from_file(self, hdr, data):
-        wl = data.field('Wavelength')
-        try:
-            I = data.field('Stokes_I')
-        except:
+    def from_file(self, hdr, data=None, filename=None, ext=None):
+        if not(data==None):
+            self.extractData(data)
+        else:
+            wl = None
             I = None
-        try:
-            Q = data.field('Stokes_Q')
-        except:
             Q = None
-        try:
-            U = data.field('Stokes_U')
-        except:
             U = None
-        try:
-            V = data.field('Stokes_V')
-        except:
             V = None
+            continuum=None
+            if (filename==None) | (ext==None):
+                errmsg = "Filename or extension not provided!"
+                raise SpectrumError(0, errmsg)
+
+        return self(wl=wl, I=I, Q=Q, U=U, V=V, continuum=continuum, header=hdr,
+                filename=filename, ext=ext)
+
+    def extractData(self, data):
         try:
-            continuum = data.field('Continuum')
+            self.wl = data.field('Wavelength')
         except:
-            continuum = None
-        return self(wl=wl, I=I, Q=Q, U=U, V=V, continuum=continuum, header=hdr)
+            raise SpectrumError(0, "Spectrum data must contain WL data")
+        try:
+            self.flux_I = data.field('Stokes_I')
+        except:
+            self.flux_I = None
+        try:
+            self.flux_Q = data.field('Stokes_Q')
+        except:
+            self.flux_Q = None
+        try:
+            self.flux_U = data.field('Stokes_U')
+        except:
+            self.flux_U = None
+        try:
+            self.flux_V = data.field('Stokes_V')
+        except:
+            self.flux_V = None
+        try:
+            self.continuum = data.field('Continuum')
+        except:
+            self.continuum = None
+
+    def loadData(self):
+        try:
+            data = pyfits.getdata(self.filename, ext=self.ext)
+        except:
+            raise SpectrumError(0, "Error reading extension %d from %s" %
+                    (self.ext, self.filename))
+        self.extractData(data)
 
     def preserve(self, prepareColumns=True, I=True, Q=False, U=False, V=True, continuum=True):
         self.wl = numpy.array(self.wl)
@@ -637,6 +676,10 @@ class BeachBall( Integrator ):
 
 
     def diskInt(self, vsini=0.0):
+        if (self.parent.rawData[0].wl == None):
+            for raw in self.parent.rawData:
+                raw.loadData()
+            self.loadData()
         I, V = self.rtint(vsini_in=vsini)
         header = self.interpolated[0].header.copy()
         header.set('VSINI', vsini)

@@ -18,13 +18,15 @@ class Phrase( object ):
             self.processedData = SpectralTools.DiskoBall(parent=self)
 
     @classmethod
-    def fromFile(self, hdr, data):
+    def fromFile(self, hdr, data=None, filename=None, ext=None):
         rawData = []
-        rawData.append(SpectralTools.Spectrum.from_file(hdr,data))
+        rawData.append(SpectralTools.Spectrum.from_file(hdr,data=data,
+            filename=filename, ext=ext))
         return self(rawData=rawData)
 
-    def addRawSpectrum(self, hdr, data):
-        self.rawData.append(SpectralTools.Spectrum.from_file(hdr, data))
+    def addRawSpectrum(self, hdr, data=None, filename=None, ext=None):
+        self.rawData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
+            filename=filename, ext=ext))
 
     def owns(self, hdr):
         if ((self.wlStart == hdr.get('WLSTART')) & 
@@ -236,17 +238,20 @@ class Melody( object ):
         for i in range(self.nSpectra):
             added = False
             hdr = pyfits.getheader(self.filename, ext=i+1)
-            data = pyfits.getdata(self.filename, ext=i+1)
+            #data = pyfits.getdata(self.filename, ext=i+1)
             for phrase in self.phrases:
                 if phrase.owns(hdr):
-                    phrase.addRawSpectrum(hdr, data)
+                    phrase.addRawSpectrum(hdr, data=None, filename=self.filename,
+                            ext=i+1)
+                    #phrase.addRawSpectrum(hdr, data)
                     added=True
                     break
             if not(added):
-                self.phrases.append(Phrase.fromFile(hdr, data))
+                self.phrases.append(Phrase.fromFile(hdr, data=None,
+                    filename=self.filename, ext=i+1))
 
-        for phrase in self.phrases:
-            phrase.processedData.loadData()
+        #for phrase in self.phrases:
+        #    phrase.processedData.loadData()
 
     def addPhrase(self, phrases):
         for phrase in phrases:
@@ -258,6 +263,7 @@ class Melody( object ):
         for phrase in self.phrases:
             self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
                 wlStop=wlRange[1]))
+        print("T=%d G=%d")
 
     def inParameterRange(self, TeffRange=[], loggRange=[], BfieldRange=[]):
         self.muted = False
@@ -309,6 +315,7 @@ class Score( object ):
     def loadMelodies(self):
         melodyFiles = glob.glob(self.directory+'*raw.fits')
         for melody in melodyFiles:
+            print("%s" % melody)
             self.melodies.append(Melody(filename=melody))
 
     def setWlRange(self, wlStart, wlStop):
@@ -328,11 +335,14 @@ class Score( object ):
 
 
     def selectEnsemble(self, T=[], G=[], B=[]):
+        print("%s, %s %s" % (T, G, B))
         for melody in self.melodies:
             if (melody.Teff in T) and (melody.logg in G) and (melody.B in B):
                 melody.muted=False
+                print("Loud: %d, %.1f, %.1f" % (melody.Teff, melody.logg, melody.B))
             else:
                 melody.muted=True
+                print("Mute: %d, %.1f, %.1f" % (melody.Teff, melody.logg, melody.B))
 
     def selectMelodies(self, TeffRange = [], loggRange = [], BfieldRange=[],
             wlRange=[]):
