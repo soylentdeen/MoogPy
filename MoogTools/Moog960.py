@@ -8,21 +8,32 @@ import os
 import matplotlib.lines as Lines
 
 class Phrase( object ):
-    def __init__(self, rawData=None, diskInt = 'BEACHBALL'):
-        self.rawData = rawData
-        self.wlStart = rawData[0].header.get('WLSTART')
-        self.wlStop = rawData[0].header.get('WLSTOP')
-        if diskInt == 'BEACHBALL':
-            self.processedData = SpectralTools.BeachBall(parent=self)
-        elif diskInt == 'DISKOBALL':
-            self.processedData = SpectralTools.DiskoBall(parent=self)
+    def __init__(self, rawData=None, diskInt = None, observedData=None):
+        if rawData != None:
+            self.observed = False
+            self.rawData = rawData
+            self.wlStart = rawData[0].header.get('WLSTART')
+            self.wlStop = rawData[0].header.get('WLSTOP')
+            if diskInt == 'BEACHBALL':
+                self.processedData = SpectralTools.BeachBall(parent=self)
+            elif diskInt == 'DISKOBALL':
+                self.processedData = SpectralTools.DiskoBall(parent=self)
+        elif observedData != None:
+            self.observed = True
+            self.processedData = SpectralTools.ObservedSpectrum(observed=observedData)
+            self.wlStart = self.processedData.observed.header.get('WLSTART')
+            self.wlStop = self.processedData.observed.header.get('WLSTOP')
 
     @classmethod
-    def fromFile(self, hdr, data=None, filename=None, ext=None):
+    def fromFile(self, hdr, data=None, filename=None, ext=None, diskInt=None):
         rawData = []
         rawData.append(SpectralTools.Spectrum.from_file(hdr,data=data,
             filename=filename, ext=ext))
-        return self(rawData=rawData)
+        return self(rawData=rawData, diskInt=diskInt)
+    
+    @classmethod
+    def fromObservedData(self, spectrum):
+        return self(observedData=spectrum)
 
     def addRawSpectrum(self, hdr, data=None, filename=None, ext=None):
         self.rawData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
@@ -41,7 +52,8 @@ class Phrase( object ):
     #    self.processedData.diskInt(vsini=vsini)
 
     def rehearse(self, vsini=0.0, R=0):
-        self.processedData.resample(vsini=vsini, R=R)
+        if self.observed == False:
+            self.processedData.resample(vsini=vsini, R=R)
 
     def perform(self, vsini= 0.0, R = 0.0):
         return self.processedData.yank(vsini=vsini, R = R)
@@ -220,12 +232,18 @@ class Phrase( object ):
             HDUList.writeto(filename)
 
 class Melody( object ):
-    def __init__(self, phrases = [], filename=None):
-        self.phrases = []
+    def __init__(self, phrases = [], filename=None, observed=False):
+        self.phrases = phrases
         self.filename = filename
-        self.loadMelody()
-        self.muted = True
+        self.observed= observed
+        if self.observed==False:
+            self.loadMelody()
+            self.muted = True
         self.nPhrases = len(self.phrases)
+
+    @classmethod
+    def fromObservedData(self, phrases=[], filename=None):
+        return self(phrases=phrases, filename=filename, observed=True)
 
     def loadMelody(self):
         info = pyfits.info(self.filename, output='')
@@ -248,7 +266,7 @@ class Melody( object ):
                     break
             if not(added):
                 self.phrases.append(Phrase.fromFile(hdr, data=None,
-                    filename=self.filename, ext=i+1))
+                    filename=self.filename, ext=i+1, diskInt='BEACHBALL'))
 
         #for phrase in self.phrases:
         #    phrase.processedData.loadData()
@@ -263,7 +281,7 @@ class Melody( object ):
         for phrase in self.phrases:
             self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
                 wlStop=wlRange[1]))
-        print("T=%d G=%d")
+        print self.muted
 
     def inParameterRange(self, TeffRange=[], loggRange=[], BfieldRange=[]):
         self.muted = False
@@ -290,7 +308,11 @@ class Melody( object ):
 
     def perform(self, vsini = 0.0, R = 0.0):
         spectra = []
-        label = "Teff = %d K log g = %.2f Bfield = %.2f kG" % (self.Teff, self.logg, self.B)
+        if self.observed == False:
+            label = "Teff = %d K log g = %.2f Bfield = %.2f kG" % (self.Teff,
+                    self.logg, self.B)
+        else:
+            label = "Observed Spectrum"
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
                 spectra.append(self.phrases[i].perform(vsini=vsini, R=R))
@@ -368,6 +390,7 @@ class Score( object ):
         The 
         '''
         for melody in self.melodies:
+            print melody.muted
             if not(melody.muted):
                 melody.rehearse(vsini=vsini, R=R)
 

@@ -289,7 +289,7 @@ def read_3col_spectrum(filename):
 class Spectrum( object ):
     def __init__(self, wl=None, I=None, Q=None, U=None, V=None,
             continuum=None, header=pyfits.Header(), spectrum_type=None,
-            filename=None, ext=None):
+            filename=None, ext=None, preserve=False):
         self.wl = wl
         self.flux_I = I
         self.flux_Q = Q
@@ -387,7 +387,7 @@ class Spectrum( object ):
                 continuum = pyfits.Column(name='Continuum', format='D', array=self.continuum)
                 coldefs.append(continuum)
             self.columns = pyfits.ColDefs(coldefs)
-
+    
     def resample(self, R, nyquist=False):
         """
         This routine convolves a given spectrum to a resolution R
@@ -435,7 +435,6 @@ class Spectrum( object ):
     
         newWl = numpy.array(newWl[int(len(xk)/2.0):-int(len(xk)/2.0)])
 
-        print("%d %d" % (len(const), len(yk)))
         normal = scipy.signal.convolve(const, yk, mode = 'valid')
         result_I = scipy.signal.convolve(newI, yk, mode ='valid')
         goodPoints = numpy.isfinite(result_I)
@@ -625,6 +624,13 @@ class Spectrum( object ):
         else:
             return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
     
+class ObservedSpectrum ( object ):
+    def __init__(self, observed=None):
+        self.observed = observed
+
+    def yank(self, **kwargs):
+        return self.observed
+
 class Integrator( object ):
     def __init__(self, parent=None, deltav = 0.1, limb_darkening=None):
         self.parent = parent
