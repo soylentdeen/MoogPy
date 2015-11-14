@@ -231,6 +231,47 @@ class Phrase( object ):
             HDUList.verify(option='silentfix')
             HDUList.writeto(filename)
 
+    def saveObserved(self, filename = None):
+        HDUs = []
+        spectrum = self.processedData.observed
+        hdr = spectrum.header.copy()
+        SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns, header=hdr)
+        SpectrumHDU.name = "%.4fA - %.4fA OBSERVED" % (hdr.get('wlStart'), hdr.get('wlStop'))
+        HDUs.append(SpectrumHDU)
+
+        if filename == None:
+            return HDUs
+
+        if os.path.exists(filename):    #file exists!  get ready to append!
+            while os.path.exists(filename+'.lock'):
+                print("Gnarly dude!  The file is locked!  I'll just hang out here for a while and wait")
+                time.sleep(0.1)
+            with open(filename+'.lock', 'w'):
+                os.utime(filename+'.lock', None)
+            HDUList = pyfits.open(filename, mode='update')
+            for spectrum in HDUs:
+                try:
+                    HDUList.pop(HDUList.index_of(spectrum.name))
+                except:
+                    pass
+                HDUList.append(spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.close()
+            os.remove(filename+'.lock')
+        else:
+            HDUList = pyfits.HDUList()
+            primary = pyfits.PrimaryHDU()
+            if primaryHeaderKWs != None:
+                for key in primaryHeaderKWs.keys():
+                    primary.header.set(key, primaryHeaderKWs[key])
+            HDUList.append(primary)
+            for spectrum in HDUs:
+                HDUList.append(spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.writeto(filename)
+
 class Melody( object ):
     def __init__(self, phrases = [], filename=None, observed=False):
         self.phrases = phrases
@@ -321,6 +362,8 @@ class Melody( object ):
         return spectra, label
 
     def record(self, filename=''):
+        if filename == '':
+            filename = self.filename
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
                 self.phrases[i].record(filename)
