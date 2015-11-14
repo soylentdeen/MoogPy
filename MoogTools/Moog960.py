@@ -8,7 +8,25 @@ import os
 import matplotlib.lines as Lines
 
 class Phrase( object ):
-    def __init__(self, rawData=None, diskInt = None, observedData=None):
+    def __init__(self, wlStart, wlStop):
+        self.wlStart = wlStart
+        self.wlStop = wlStop
+        return
+
+    def owns(self, hdr):
+        if ((self.wlStart == hdr.get('WLSTART')) & (self.wlStop == hdr.get("WLSTOP"))):
+            return True
+        return False
+
+    def inWlRange(self, wlStart, wlStop):
+        return ((self.wlStart < wlStop) & (self.wlStop > wlStart))
+
+class ObservedPhrase( Phrase ):
+    def __init__(self, observedData = None):
+        self.observedData = SpectralTools.ObservedSpectrum(observed=observedData)
+
+class SyntheticPhrase( Phrase ):
+    def __init__(self, rawData=None, diskInt = None):
         if rawData != None:
             self.observed = False
             self.rawData = rawData
@@ -39,21 +57,8 @@ class Phrase( object ):
         self.rawData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
             filename=filename, ext=ext))
 
-    def owns(self, hdr):
-        if ((self.wlStart == hdr.get('WLSTART')) & 
-                (self.wlStop == hdr.get("WLSTOP"))):
-            return True
-        return False
-
-    def inWlRange(self, wlStart, wlStop):
-        return ((self.wlStart < wlStop) & (self.wlStop > wlStart))
-
-    #def integrate(self, vsini=0.0):
-    #    self.processedData.diskInt(vsini=vsini)
-
     def rehearse(self, vsini=0.0, R=0):
-        if self.observed == False:
-            self.processedData.resample(vsini=vsini, R=R)
+        self.processedData.resample(vsini=vsini, R=R)
 
     def perform(self, vsini= 0.0, R = 0.0):
         return self.processedData.yank(vsini=vsini, R = R)
