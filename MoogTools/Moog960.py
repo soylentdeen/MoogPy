@@ -23,24 +23,69 @@ class Phrase( object ):
 
 class ObservedPhrase( Phrase ):
     def __init__(self, observedData = None):
-        self.observedData = SpectralTools.ObservedSpectrum(observed=observedData)
+        observedData = SpectralTools.ObservedSpectrum(observed=observedData)
+        wlStart = observedData.observed.header.get('WLSTART')
+        wlStop = observedData.observed.header.get('WLSTOP')
+        super(ObservedPhrase, self).__init__(wlStart, wlStop)
+
+        self.observedData = observedData
+
+    @classmethod
+    def fromFile(self, hdr, data=None, filename=None, ext=None):
+        observed = SpectralTools.Spectrum.from_file(hdr, data=data, filename=filename, ext=ext)
+        return self(observedData=observed)
+
+    def record(self, filename = None):
+        self.save(filename=filename)
+
+    def save(self, filename = None):
+        HDUs = []
+        spectrum = self.observedData.observed
+        hdr = spectrum.header.copy()
+        SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns, header=hdr)
+        SpectrumHDU.name = "%.4fA - %.4fA OBSERVED" % (hdr.get('wlStart'), 
+                hdr.get('wlStop'))
+        HDUs.append(SpectrumHDU)
+
+        if filename == None:
+            return HDUs
+
+        if os.path.exists(filename):    #file exists!  get ready to append!
+            while os.path.exists(filename+'.lock'):
+                print("Gnarly dude!  The file is locked!  I'll just hang out here for a while and wait")
+                time.sleep(0.1)
+            with open(filename+'.lock', 'w'):
+                os.utime(filename+'.lock', None)
+            HDUList = pyfits.open(filename, mode='update')
+            for spectrum in HDUs:
+                try:
+                    HDUList.pop(HDUList.index_of(spectrum.name))
+                except:
+                    pass
+                HDUList.append(spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.close()
+            os.remove(filename+'.lock')
+        else:
+            HDUList = pyfits.HDUList()
+            primary = pyfits.PrimaryHDU()
+            HDUList.append(primary)
+            for spectrum in HDUs:
+                HDUList.append(spectrum)
+            HDUList.update_extend()
+            HDUList.verify(option='silentfix')
+            HDUList.writeto(filename)
 
 class SyntheticPhrase( Phrase ):
     def __init__(self, rawData=None, diskInt = None):
-        if rawData != None:
-            self.observed = False
-            self.rawData = rawData
-            self.wlStart = rawData[0].header.get('WLSTART')
-            self.wlStop = rawData[0].header.get('WLSTOP')
-            if diskInt == 'BEACHBALL':
-                self.processedData = SpectralTools.BeachBall(parent=self)
-            elif diskInt == 'DISKOBALL':
-                self.processedData = SpectralTools.DiskoBall(parent=self)
-        elif observedData != None:
-            self.observed = True
-            self.processedData = SpectralTools.ObservedSpectrum(observed=observedData)
-            self.wlStart = self.processedData.observed.header.get('WLSTART')
-            self.wlStop = self.processedData.observed.header.get('WLSTOP')
+        self.rawData = rawData
+        self.wlStart = rawData[0].header.get('WLSTART')
+        self.wlStop = rawData[0].header.get('WLSTOP')
+        if diskInt == 'BEACHBALL':
+            self.processedData = SpectralTools.BeachBall(parent=self)
+        elif diskInt == 'DISKOBALL':
+            self.processedData = SpectralTools.DiskoBall(parent=self)
 
     @classmethod
     def fromFile(self, hdr, data=None, filename=None, ext=None, diskInt=None):
@@ -49,9 +94,9 @@ class SyntheticPhrase( Phrase ):
             filename=filename, ext=ext))
         return self(rawData=rawData, diskInt=diskInt)
     
-    @classmethod
-    def fromObservedData(self, spectrum):
-        return self(observedData=spectrum)
+    #@classmethod
+    #def fromObservedData(self, spectrum):
+    #   return self(observedData=spectrum)
 
     def addRawSpectrum(self, hdr, data=None, filename=None, ext=None):
         self.rawData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
@@ -236,56 +281,17 @@ class SyntheticPhrase( Phrase ):
             HDUList.verify(option='silentfix')
             HDUList.writeto(filename)
 
-    def saveObserved(self, filename = None):
-        HDUs = []
-        spectrum = self.processedData.observed
-        hdr = spectrum.header.copy()
-        SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns, header=hdr)
-        SpectrumHDU.name = "%.4fA - %.4fA OBSERVED" % (hdr.get('wlStart'), hdr.get('wlStop'))
-        HDUs.append(SpectrumHDU)
-
-        if filename == None:
-            return HDUs
-
-        if os.path.exists(filename):    #file exists!  get ready to append!
-            while os.path.exists(filename+'.lock'):
-                print("Gnarly dude!  The file is locked!  I'll just hang out here for a while and wait")
-                time.sleep(0.1)
-            with open(filename+'.lock', 'w'):
-                os.utime(filename+'.lock', None)
-            HDUList = pyfits.open(filename, mode='update')
-            for spectrum in HDUs:
-                try:
-                    HDUList.pop(HDUList.index_of(spectrum.name))
-                except:
-                    pass
-                HDUList.append(spectrum)
-            HDUList.update_extend()
-            HDUList.verify(option='silentfix')
-            HDUList.close()
-            os.remove(filename+'.lock')
-        else:
-            HDUList = pyfits.HDUList()
-            primary = pyfits.PrimaryHDU()
-            if primaryHeaderKWs != None:
-                for key in primaryHeaderKWs.keys():
-                    primary.header.set(key, primaryHeaderKWs[key])
-            HDUList.append(primary)
-            for spectrum in HDUs:
-                HDUList.append(spectrum)
-            HDUList.update_extend()
-            HDUList.verify(option='silentfix')
-            HDUList.writeto(filename)
-
 class Melody( object ):
     def __init__(self, phrases = [], filename=None, observed=False):
         self.phrases = phrases
+        self.nPhrases = len(self.phrases)
         self.filename = filename
         self.observed= observed
         if self.observed==False:
             self.loadMelody()
             self.muted = True
-        self.nPhrases = len(self.phrases)
+        else:
+            self.muted = False
 
     @classmethod
     def fromObservedData(self, phrases=[], filename=None):
@@ -311,7 +317,7 @@ class Melody( object ):
                     added=True
                     break
             if not(added):
-                self.phrases.append(Phrase.fromFile(hdr, data=None,
+                self.phrases.append(SyntheticPhrase.fromFile(hdr, data=None,
                     filename=self.filename, ext=i+1, diskInt='BEACHBALL'))
 
         #for phrase in self.phrases:
@@ -322,12 +328,14 @@ class Melody( object ):
             self.phrases.append(phrase)
         self.nPhrases = len(self.phrases)
 
-    def selectPhrases(self, wlRange=[]):
+    def selectPhrases(self, wlRange=[], selectAll=False):
         self.selectedPhrases = []
         for phrase in self.phrases:
-            self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
-                wlStop=wlRange[1]))
-        print self.muted
+            if selectAll:
+                self.selectedPhrases.append(True)
+            else:
+                self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
+                    wlStop=wlRange[1]))
 
     def inParameterRange(self, TeffRange=[], loggRange=[], BfieldRange=[]):
         self.muted = False
@@ -522,6 +530,8 @@ class Moog960( object ):
             keysignatures.append(sp)
             labels.append(l)
 
+        print sp
+        print l
         if len(keysignatures) < 1:
             return
 
