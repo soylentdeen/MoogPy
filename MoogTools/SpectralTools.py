@@ -15,6 +15,7 @@ class SpectrumError( Exception ):
         self.value = value
         self.message = {}
         self.message[0] = "Failure loading Raw Data!! %s" % errmsg
+        self.message[1] = "Failure loading Processed Data!! %s" % errmsg
 
     def __str__(self):
         return repr(self.message[self.value])
@@ -626,7 +627,7 @@ class Spectrum( object ):
     
 class ObservedSpectrum ( object ):
     def __init__(self, observed=None):
-        self.observed = observed
+        self.observed = observed             # Should be a Spectrum object
 
     def yank(self, **kwargs):
         return self.observed
@@ -724,7 +725,8 @@ class BeachBall( Integrator ):
             if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
                 return convol
 
-        print("ERROR!  Spectrum with vsini=%.2f and R=%.1f NOT FOUND!!!" % (vsini, R))
+        raise SpectrumError(1, "Spectrum with vsini=%.2f and R=%.1f NOT FOUND!!!" % 
+                (vsini, R))
 
 
     def rtint(self, vsini_in=0.0, vrt_in=0, **kwargs):
@@ -902,6 +904,14 @@ class BeachBall( Integrator ):
                 j2 = scipy.where((abs(v) >= vsini*r1) & (abs(v) <= vsini*r2))
                 if len(j2[0]) > 0:
                     rkern[j2] = numpy.sqrt((vsini*r2)**2 - v[j2]**2)
+                #print("dv = %.2f" % dv)
+                #print("vsini = %.2f" % vsini)
+                #print abs(v)
+                #print vsini*r1
+                #print vsini*r2
+                #print("len(j1) = %d len(j2) = %d" % (len(j1[0]), len(j2[0])))
+                #print("Rkern = ")
+                #print rkern
                 rkern = rkern / rkern.sum()   # normalize kernel
 
 
