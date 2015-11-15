@@ -282,6 +282,7 @@ class Melody( object ):
         self.phrases = phrases
         self.filename = filename
         self.observed= observed
+        self.selectedPhrases = None
         if self.observed==False:
             self.loadMelody()
             self.muted = True
@@ -369,6 +370,8 @@ class Melody( object ):
     def record(self, filename=''):
         if filename == '':
             filename = self.filename
+        if self.selectedPhrases == None:
+            self.selectPhrases()
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
                 self.phrases[i].record(filename)
