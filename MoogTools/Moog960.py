@@ -94,10 +94,6 @@ class SyntheticPhrase( Phrase ):
             filename=filename, ext=ext))
         return self(rawData=rawData, diskInt=diskInt)
     
-    #@classmethod
-    #def fromObservedData(self, spectrum):
-    #   return self(observedData=spectrum)
-
     def addRawSpectrum(self, hdr, data=None, filename=None, ext=None):
         self.rawData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
             filename=filename, ext=ext))
@@ -282,20 +278,126 @@ class SyntheticPhrase( Phrase ):
             HDUList.writeto(filename)
 
 class Melody( object ):
+    def __init__(self, phrases = [], filename=None, label=None):
+        self.phrases = phrases
+        self.nPhrases = len(self.phrases)
+        self.filename = filename
+        self.selectedPhrases = [False for i in range(self.nPhrases)]
+        self.muted = True
+        self.label = label
+        
+    def addPhrase(self, phrases):
+        for phrase in phrases:
+            self.phrases.append(phrase)
+        self.nPhrases = len(self.phrases)
+
+    def selectPhrases(self, wlRange=[], selectAll=False):
+        self.selectedPhrases = []
+        for phrase in self.phrases:
+            if selectAll:
+                self.selectedPhrases.append(True)
+            else:
+                self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
+                    wlStop=wlRange[1]))
+
+    def inParameterRange(self, TeffRange=[], loggRange=[], BfieldRange=[]):
+        self.muted = False
+        try:
+            if ((self.Teff < TeffRange[0]) or (self.Teff > TeffRange[1])):
+                self.muted = True
+        except:
+            pass
+        try:
+            if ((self.logg < loggRange[0]) | (self.logg > loggRange[1])):
+                self.muted = True
+        except:
+            pass
+        try:
+            if ((self.B < BfieldRange[0]) | (self.B > BfieldRange[1])):
+                self.muted = True
+        except:
+            pass
+    
+
+    def record(self, filename = None):
+        if filename == None:
+            filename = self.filename
+        for i in range(self.nPhrases):
+            if self.selectedPhrases[i]:
+                self.phrases[i].record(filename)
+
+
+class ObservedMelody( Melody ):
+    def __init__(self, phrases = [], filename=None, label=None):
+        super(ObservedMelody, self).__init__(phrases=phrases, filename=filename, label=label)
+
+    @classmethod
+    def fromFile(self, filename=None, label=None):
+        info = pyfits.info(filename, output='')
+        nPhrases = len(info)-1
+        header = pyfits.getheader(self.filename, ext=0)
+        phrases = []
+        for i in range(nPhrases):
+            phrases.append(ObservedPhrase.fromFile(header, filename=filename, ext=i+1))
+
+        return self(phrases=phrases, filename=filename, label=label)
+
+    def rehearse(self, **kwargs):
+        return
+
+    def perform(self):
+        spectra = []
+        for i in range(self.nPhrase):
+            if self.selectedPhrases[i]:
+                spectra.append(self.phrases[i].perform())
+
+        return spectra, self.label
+
+
+class SyntheticMelody( Melody ):
+    def __init__(self, phrases = [], filename=None, label=None):
+        super(SyntheticMelody, self).__init__(phrases = phrases, filename=filename,
+                label=label)
+
+    def rehearse(self, vsini = 0.0, R = 0):
+        for i in range(self.nPhrases):
+            if self.selectedPhrases[i]:
+                self.phrases[i].rehearse(vsini = vsini, R=R)
+
+    def perform(self, vsini = 0.0, R = 0.0):
+        spectra = []
+        print("melody.observed = %s" % self.observed)
+        print("selectedPhrases = %s" % self.selectedPhrases)
+        print("number of Phrases = %d" % self.nPhrases)
+        if self.observed == False:
+            label = "Teff = %d K log g = %.2f Bfield = %.2f kG" % (self.Teff,
+                    self.logg, self.B)
+        else:
+            label = "Observed Spectrum"
+        for i in range(self.nPhrases):
+            print("Is Phrase %d selected? %s" % (i, self.selectedPhrases[i]))
+            if self.selectedPhrases[i]:
+                spectra.append(self.phrases[i].perform(vsini=vsini, R=R))
+
+
+        return spectra, label
+    
+"""
+class Melody( object ):
     def __init__(self, phrases = [], filename=None, observed=False):
         self.phrases = phrases
         self.nPhrases = len(self.phrases)
         self.filename = filename
         self.observed= observed
+        self.ID = numpy.random.rand()
         if self.observed==False:
             self.loadMelody()
             self.muted = True
         else:
+            if self.nPhrases = 0:   # Need to load them from a file
+                self.loadObservedFromFile
             self.muted = False
 
-    @classmethod
-    def fromObservedData(self, phrases=[], filename=None):
-        return self(phrases=phrases, filename=filename, observed=True)
 
     def loadMelody(self):
         info = pyfits.info(self.filename, output='')
@@ -304,6 +406,8 @@ class Melody( object ):
         self.Teff = self.header.get("TEFF")
         self.logg = self.header.get("LOGG")
         self.B = self.header.get("BFIELD")
+
+        self.phrases = []
 
         for i in range(self.nSpectra):
             added = False
@@ -319,6 +423,10 @@ class Melody( object ):
             if not(added):
                 self.phrases.append(SyntheticPhrase.fromFile(hdr, data=None,
                     filename=self.filename, ext=i+1, diskInt='BEACHBALL'))
+
+        self.nPhrases = len(self.phrases)
+        print("%.3f %d" % (self.ID, self.nPhrases))
+        raw_input()
 
         #for phrase in self.phrases:
         #    phrase.processedData.loadData()
@@ -362,12 +470,16 @@ class Melody( object ):
 
     def perform(self, vsini = 0.0, R = 0.0):
         spectra = []
+        print("melody.observed = %s" % self.observed)
+        print("selectedPhrases = %s" % self.selectedPhrases)
+        print("number of Phrases = %d" % self.nPhrases)
         if self.observed == False:
             label = "Teff = %d K log g = %.2f Bfield = %.2f kG" % (self.Teff,
                     self.logg, self.B)
         else:
             label = "Observed Spectrum"
         for i in range(self.nPhrases):
+            print("Is Phrase %d selected? %s" % (i, self.selectedPhrases[i]))
             if self.selectedPhrases[i]:
                 spectra.append(self.phrases[i].perform(vsini=vsini, R=R))
 
@@ -380,6 +492,7 @@ class Melody( object ):
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
                 self.phrases[i].record(filename)
+#"""
 
 class Score( object ):
     """
@@ -394,7 +507,8 @@ class Score( object ):
         melodyFiles = glob.glob(self.directory+'*raw.fits')
         for melody in melodyFiles:
             print("%s" % melody)
-            self.melodies.append(Melody(filename=melody))
+            m = SyntheticMelody(filename=melody)
+            self.melodies.append(m)
 
     def setWlRange(self, wlStart, wlStop):
         for melody in self.melodies:
@@ -446,7 +560,7 @@ class Score( object ):
         The 
         '''
         for melody in self.melodies:
-            print melody.muted
+            print("Score::Melody::Rehearse: %s" %melody.muted)
             if not(melody.muted):
                 melody.rehearse(vsini=vsini, R=R)
 
@@ -454,6 +568,7 @@ class Score( object ):
         spectra = []
         labels = []
         for melody in self.melodies:
+            print("%d %.1f %.1f %s" % (melody.Teff, melody.logg, melody.B, melody.muted))
             if not(melody.muted):
                 sp, label = melody.perform(vsini=vsini, R=R)
                 spectra.append(sp)
@@ -495,6 +610,10 @@ class Moog960( object ):
             self.vsini = self.config['vsini']
         else:
             self.vsini = None
+
+        if 'observed' in keys:
+            self.observed = self.config['observed']
+
         self.Score = Score(directory=self.watchedDir)
         self.Score.selectMelodies(TeffRange=self.TeffRange, loggRange=self.loggRange,
                 BfieldRange=self.BfieldRange, wlRange=self.wlRange)
@@ -526,10 +645,12 @@ class Moog960( object ):
         linestyles = ['-', '--', '-.', ':']
 
         for v, r in zip(vsini, R):
+            print("%f %f" % (v, r))
             sp, l = self.Score.perform(vsini=v, R = r)
             keysignatures.append(sp)
             labels.append(l)
 
+        self.junk = keysignatures
         print sp
         print l
         if len(keysignatures) < 1:
@@ -539,6 +660,8 @@ class Moog960( object ):
         for k, lb, ls in zip(keysignatures,labels, linestyles):
             for spectra, l, c in zip(k, lb, colors):
                 for s in spectra:
+                    print len(s.wl)
+                    print len(s.flux_I)
                     line = axes.plot(s.wl, s.flux_I, ls=ls, color=c, label=l)
 
         #axes.figure.legend(lines, labels)

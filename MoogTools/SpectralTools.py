@@ -904,14 +904,14 @@ class BeachBall( Integrator ):
                 j2 = scipy.where((abs(v) >= vsini*r1) & (abs(v) <= vsini*r2))
                 if len(j2[0]) > 0:
                     rkern[j2] = numpy.sqrt((vsini*r2)**2 - v[j2]**2)
-                print("dv = %.2f" % dv)
-                print("vsini = %.2f" % vsini)
-                print abs(v)
-                print vsini*r1
-                print vsini*r2
-                print("len(j1) = %d len(j2) = %d" % (len(j1[0]), len(j2[0])))
-                print("Rkern = ")
-                print rkern
+                #print("dv = %.2f" % dv)
+                #print("vsini = %.2f" % vsini)
+                #print abs(v)
+                #print vsini*r1
+                #print vsini*r2
+                #print("len(j1) = %d len(j2) = %d" % (len(j1[0]), len(j2[0])))
+                #print("Rkern = ")
+                #print rkern
                 rkern = rkern / rkern.sum()   # normalize kernel
 
 
