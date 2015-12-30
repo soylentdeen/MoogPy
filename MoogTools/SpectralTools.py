@@ -108,7 +108,129 @@ def resample(x, y, R, nyquist=False, halt=False):
         input()
     return retval
 
-def binSpectrum(spectrum, native_wl, new_wl):
+def binSpectrum(spectrum, new_wl):
+
+    overlap_start = numpy.max([numpy.min(spectrum.wl), numpy.min(new_wl)])
+    overlap_stop = numpy.min([numpy.max(spectrum.wl), numpy.max(new_wl)])
+    overlap = scipy.where((new_wl >= overlap_start) & (new_wl <= overlap_stop))
+    
+    new_wl = new_wl[overlap]
+    
+    if spectrum.flux_I != None:
+        new_I = numpy.zeros(len(new_wl))
+    else:
+        new_I = None
+    if spectrum.flux_Q != None:
+        new_Q = numpy.zeros(len(new_wl))
+    else:
+        new_Q = None
+    if spectrum.flux_U != None:
+        new_U = numpy.zeros(len(new_wl))
+    else:
+        new_U = None
+    if spectrum.flux_V != None:
+        new_V = numpy.zeros(len(new_wl))
+    else:
+        new_V = None
+    if spectrum.continuum != None:
+        new_continuum = numpy.zeros(len(new_wl))
+    else:
+        new_continuum = None
+
+    for i in range(len(new_wl)-1):
+        bm = scipy.where( (spectrum.wl > new_wl[i]) & (
+                spectrum.wl <= new_wl[i+1]))[0]
+        if (len(bm) > 1):
+            denom = max(spectrum.wl[bm]) - min(spectrum.wl[bm])
+            if spectrum.flux_I != None:
+                num = scipy.integrate.simps(spectrum.flux_I[bm], x=spectrum.wl[bm])
+                new_I[i] = num/denom
+            if spectrum.flux_Q != None:
+                num = scipy.integrate.simps(spectrum.flux_Q[bm], x=spectrum.wl[bm])
+                new_Q[i] = num/denom
+            if spectrum.flux_U != None:
+                num = scipy.integrate.simps(spectrum.flux_U[bm], x=spectrum.wl[bm])
+                new_U[i] = num/denom
+            if spectrum.flux_V != None:
+                num = scipy.integrate.simps(spectrum.flux_V[bm], x=spectrum.wl[bm])
+                new_V[i] = num/denom
+            if spectrum.continuum != None:
+                num = scipy.integrate.simps(spectrum.continuum[bm], x=spectrum.wl[bm])
+                new_continuum[i] = num/denom
+        elif (len(bm) == 1):
+            if spectrum.flux_I != None:
+                new_I[i] = spectrum.flux_I[bm]
+            if spectrum.flux_Q != None:
+                new_Q[i] = spectrum.flux_Q[bm]
+            if spectrum.flux_U != None:
+                new_U[i] = spectrum.flux_U[bm]
+            if spectrum.flux_V != None:
+                new_V[i] = spectrum.flux_V[bm]
+            if spectrum.continuum != None:
+                new_continuum[i] = spectrum.continuum[bm]
+        else:
+            if spectrum.flux_I != None:
+                new_I[i] = 0.0 
+            if spectrum.flux_Q != None:
+                new_Q[i] = 0.0 
+            if spectrum.flux_U != None:
+                new_U[i] = 0.0 
+            if spectrum.flux_V != None:
+                new_V[i] = 0.0 
+            if spectrum.continuum != None:
+                new_continuum[i] = 0.0 
+    bm = scipy.where(spectrum.wl > new_wl[-1])[0]
+    if len(bm) > 1:
+        denom = max(spectrum.wl[bm]) - min(spectrum.wl[bm])
+        if spectrum.flux_I != None:
+            num = scipy.integrate.simps(spectrum.flux_I[bm], x=spectrum.wl[bm])
+            new_I[-1] = num/denom
+        if spectrum.flux_Q != None:
+            num = scipy.integrate.simps(spectrum.flux_Q[bm], x=spectrum.wl[bm])
+            new_Q[-1] = num/denom
+        if spectrum.flux_U != None:
+            num = scipy.integrate.simps(spectrum.flux_U[bm], x=spectrum.wl[bm])
+            new_U[-1] = num/denom
+        if spectrum.flux_V != None:
+            num = scipy.integrate.simps(spectrum.flux_V[bm], x=spectrum.wl[bm])
+            new_V[-1] = num/denom
+        if spectrum.continuum != None:
+            num = scipy.integrate.simps(spectrum.continuum[bm], x=spectrum.wl[bm])
+            new_continuum[-1] = num/denom
+    else:
+        if len(bm) == 1:
+            if spectrum.flux_I != None:
+                new_I[-1] = spectrum.flux_I[bm]
+            if spectrum.flux_Q != None:
+                new_Q[-1] = spectrum.flux_Q[bm]
+            if spectrum.flux_U != None:
+                new_U[-1] = spectrum.flux_U[bm]
+            if spectrum.flux_V != None:
+                new_V[-1] = spectrum.flux_V[bm]
+            if spectrum.continuum != None:
+                new_continuum[-1] = spectrum.continuum[bm]
+        else:
+            if spectrum.flux_I != None:
+                new_I[-1] = spectrum.flux_I[-1]
+            if spectrum.flux_Q != None:
+                new_Q[-1] = spectrum.flux_Q[-1]
+            if spectrum.flux_U != None:
+                new_U[-1] = spectrum.flux_U[-1]
+            if spectrum.flux_V != None:
+                new_V[-1] = spectrum.flux_V[-1]
+            if spectrum.continuum != None:
+                new_continuum[-1] = spectrum.continuum[-1]
+                
+    retval = Spectrum(wl=new_wl, I=new_I, Q=new_Q,
+                U=new_U, V=new_V, continuum=new_continuum, 
+                header=spectrum.header, spectrum_type="REBINNED",
+                filename=spectrum.filename, ext=spectrum.ext, 
+                preserve=spectrum.preserve)
+                
+    return retval
+
+            
+def binSpectrum_old(spectrum, native_wl, new_wl):
     """
         This routine pixelates a synthetic spectrum, in effect simulating the 
         discrete nature of detector pixels.
@@ -158,6 +280,125 @@ def diff_spectra(x1, y1, x2, y2, pad=False):
     else:
         return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
     
+def mergeSpectra(first=None, second=None):
+    if second == None:
+        return first
+    
+    x1 = first.wl
+    x2 = second.wl
+
+    overlap_start = numpy.max([numpy.min(x1), numpy.min(x2)])
+    overlap_stop = numpy.min([numpy.max(x1), numpy.max(x2)])
+    overlap = scipy.where((x1 >= overlap_start) & (x1 <= overlap_stop))
+    if (len(overlap[0]) > 1):
+        unique1 = scipy.where((x1 < overlap_start) | (x1 > overlap_stop))
+        unique2 = scipy.where((x2 < overlap_start) | (x2 > overlap_stop))
+
+        new_x = numpy.append(x1, x2[unique2])
+
+        if (first.flux_I != None) & (second.flux_I != None):
+            I1 = first.flux_I
+            I2 = second.flux_I
+            I1[numpy.isnan(I1)] = 0.0
+            I2[numpy.isnan(I2)] = 0.0
+            I = scipy.interpolate.splrep(x2, I2)
+            Iinterp = scipy.interpolate.splev(x1[overlap], I)
+            mergedI = I1[overlap] + Iinterp
+            new_I = numpy.append(numpy.append(I1[unique1], merged), I2[unique2])
+        else:
+            new_I = None
+        if (first.flux_Q != None) & (second.flux_Q != None):
+            Q1 = first.flux_Q
+            Q2 = second.flux_Q
+            Q1[numpy.isnan(Q1)] = 0.0
+            Q2[numpy.isnan(Q2)] = 0.0
+            Q = scipy.interpolate.splrep(x2, Q2)
+            Qinterp = scipy.interpolate.splev(x1[overlap], Q)
+            mergedQ = Q1[overlap] + Qinterp
+            new_Q = numpy.append(numpy.append(Q1[unique1], merged), Q2[unique2])
+        else:
+            new_Q = None
+        if (first.flux_U != None) & (second.flux_U != None):
+            U1 = first.flux_U
+            U2 = second.flux_U
+            U1[numpy.isnan(U1)] = 0.0
+            U2[numpy.isnan(U2)] = 0.0
+            U = scipy.interpolate.splrep(x2, U2)
+            Uinterp = scipy.interpolate.splev(x1[overlap], U)
+            mergedU = U1[overlap] + Uinterp
+            new_U = numpy.append(numpy.append(U1[unique1], merged), U2[unique2])
+        else:
+            new_U = None
+        if (first.flux_V != None) & (second.flux_V != None):
+            V1 = first.flux_V
+            V2 = second.flux_V
+            V1[numpy.isnan(V1)] = 0.0
+            V2[numpy.isnan(V2)] = 0.0
+            V = scipy.interpolate.splrep(x2, V2)
+            Vinterp = scipy.interpolate.splev(x1[overlap], V)
+            mergedV = V1[overlap] + Vinterp
+            new_V = numpy.append(numpy.append(V1[unique1], merged), V2[unique2])
+        else:
+            new_V = None
+        if (first.continuum != None) & (second.continuum != None):
+            C1 = first.continuum
+            C2 = second.continuum
+            C1[numpy.isnan(C1)] = 0.0
+            C2[numpy.isnan(C2)] = 0.0
+            C = scipy.interpolate.splrep(x2, C2)
+            Cinterp = scipy.interpolate.splev(x1[overlap], C)
+            mergedC = C1[overlap] + Cinterp
+            new_C = numpy.append(numpy.append(C1[unique1], merged), C2[unique2])
+        else:
+            new_C = None
+            if new_I != None:
+                new_I /= 2.0
+            if new_Q != None:
+                new_Q /= 2.0
+            if new_U != None:
+                new_U /= 2.0
+            if new_V != None:
+                new_V /= 2.0
+    else:
+        new_x = numpy.append(x1, x2)
+        if (first.flux_I != None) & (second.flux_I != None):
+            I1 = first.flux_I
+            I2 = second.flux_I
+            I1[numpy.isnan(I1)] = 0.0
+            I2[numpy.isnan(I2)] = 0.0
+            new_I = numpy.append(I1, I2)
+        else:
+            new_I = None
+        if (first.flux_Q != None) & (second.flux_Q != None):
+            Q1 = first.flux_Q
+            Q2 = second.flux_Q
+            Q1[numpy.isnan(Q1)] = 0.0
+            Q2[numpy.isnan(Q2)] = 0.0
+            new_Q = numpy.append(Q1, Q2)
+        else:
+            new_Q = None
+        if (first.flux_U != None) & (second.flux_U != None):
+            U1 = first.flux_U
+            U2 = second.flux_U
+            U1[numpy.isnan(U1)] = 0.0
+            U2[numpy.isnan(U2)] = 0.0
+            new_U = numpy.append(U1, U2)
+        else:
+            new_U = None
+        if (first.flux_V != None) & (second.flux_V != None):
+            V1 = first.flux_V
+            V2 = second.flux_V
+            V1[numpy.isnan(V1)] = 0.0
+            V2[numpy.isnan(V2)] = 0.0
+            new_V = numpy.append(V1, V2)
+        else:
+            new_V = None
+        
+    retval = Spectrum(wl=new_x, I = new_I, Q = new_Q, U = new_U, V = new_V, 
+            continuum = new_C, spectrum_type='Merged')
+
+    return retval
+
 def merge_spectra(x1, y1, x2, y2):
     x1 = numpy.array(x1)
     y1 = numpy.array(y1)
@@ -309,7 +550,7 @@ class Spectrum( object ):
             self.header.set('SPECTRUM_TYPE', spectrum_type)
 
     @classmethod
-    def from_file(self, hdr, data=None, filename=None, ext=None):
+    def from_file(self, header=None, data=None, filename=None, ext=None):
         if not(data==None):
             self.extractData(data)
         else:
@@ -323,7 +564,7 @@ class Spectrum( object ):
                 errmsg = "Filename or extension not provided!"
                 raise SpectrumError(0, errmsg)
 
-        return self(wl=wl, I=I, Q=Q, U=U, V=V, continuum=continuum, header=hdr,
+        return self(wl=wl, I=I, Q=Q, U=U, V=V, continuum=continuum, header=header,
                 filename=filename, ext=ext)
 
     def extractData(self, data):
@@ -389,7 +630,7 @@ class Spectrum( object ):
                 coldefs.append(continuum)
             self.columns = pyfits.ColDefs(coldefs)
     
-    def resample(self, R, nyquist=False):
+    def resample(self, R, nyquist=False, observedWl=None):
         """
         This routine convolves a given spectrum to a resolution R
         :INPUTS:
@@ -460,6 +701,12 @@ class Spectrum( object ):
         header.set('RESOLVING_POWER', R)
         processed = Spectrum(wl=newWl, I=flux_I, Q=flux_Q, U=flux_U,
                 V=flux_V, header=header, spectrum_type='RESOLVING POWER=%.1f' % R)
+                
+        if observedWl == None:
+            return processed
+        else:
+            binned = binSpectrum(processed, observedWl)
+            return binned
 
         #if nyquist:
         #    nyquistWl = []
@@ -470,7 +717,7 @@ class Spectrum( object ):
         #        nyquistWl.append(nyquistWl[-1] + deltaWl)
         #    newWl = numpy.array(nyquistWl)
         #    self.processed.binSpectrum(newWl=newWl)
-        return processed
+        
     
     def bin(self, newWl):
         """
@@ -595,14 +842,37 @@ class Spectrum( object ):
             self.continuum = newSpec_continuum
 
     def __sub__(self, other):
-        return None
+        overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
+        overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl)])
+        overlap_self = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
+        overlap_other = scipy.where((other.wl >= overlap_start) & (other.wl <= overlap_stop))
+        
+        I = None
+        Q = None
+        U = None
+        V = None
+        continuum = None
+        
+        if (self.flux_I != None) & (other.flux_I != None):
+            I = self.flux_I[overlap_self] - other.flux_I[overlap_other]
+        if (self.flux_Q != None) & (other.flux_Q != None):
+            Q = self.flux_Q[overlap_self] - other.flux_Q[overlap_other]
+        if (self.flux_U != None) & (other.flux_U != None):
+            U = self.flux_U[overlap_self] - other.flux_U[overlap_other]
+        if (self.flux_V != None) & (other.flux_V != None):
+            V = self.flux_V[overlap_self] - other.flux_V[overlap_other]
+        if (self.continuum != None) & (other.continuum != None):
+            continuum = self.continuum[overlap_self] - other.continuum[overlap_other]
+        
+        return Spectrum(wl=self.wl[overlap_self], I=I, Q=Q, U=U, V=V, continuum=continuum, header=self.header,
+                        spectrum_type="Difference Spectrum")
 
     def diff_spectra(self, other, pad=False):
         '''
         '''
-        if self.R != other.R:
-            print("ERROR!  The resolutions of the two spectra are not compatible!")
-            return
+        #if self.R != other.R:
+        #    print("ERROR!  The resolutions of the two spectra are not compatible!")
+        #    return
 
         overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
         overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl)])
@@ -705,7 +975,7 @@ class BeachBall( Integrator ):
         self.diskInt(vsini=vsini)
         return self.integrated[-1]
 
-    def resample(self, vsini, R):
+    def resample(self, vsini, R, observedWl=None):
         found = False
         for convol in self.convolved:
             if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
@@ -715,15 +985,18 @@ class BeachBall( Integrator ):
         if not(found):
             integrated = self.findVsini(vsini)
             if R > 0:
-                self.convolved.append(integrated.resample(R))
-        
-    def yank(self, vsini=0.0, R=0.0):
+                self.convolved.append(integrated.resample(R, observedWl=observedWl))
+
+    def yank(self, vsini=0.0, R=0.0, observedWl = None):
         if R <= 0:
             return self.findVsini(vsini)
 
         for convol in self.convolved:
             if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
-                return convol
+                if observedWl!= None:
+                    return rebin(convol, observedWl)
+                else:
+                    return convol
 
         raise SpectrumError(1, "Spectrum with vsini=%.2f and R=%.1f NOT FOUND!!!" % 
                 (vsini, R))
