@@ -261,7 +261,7 @@ class MoogStokes( object ):
             self.progressBar.start()
         self.MoogPy.moogstokessilent()
         self.finishSpectra()
-        self.Phrase = Moog960.Phrase(rawData=self.Spectra,
+        self.Phrase = Moog960.SyntheticPhrase(rawData=self.Spectra,
                 diskInt="BEACHBALL")
         if saveRaw:
             filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"])
