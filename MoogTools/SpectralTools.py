@@ -560,7 +560,7 @@ class Spectrum( object ):
             U = None
             V = None
             continuum=None
-            if (filename==None) | (ext==None):
+            if (filename==None) and (ext==None):
                 errmsg = "Filename or extension not provided!"
                 raise SpectrumError(0, errmsg)
 
@@ -903,12 +903,19 @@ class ObservedSpectrum ( object ):
         return self.observed
 
 class Integrator( object ):
-    def __init__(self, parent=None, deltav = 0.1, limb_darkening=None):
+    def __init__(self, parent=None, interpolatedData=[], integratedData=[],
+                 convolvedData=[], deltav = 0.1, limb_darkening=None):
         self.parent = parent
         self.deltav = deltav
-        self.interpolated = []        # interpolated to uniform wl grid
-        self.integrated = []          # vsin i - needs interpolated
-        self.convolved = []           # R - needs integrated
+        self.interpolated = interpolatedData  # interpolated to uniform wl grid
+        for interp in self.interpolated:
+            interp.loadData()
+        self.integrated = integratedData      # vsin i - needs interpolated
+        for integ in self.integrated:
+            integ.loadData()
+        self.convolved = convolvedData        # R - needs integrated
+        for convol in self.convolved:
+            convol.loadData()
         self.limb_darkening = None
 
 class BeachBall( Integrator ):
@@ -988,6 +995,8 @@ class BeachBall( Integrator ):
                 self.convolved.append(integrated.resample(R, observedWl=observedWl))
 
     def yank(self, vsini=0.0, R=0.0, observedWl = None):
+        if ((vsini == 0.0) and (R==0)):
+            return self.convolved[0]
         if R <= 0:
             return self.findVsini(vsini)
 

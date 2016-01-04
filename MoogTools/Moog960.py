@@ -19,8 +19,6 @@ class Phrase( object ):
         return False
 
     def inWlRange(self, wlStart, wlStop):
-        print self.wlStart, wlStart
-        print self.wlStop, wlStop
         return ((self.wlStart < wlStop) & (self.wlStop > wlStart))
 
 class ObservedPhrase( Phrase ):
@@ -88,25 +86,77 @@ class ObservedPhrase( Phrase ):
             HDUList.writeto(filename)
 
 class SyntheticPhrase( Phrase ):
-    def __init__(self, rawData=None, diskInt = None):
+    def __init__(self, rawData=[], interpolatedData=[], 
+                 integratedData=[], convolvedData=[], diskInt = None):
         self.rawData = rawData
-        self.wlStart = rawData[0].header.get('WLSTART')
-        self.wlStop = rawData[0].header.get('WLSTOP')
+        if len(self.rawData) > 0:
+            self.wlStart = rawData[0].header.get('WLSTART')
+            self.wlStop = rawData[0].header.get('WLSTOP')
+        elif len(interpolatedData) > 0:
+            self.wlStart = interpolatedData[0].header.get('WLSTART')
+            self.wlStop = interpolatedData[0].header.get('WLSTOP')
+        elif len(integratedData) > 0:
+            self.wlStart = integratedData[0].header.get('WLSTART')
+            self.wlStop = integratedData[0].header.get('WLSTOP')
+        elif len(convolvedData) > 0:
+            self.wlStart = convolvedData[0].header.get('WLSTART')
+            self.wlStop = convolvedData[0].header.get('WLSTOP')
         if diskInt == 'BEACHBALL':
-            self.processedData = SpectralTools.BeachBall(parent=self)
+            self.processedData = SpectralTools.BeachBall(parent=self,
+                    interpolatedData=interpolatedData, integratedData=integratedData,
+                    convolvedData=convolvedData)
         elif diskInt == 'DISKOBALL':
-            self.processedData = SpectralTools.DiskoBall(parent=self)
+            self.processedData = SpectralTools.DiskoBall(parent=self,
+                    interpolatedData=interpolatedData, integratedData=integratedData,
+                    convolvedData=convolvedData)
 
     @classmethod
-    def fromFile(self, hdr, data=None, filename=None, ext=None, diskInt=None):
-        rawData = []
-        rawData.append(SpectralTools.Spectrum.from_file(hdr,data=data,
-            filename=filename, ext=ext))
-        return self(rawData=rawData, diskInt=diskInt)
+    def fromFile(self, hdr, data=None, filename=None, ext=None, diskInt=None,
+                 sourceType="RAW"):
+        if sourceType =="RAW":
+            rawData = []
+            rawData.append(SpectralTools.Spectrum.from_file(hdr,data=data,
+                filename=filename, ext=ext))
+            interpolatedData = []
+            integratedData = []
+            convolvedData = []
+        elif sourceType == "INTERPOLATED":
+            rawData = []
+            interpolatedData = []
+            interpolatedData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
+                filename=filename, ext=ext))
+            integratedData = []
+            convolvedData = []
+        elif sourceType == "INTEGRATED":
+            rawData = []
+            interpolatedData = []
+            integratedData = []
+            integratedData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
+                filename=filename, ext=ext))
+            convolvedData = []
+        elif sourceType == "CONVOLVED":
+            rawData = []
+            interpolatedData = []
+            integratedData = []
+            convolvedData = []
+            convolvedData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
+                filename=filename, ext=ext))
+        return self(rawData=rawData, interpolatedData=interpolatedData, 
+                    integratedData=integratedData, convolvedData=convolvedData, diskInt=diskInt)
     
-    def addRawSpectrum(self, hdr, data=None, filename=None, ext=None):
-        self.rawData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
-            filename=filename, ext=ext))
+    def addSpectrum(self, hdr, data=None, filename=None, ext=None, sourceType="RAW"):
+        if sourceType=="RAW":
+            self.rawData.append(SpectralTools.Spectrum.from_file(hdr, data=data,
+                filename=filename, ext=ext))
+        elif sourceType =="INTERPOLATED":
+            self.processedData.interpolated.append(SpectralTools.Spectrum.from_file(hdr, data=data,
+                filename=filename, ext=ext))
+        elif sourceType =="INTEGRATED":
+            self.processedData.integrated.append(SpectralTools.Spectrum.from_file(hdr, data=data,
+                filename=filename, ext=ext))
+        elif sourceType =="CONVOLVED":
+            self.processedData.convolved.append(SpectralTools.Spectrum.from_file(hdr, data=data,
+                filename=filename, ext=ext))
 
     def rehearse(self, vsini=0.0, R=0, observedWl=None):
         self.processedData.resample(vsini=vsini, R=R, observedWl=observedWl)
@@ -150,6 +200,7 @@ class SyntheticPhrase( Phrase ):
             if primaryHeaderKWs != None:
                 for key in primaryHeaderKWs.keys():
                     primary.header.set(key, primaryHeaderKWs[key])
+            primary.header.set("SPECTRUM_CONTENTS", "RAW")
             HDUList.append(primary)
             for spectrum in HDUs:
                 HDUList.append(spectrum)
@@ -158,7 +209,7 @@ class SyntheticPhrase( Phrase ):
             HDUList.writeto(filename)
 
 
-    def saveInterpolated(self, filename = None, primaryHeaderKWs={}):
+    def saveInterpolated(self, filename = None, header=None, primaryHeaderKWs={}):
         HDUs = []
         for spectrum in self.processedData.interpolated:
             hdr = spectrum.header.copy()
@@ -190,10 +241,11 @@ class SyntheticPhrase( Phrase ):
             os.remove(filename+'.lock')
         else:
             HDUList = pyfits.HDUList()
-            primary = pyfits.PrimaryHDU()
+            primary = pyfits.PrimaryHDU(header=header)
             if primaryHeaderKWs != None:
                 for key in primaryHeaderKWs.keys():
                     primary.header.set(key, primaryHeaderKWs[key])
+            header.set("SPECTRUM_CONTENTS", "INTERPOLATED") 
             HDUList.append(primary)
             for spectrum in HDUs:
                 HDUList.append(spectrum)
@@ -201,7 +253,7 @@ class SyntheticPhrase( Phrase ):
             HDUList.verify(option='silentfix')
             HDUList.writeto(filename)
 
-    def saveIntegrated(self, filename = None, primaryHeaderKWs={}):
+    def saveIntegrated(self, filename = None, header=None, primaryHeaderKWs={}):
         HDUs = []
         for spectrum in self.processedData.integrated:
             hdr = spectrum.header.copy()
@@ -233,10 +285,12 @@ class SyntheticPhrase( Phrase ):
             os.remove(filename+'.lock')
         else:
             HDUList = pyfits.HDUList()
-            primary = pyfits.PrimaryHDU()
+
+            primary = pyfits.PrimaryHDU(header=header)
             if primaryHeaderKWs != None:
                 for key in primaryHeaderKWs.keys():
                     primary.header.set(key, primaryHeaderKWs[key])
+            primary.header.set("SPECTRUM_CONTENTS", "INTEGRATED")
             HDUList.append(primary)
             for spectrum in HDUs:
                 HDUList.append(spectrum)
@@ -244,7 +298,7 @@ class SyntheticPhrase( Phrase ):
             HDUList.verify(option='silentfix')
             HDUList.writeto(filename)
 
-    def saveConvolved(self, vsini=None, R=None,filename = None, primaryHeaderKWs={}):
+    def saveConvolved(self, vsini=None, R=None,filename = None, header=None, primaryHeaderKWs={}):
         HDUs = []
         for spectrum in self.processedData.convolved:
             hdr = spectrum.header.copy()
@@ -287,10 +341,11 @@ class SyntheticPhrase( Phrase ):
             os.remove(filename+'.lock')
         else:
             HDUList = pyfits.HDUList()
-            primary = pyfits.PrimaryHDU()
+            primary = pyfits.PrimaryHDU(header=header)
             if primaryHeaderKWs != None:
                 for key in primaryHeaderKWs.keys():
                     primary.header.set(key, primaryHeaderKWs[key])
+            primary.header.set("SPECTRUM_CONTENTS", "CONVOLVED")
             HDUList.append(primary)
             for spectrum in HDUs:
                 HDUList.append(spectrum)
@@ -299,8 +354,9 @@ class SyntheticPhrase( Phrase ):
             HDUList.writeto(filename)
 
 class Melody( object ):
-    def __init__(self, phrases = [], filename=None, label=None):
+    def __init__(self, phrases = [], filename=None, label=None, header=None):
         self.phrases = phrases
+        self.header = header
         self.nPhrases = len(self.phrases)
         self.filename = filename
         self.selectedPhrases = [False for i in range(self.nPhrases)]
@@ -314,15 +370,12 @@ class Melody( object ):
 
     def selectPhrases(self, wlRange=[], selectAll=False):
         self.selectedPhrases = []
-        print "Junk"
         for phrase in self.phrases:
             if selectAll:
                 self.selectedPhrases.append(True)
             else:
-                print "Blah"
                 self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
                     wlStop=wlRange[1]))
-        print self.selectedPhrases
 
     def inParameterRange(self, TeffRange=[], loggRange=[], BfieldRange=[]):
         self.muted = False
@@ -354,12 +407,12 @@ class Melody( object ):
                 self.Teff, self.logg, self.B, R, vsini)
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
-                self.phrases[i].saveConvolved(vsini=vsini, R=R, filename=filename)
+                self.phrases[i].saveConvolved(vsini=vsini, R=R, filename=filename, header=self.header)
 
 
 class ObservedMelody( Melody ):
-    def __init__(self, phrases = [], filename=None, label=None):
-        super(ObservedMelody, self).__init__(phrases=phrases, filename=filename, label=label)
+    def __init__(self, phrases = [], filename=None, label=None, header=None):
+        super(ObservedMelody, self).__init__(phrases=phrases, filename=filename, label=label, header=header)
 
     @classmethod
     def fromFile(self, filename=None, label=None):
@@ -371,7 +424,7 @@ class ObservedMelody( Melody ):
             hdr = pyfits.getheader(filename, ext=i+1)
             phrases.append(ObservedPhrase.fromFile(header=hdr, filename=filename, ext=i+1))
 
-        return self(phrases=phrases, filename=filename, label=label)
+        return self(phrases=phrases, filename=filename, label=label, header=header)
         
     def loadData(self):
         for phrase in self.phrases:
@@ -383,19 +436,16 @@ class ObservedMelody( Melody ):
     def perform(self):
         spectra = []
         for i in range(self.nPhrases):
-            print self.selectedPhrases[i]
             if self.selectedPhrases[i]:
                 spectra.append(self.phrases[i].listen())
 
-        print spectra
-        print self.label
         return spectra, self.label
 
 
 class SyntheticMelody( Melody ):
-    def __init__(self, phrases = [], filename=None, label=None):
+    def __init__(self, phrases = [], filename=None, label=None, header=None):
         super(SyntheticMelody, self).__init__(phrases = phrases, filename=filename,
-                label=label)
+                label=label, header=header)
         self.loadMelody()
 
     def loadMelody(self):
@@ -405,6 +455,9 @@ class SyntheticMelody( Melody ):
         self.Teff = self.header.get("TEFF")
         self.logg = self.header.get("LOGG")
         self.B = self.header.get("BFIELD")
+        self.contents = self.header.get("SPECTRUM_CONTENTS")
+        if self.contents == None:
+            self.contents = "RAW"
         self.label = ["T = %dK log g = %.1f B = %.2f kG" % (self.Teff, self.logg, self.B)]
 
         self.phrases = []
@@ -414,13 +467,14 @@ class SyntheticMelody( Melody ):
             hdr = pyfits.getheader(self.filename, ext=i+1)
             for phrase in self.phrases:
                 if phrase.owns(hdr):
-                    phrase.addRawSpectrum(hdr, data=None, filename=self.filename,
-                            ext=i+1)
+                    phrase.addSpectrum(hdr, data=None, filename=self.filename,
+                            ext=i+1, sourceType=self.contents)
                     added=True
                     break
             if not(added):
                 self.phrases.append(SyntheticPhrase.fromFile(hdr, data=None,
-                    filename=self.filename, ext=i+1, diskInt='BEACHBALL'))
+                    filename=self.filename, ext=i+1, diskInt='BEACHBALL',
+                    sourceType=self.contents))
 
         self.nPhrases = len(self.phrases)
 
@@ -433,9 +487,13 @@ class SyntheticMelody( Melody ):
         if found:
             self.label.append("T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" % (self.Teff, self.logg, self.B, vsini, R))
 
-    def perform(self, label):
-        R = int(label.split('=')[5])
-        vsini = float(label.split('=')[4].split()[0])
+    def perform(self, label=""):
+        try:
+            R = int(label.split('=')[5])
+            vsini = float(label.split('=')[4].split()[0])
+        except:
+            R = 0
+            vsini = 0.0
         spectra = []
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
@@ -456,7 +514,6 @@ class Score( object ):
     def loadMelodies(self):
         melodyFiles = glob.glob(self.directory+'*raw.fits')
         for melody in melodyFiles:
-            print("%s" % melody)
             m = SyntheticMelody(filename=melody)
             self.syntheticMelodies.append(m)
 
@@ -475,8 +532,6 @@ class Score( object ):
             logg.append(melody.logg)
             B.append(melody.B)
             raw_labels.append(melody.label[0])
-            print "length of melody %d" % len(melody.label)
-            print melody.label
             if len(melody.label) > 1:
                 for convolved in melody.label[1:]:
                     processed_labels.append(convolved)
@@ -487,19 +542,13 @@ class Score( object ):
         for melody in self.syntheticMelodies:
             if melody.label[0] in selectedLabels:
                 melody.muted=False
-                print("Loud: %d, %.1f, %.1f" % (melody.Teff, melody.logg, melody.B))
             else:
                 melody.muted=True
-                print("Mute: %d, %.1f, %.1f" % (melody.Teff, melody.logg, melody.B))
 
     def addToEnsemble(self, selectedLabels):
-        print "Attempting to add labels"
-        print selectedLabels
         for melody in self.syntheticMelodies:
             if melody.label[0] in selectedLabels:
                 melody.muted=False
-                print("Loud: %d, %.1f, %.1f" % (melody.Teff, melody.logg, melody.B))
-
 
     def selectMelodies(self, wlRange=[]):
         for melody in self.syntheticMelodies:
@@ -527,7 +576,6 @@ class Score( object ):
         The 
         '''
         for melody in self.syntheticMelodies:
-            print("Score::Melody::Rehearse: %s" %melody.muted)
             if not(melody.muted):
                 melody.rehearse(vsini=vsini, R=R, 
                         observedWl = self.compositeObserved.wl)
@@ -537,10 +585,8 @@ class Score( object ):
         labels = []
         for melody in self.syntheticMelodies:
             if not(melody.muted):
-                print("Aha! We have a non-muted melody!")
-                for i in range(len(melody.label)-1):
+               for i in range(len(melody.label)-1):
                     if melody.label[i+1] in selected:
-                        print("Trying a performance!")
                         spectra.append(melody.perform(melody.label[i+1]))
                         labels.append(melody.label[i+1])
 
@@ -648,7 +694,6 @@ class Moog960( object ):
         performances, labels = self.Score.perform(selected=selected)
         
         colors = numpy.random.rand(len(performances), 3)
-        print performances
         for spectrum, l, c in zip(performances, labels, colors):
             for s in spectrum:
                 if not(plotaxes==None):
