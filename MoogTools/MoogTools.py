@@ -1259,34 +1259,42 @@ class New_VALD_Line( Spectral_Line ):
 
             if (self.g_lo == 99.0):
                 # Lower State
-                if self.lowerTerm[0] == 'LS':
-                    self.g_lo = self.parse_LS_coupling(self.lowerTerm[-1], self.J_lo)
-                elif self.lowerTerm[0] == 'JJ':
-                    #print("Awww Shucks, the JJ coupling parser isn't ready yet!")
-                    #self.g_lo = self.parse_JJ_coupling(self.lowerTerm[-1])
-                    self.g_lo = 0.0
-                elif self.lowerTerm[0] == 'JK':
-                    #print("Awww Shucks, the JK coupling parser isn't ready yet!")
-                    self.g_lo = 0.0
-                elif self.lowerTerm[0] == 'LK':
-                    #print("Awww Shucks, the LK coupling parser isn't ready yet!")
-                    self.g_lo = 0.0
-                else:
+                try:
+                    if self.lowerTerm[0] == 'LS':
+                        self.g_lo = self.parse_LS_coupling(self.lowerTerm[-1], self.J_lo)
+                    elif self.lowerTerm[0] == 'JJ':
+                        #print("Awww Shucks, the JJ coupling parser isn't ready yet!")
+                        #self.g_lo = self.parse_JJ_coupling(self.lowerTerm[-1])
+                        self.g_lo = 0.0
+                    elif self.lowerTerm[0] == 'JK':
+                        #print("Awww Shucks, the JK coupling parser isn't ready yet!")
+                        self.g_lo = 0.0
+                    elif self.lowerTerm[0] == 'LK':
+                        #print("Awww Shucks, the LK coupling parser isn't ready yet!")
+                        self.g_lo = 0.0
+                    else:
+                        self.g_lo = 0.0
+                except:
+                    print("Lower state of line at %.3f failed!" % self.wl)
                     self.g_lo = 0.0
     
                 # Upper State
-                if self.upperTerm[0] == 'LS':
-                    self.g_hi = self.parse_LS_coupling(self.upperTerm[-1], self.J_hi)
-                elif self.upperTerm[0] == 'JJ':
-                    #print("Awww Shucks, the JJ coupling parser isn't ready yet!")
-                    self.g_hi = 0.0
-                elif self.upperTerm[0] == 'JK':
-                    #print("Awww Shucks, the JK coupling parser isn't ready yet!")
-                    self.g_hi = 0.0
-                elif self.upperTerm[0] == 'LK':
-                    #print("Awww Shucks, the LK coupling parser isn't ready yet!")
-                    self.g_hi = 0.0
-                else:
+                try:
+                    if self.upperTerm[0] == 'LS':
+                        self.g_hi = self.parse_LS_coupling(self.upperTerm[-1], self.J_hi)
+                    elif self.upperTerm[0] == 'JJ':
+                        #print("Awww Shucks, the JJ coupling parser isn't ready yet!")
+                        self.g_hi = 0.0
+                    elif self.upperTerm[0] == 'JK':
+                        #print("Awww Shucks, the JK coupling parser isn't ready yet!")
+                        self.g_hi = 0.0
+                    elif self.upperTerm[0] == 'LK':
+                        #print("Awww Shucks, the LK coupling parser isn't ready yet!")
+                        self.g_hi = 0.0
+                    else:
+                        self.g_hi = 0.0
+                except:
+                    print("Upper state of line at %.3f failed!" % self.wl)
                     self.g_hi = 0.0
 
         self.lower = Observed_Level(self.J_lo, self.g_lo, self.expot_lo)
