@@ -595,7 +595,9 @@ class Spectrum( object ):
 
     def loadData(self):
         try:
-            data = pyfits.getdata(self.filename, ext=self.ext)
+            datafile = open(self.filename, 'rb')
+            data = pyfits.getdata(datafile, ext=self.ext, memmap=False)
+            datafile.close()
         except:
             raise SpectrumError(0, "Error reading extension %d from %s" %
                     (self.ext, self.filename))
@@ -994,18 +996,17 @@ class BeachBall( Integrator ):
             if R > 0:
                 self.convolved.append(integrated.resample(R, observedWl=observedWl))
 
-    def yank(self, vsini=0.0, R=0.0, observedWl = None):
-        if ((vsini == 0.0) and (R==0)):
-            return self.convolved[0]
-        if R <= 0:
+    def yank(self, vsini=0.0, R=0.0, observedWl = None, keySignature="CONVOLVED"):
+        if keySignature=="INTEGRATED":
             return self.findVsini(vsini)
 
-        for convol in self.convolved:
-            if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
-                if observedWl!= None:
-                    return rebin(convol, observedWl)
-                else:
-                    return convol
+        if keySignature=="CONVOLVED":
+            for convol in self.convolved:
+                if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
+                    if observedWl!= None:
+                        return rebin(convol, observedWl)
+                    else:
+                        return convol
 
         raise SpectrumError(1, "Spectrum with vsini=%.2f and R=%.1f NOT FOUND!!!" % 
                 (vsini, R))

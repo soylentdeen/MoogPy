@@ -84,6 +84,7 @@ class ObservedPhrase( Phrase ):
             HDUList.update_extend()
             HDUList.verify(option='silentfix')
             HDUList.writeto(filename)
+            HDUList.close()
 
 class SyntheticPhrase( Phrase ):
     def __init__(self, rawData=[], interpolatedData=[], 
@@ -158,11 +159,18 @@ class SyntheticPhrase( Phrase ):
             self.processedData.convolved.append(SpectralTools.Spectrum.from_file(hdr, data=data,
                 filename=filename, ext=ext))
 
+    def tune(self, save=False, header=None):
+        self.processedData.diskInt()
+        if save:
+            integratedFilename = self.rawData[0].filename[:-8]+'integrated.fits'
+            self.saveIntegrated(filename = integratedFilename, header=header)
+
     def rehearse(self, vsini=0.0, R=0, observedWl=None):
         self.processedData.resample(vsini=vsini, R=R, observedWl=observedWl)
 
-    def perform(self, vsini= 0.0, R = 0.0, observedWl = None):
-        return self.processedData.yank(vsini=vsini, R = R, observedWl=observedWl)
+    def perform(self, vsini= 0.0, R = 0.0, observedWl = None, keySignature="CONVOLVED"):
+        return self.processedData.yank(vsini=vsini, R = R, observedWl=observedWl,
+                keySignature=keySignature)
 
     def saveRaw(self, filename = None, primaryHeaderKWs={}):
         HDUs = []
@@ -207,6 +215,7 @@ class SyntheticPhrase( Phrase ):
             HDUList.update_extend()
             HDUList.verify(option='silentfix')
             HDUList.writeto(filename)
+            HDUList.close()
 
 
     def saveInterpolated(self, filename = None, header=None, primaryHeaderKWs={}):
@@ -252,11 +261,13 @@ class SyntheticPhrase( Phrase ):
             HDUList.update_extend()
             HDUList.verify(option='silentfix')
             HDUList.writeto(filename)
+            HDUList.close()
 
     def saveIntegrated(self, filename = None, header=None, primaryHeaderKWs={}):
         HDUs = []
         for spectrum in self.processedData.integrated:
             hdr = spectrum.header.copy()
+            spectrum.preserve(continuum=False)
             SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
                     header=hdr)
             SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.3f" % (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get('VSINI'))
@@ -297,6 +308,7 @@ class SyntheticPhrase( Phrase ):
             HDUList.update_extend()
             HDUList.verify(option='silentfix')
             HDUList.writeto(filename)
+            HDUList.close()
 
     def saveConvolved(self, vsini=None, R=None,filename = None, header=None, primaryHeaderKWs={}):
         HDUs = []
@@ -352,6 +364,7 @@ class SyntheticPhrase( Phrase ):
             HDUList.update_extend()
             HDUList.verify(option='silentfix')
             HDUList.writeto(filename)
+            HDUList.close()
 
 class Melody( object ):
     def __init__(self, phrases = [], filename=None, label=None, header=None):
@@ -451,20 +464,23 @@ class SyntheticMelody( Melody ):
     def loadMelody(self):
         info = pyfits.info(self.filename, output='')
         self.nSpectra = len(info)-1
-        self.header = pyfits.getheader(self.filename, ext=0)
+        self.header = pyfits.getheader(self.filename, ext=0, memmap=False)
         self.Teff = self.header.get("TEFF")
         self.logg = self.header.get("LOGG")
         self.B = self.header.get("BFIELD")
         self.contents = self.header.get("SPECTRUM_CONTENTS")
         if self.contents == None:
             self.contents = "RAW"
-        self.label = ["T = %dK log g = %.1f B = %.2f kG" % (self.Teff, self.logg, self.B)]
+        self.rawLabel = "T = %dK log g = %.1f B = %.2f kG" % (self.Teff, self.logg, self.B)
+        self.integratedLabels = []
+        self.interpolatedLabels = []
+        self.convolvedLabels = []
 
         self.phrases = []
 
         for i in range(self.nSpectra):
             added = False
-            hdr = pyfits.getheader(self.filename, ext=i+1)
+            hdr = pyfits.getheader(self.filename, ext=i+1, memmap=False)
             for phrase in self.phrases:
                 if phrase.owns(hdr):
                     phrase.addSpectrum(hdr, data=None, filename=self.filename,
@@ -475,8 +491,15 @@ class SyntheticMelody( Melody ):
                 self.phrases.append(SyntheticPhrase.fromFile(hdr, data=None,
                     filename=self.filename, ext=i+1, diskInt='BEACHBALL',
                     sourceType=self.contents))
+                if self.contents == 'INTEGRATED':
+                    self.integratedLabels.append("T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s" % (
+                            self.Teff, self.logg, self.B, hdr.get('VSINI')))
 
         self.nPhrases = len(self.phrases)
+
+    def tune(self, save=False):
+        for i in range(self.nPhrases):
+            self.phrases[i].tune(save=save, header=self.header)
 
     def rehearse(self, vsini = 0.0, R = 0, observedWl = None):
         found = False
@@ -485,70 +508,127 @@ class SyntheticMelody( Melody ):
                 self.phrases[i].rehearse(vsini = vsini, R=R, observedWl=observedWl)
                 found = True
         if found:
-            self.label.append("T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" % (self.Teff, self.logg, self.B, vsini, R))
+            self.convolvedLabels.append("T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" %
+                    (self.Teff, self.logg, self.B, vsini, R))
 
-    def perform(self, label=""):
-        try:
-            R = int(label.split('=')[5])
-            vsini = float(label.split('=')[4].split()[0])
-        except:
-            R = 0
-            vsini = 0.0
+    def perform(self, label="", keySignature="CONVOLVED"):
+        if keySignature == "CONVOLVED":
+            try:
+                R = int(label.split('=')[5])
+                vsini = float(label.split('=')[4].split()[0])
+            except:
+                R = 0
+                vsini = 0.0
+        elif keySignature == "INTEGRATED":
+            R= 0
+            try:
+                vsini = float(label.split('=')[4].split()[0])
+            except:
+                vsini = 0.0
         spectra = []
+        params = {}
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
-                spectra.append(self.phrases[i].perform(vsini=vsini, R=R))
+                spectra.append(self.phrases[i].perform(vsini=vsini, R=R, 
+                    keySignature=keySignature))
+                params["TEFF"] = self.Teff
+                params["LOGG"] = self.logg
+                params["BFIELD"] = self.B
 
-        return spectra
+        return spectra, params
     
 class Score( object ):
     """
         This Score object contains many melodies.
     """
-    def __init__(self, melodies = [], directory=None, observed=None):
+    def __init__(self, melodies = [], directory=None, observed=None, suffix='raw'):
         self.syntheticMelodies = melodies
         self.directory = directory
         self.observed = observed
+        self.suffix = suffix
         self.loadMelodies()
 
     def loadMelodies(self):
-        melodyFiles = glob.glob(self.directory+'*raw.fits')
+        melodyFiles = glob.glob(self.directory+'*'+self.suffix+'.fits')
         for melody in melodyFiles:
-            m = SyntheticMelody(filename=melody)
-            self.syntheticMelodies.append(m)
+            print("%s" % melody)
+            self.syntheticMelodies.append(SyntheticMelody(filename=melody))
 
         if not(self.observed==None):
             self.Observed = ObservedMelody.fromFile(filename=self.observed, label='TWHydra')
             self.Observed.loadData()
 
     def getMelodyParams(self):
-        Teff = []
-        logg = []
-        B = []
         raw_labels = []
-        processed_labels = []
+        interpolated_labels = []
+        integrated_labels = []
+        convolved_labels = []
+        observed_labels = []
         for melody in self.syntheticMelodies:
-            Teff.append(melody.Teff)
-            logg.append(melody.logg)
-            B.append(melody.B)
-            raw_labels.append(melody.label[0])
-            if len(melody.label) > 1:
-                for convolved in melody.label[1:]:
-                    processed_labels.append(convolved)
+            raw_labels.append(melody.rawLabel)
+            if len(melody.interpolatedLabels) > 0:
+                for interpolated in melody.interpolatedLabels:
+                    interpolated_labels.append(interpolated)
+            if len(melody.integratedLabels) > 0:
+                for integrated in melody.integratedLabels:
+                    integrated_labels.append(integrated)
+            if len(melody.convolvedLabels) > 0:
+                for convolved in melody.convolvedLabels:
+                    convolved_labels.append(convolved)
+        if not(self.observed==None):
+            observed_labels.append(self.Observed.label)
 
-        return raw_labels, processed_labels
+        return raw_labels, interpolated_labels, integrated_labels, convolved_labels, observed_labels
 
-    def selectEnsemble(self, selectedLabels):
-        for melody in self.syntheticMelodies:
-            if melody.label[0] in selectedLabels:
-                melody.muted=False
-            else:
-                melody.muted=True
+    def selectEnsemble(self, selectedLabels, keySignature='CONVOLVED'):
+        if keySignature == 'RAW':
+            for melody in self.syntheticMelodies:
+                if melody.rawLabel in selectedLabels:
+                    melody.muted=False
+                else:
+                    melody.muted=True
+        elif keySignature == 'INTERPOLATED':
+            for melody in self.syntheticMelodies:
+                for interpolated in melody.interpolatedLabels:
+                    if interpolated in selectedLabels:
+                        melody.muted=False
+                    else:
+                        melody.muted=True
+        elif keySignature == 'INTEGRATED':
+            for melody in self.syntheticMelodies:
+                for integrated in melody.integratedLabels:
+                    if integrated in selectedLabels:
+                        melody.muted=False
+                    else:
+                        melody.muted=True
+        elif keySignature == 'CONVOLVED':
+            for melody in self.syntheticMelodies:
+                for convolved in melody.convolvedLabels:
+                    if convolved in selectedLabels:
+                        melody.muted=False
+                    else:
+                        melody.muted=True
 
     def addToEnsemble(self, selectedLabels):
-        for melody in self.syntheticMelodies:
-            if melody.label[0] in selectedLabels:
-                melody.muted=False
+        if keySignature == 'RAW':
+            for melody in self.syntheticMelodies:
+                if melody.rawLabel in selectedLabels:
+                    melody.muted=False
+        elif keySignature == 'INTERPOLATED':
+            for melody in self.syntheticMelodies:
+                for interpolated in melody.interpolatedLabels:
+                    if interpolated in selectedLabels:
+                        melody.muted=False
+        elif keySignature == 'INTEGRATED':
+            for melody in self.syntheticMelodies:
+                for integrated in melody.integratedLabels:
+                    if integrated in selectedLabels:
+                        melody.muted=False
+        elif keySignature == 'CONVOLVED':
+            for melody in self.syntheticMelodies:
+                for convolved in melody.convolvedLabels:
+                    if convolved in selectedLabels:
+                        melody.muted=False
 
     def selectMelodies(self, wlRange=[]):
         for melody in self.syntheticMelodies:
@@ -558,9 +638,16 @@ class Score( object ):
             #if not(melody.muted):
             melody.selectPhrases(wlRange=wlRange)
 
-        self.Observed.selectPhrases(wlRange=wlRange)
+        if not(self.observed==None):
+            self.Observed.selectPhrases(wlRange=wlRange)
 
-    def rehearse(self, vsini=0.0, R=0.0):
+    def tune(self, save=False):
+        for melody in self.syntheticMelodies:
+            print melody
+            melody.tune(save=save)
+
+
+    def rehearse(self, vsini=0.0, R=0.0, binToObserved=True):
         '''
         Score.rehearse(vsini=0.0, R=0.0) - For the melodies and phrases selected by
              the parameter and wavelength ranges, generate spectra corresponding to
@@ -577,20 +664,47 @@ class Score( object ):
         '''
         for melody in self.syntheticMelodies:
             if not(melody.muted):
-                melody.rehearse(vsini=vsini, R=R, 
-                        observedWl = self.compositeObserved.wl)
 
-    def perform(self, selected=[]):
+                if binToObserved:
+                    melody.rehearse(vsini=vsini, R=R, 
+                        observedWl = self.compositeObserved.wl)
+                else:
+                    melody.rehearse(vsini=vsini, R=R, observedWl=None)
+
+    def perform(self, selected=[], keySignature = "CONVOLVED"):
         spectra = []
         labels = []
+        params = []
         for melody in self.syntheticMelodies:
             if not(melody.muted):
-               for i in range(len(melody.label)-1):
-                    if melody.label[i+1] in selected:
-                        spectra.append(melody.perform(melody.label[i+1]))
-                        labels.append(melody.label[i+1])
+                if keySignature == "INTERPOLATED":
+                    for i in range(len(melody.interpolatedLabels)):
+                        if melody.interpolatedLabels[i] in selected:
+                            sp, p = melody.perform(melody.interpolatedLabels[i],
+                                    keySignature=keySignature)
+                            spectra.append(sp)
+                            params.append(p)
+                            labels.append(melody.interpolatedLabels[i])
 
-        return spectra, labels
+                if keySignature == "INTEGRATED":
+                    for i in range(len(melody.integratedLabels)):
+                        if melody.integratedLabels[i] in selected:
+                            sp, p = melody.perform(melody.integratedLabels[i],
+                                    keySignature=keySignature)
+                            spectra.append(sp)
+                            params.append(p)
+                            labels.append(melody.integratedLabels[i])
+
+                if keySignature == "CONVOLVED":
+                    for i in range(len(melody.convolvedLabels)):
+                        if melody.convolvedLabels[i] in selected:
+                            sp, p = melody.perform(melody.convolvedLabels[i],
+                                    keySignature=keySignature)
+                            spectra.append(sp)
+                            params.append(p)
+                            labels.append(melody.convolvedLabels[i])
+
+        return spectra, params, labels
 
 
     def listen(self):   # gets the observed spectrum
