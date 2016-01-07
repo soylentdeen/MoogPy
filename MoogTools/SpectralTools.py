@@ -16,6 +16,7 @@ class SpectrumError( Exception ):
         self.message = {}
         self.message[0] = "Failure loading Raw Data!! %s" % errmsg
         self.message[1] = "Failure loading Processed Data!! %s" % errmsg
+        self.message[2] = "Failure calculating Equivalent Widths! %s" % errmsg
 
     def __str__(self):
         return repr(self.message[self.value])
@@ -897,6 +898,16 @@ class Spectrum( object ):
         else:
             return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
     
+    def calc_EW(self, wlStart, wlStop):
+        if (wlStart > self.wl[-1]) or (wlStop < self.wl[0]):
+            raise SpectrumError(2, 'Wavelength Regions do not overlap!')
+
+        bm = scipy.where( (self.wl > wlStart) & (self.wl < wlStop) )[0]
+        cont = numpy.ones(len(bm))
+        num = scipy.integrate.simps(self.flux_I[bm], self.wl[bm])
+        denom = scipy.integrate.simps(cont, self.wl[bm])
+        return (denom-num)
+
 class ObservedSpectrum ( object ):
     def __init__(self, observed=None):
         self.observed = observed             # Should be a Spectrum object
