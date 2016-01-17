@@ -494,6 +494,9 @@ class SyntheticMelody( Melody ):
                 if self.contents == 'INTEGRATED':
                     self.integratedLabels.append("T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s" % (
                             self.Teff, self.logg, self.B, hdr.get('VSINI')))
+                if self.contents == 'CONVOLVED':
+                    self.convolvedLabels.append("T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" % (
+                            self.Teff, self.logg, self.B, hdr.get('VSINI'), hdr.get('RESOLVING_POWER')))
 
         self.nPhrases = len(self.phrases)
 
@@ -510,8 +513,10 @@ class SyntheticMelody( Melody ):
         if found:
             self.convolvedLabels.append("T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" %
                     (self.Teff, self.logg, self.B, vsini, R))
+            return self.convolvedLabels[-1]
 
     def perform(self, label="", keySignature="CONVOLVED"):
+        params = {}
         if keySignature == "CONVOLVED":
             try:
                 R = int(label.split('=')[5])
@@ -526,14 +531,15 @@ class SyntheticMelody( Melody ):
             except:
                 vsini = 0.0
         spectra = []
-        params = {}
+        params["TEFF"] = self.Teff
+        params["LOGG"] = self.logg
+        params["BFIELD"] = self.B
+        params["RESOLVING_POWER"] = R
+        params["VSINI"] = vsini
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
                 spectra.append(self.phrases[i].perform(vsini=vsini, R=R, 
                     keySignature=keySignature))
-                params["TEFF"] = self.Teff
-                params["LOGG"] = self.logg
-                params["BFIELD"] = self.B
 
         return spectra, params
     
@@ -711,8 +717,8 @@ class Score( object ):
         spectra, label = self.Observed.perform()
         compositeSpectrum = None
         for sp in spectra:
-            compositeSpectrum = SpectralTools.mergeSpectra(first=sp,
-                    second=compositeSpectrum)
+            compositeSpectrum = SpectralTools.mergeSpectra(first=compositeSpectrum,
+                    second=sp)
         
         self.compositeObserved = compositeSpectrum
         return compositeSpectrum, label

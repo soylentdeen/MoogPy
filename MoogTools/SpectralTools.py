@@ -284,6 +284,8 @@ def diff_spectra(x1, y1, x2, y2, pad=False):
 def mergeSpectra(first=None, second=None):
     if second == None:
         return first
+    if first == None:
+        return second
     
     x1 = first.wl
     x2 = second.wl
@@ -394,6 +396,14 @@ def mergeSpectra(first=None, second=None):
             new_V = numpy.append(V1, V2)
         else:
             new_V = None
+        if (first.continuum != None) & (second.continuum != None):
+            C1 = first.continuum
+            C2 = second.continuum
+            C1[numpy.isnan(C1)] = 0.0
+            C2[numpy.isnan(C2)] = 0.0
+            new_C = numpy.append(C1, C2)
+        else:
+            new_C = None
         
     retval = Spectrum(wl=new_x, I = new_I, Q = new_Q, U = new_U, V = new_V, 
             continuum = new_C, spectrum_type='Merged')
@@ -763,6 +773,7 @@ class Spectrum( object ):
                             x=self.wl[inBin])
                     newSpec_continuum[i] = num/denom
             elif (len(inBin) == 1):
+                print "Woo!"
                 if self.flux_I != None:
                     newSpec_I[i] = 0.0
                 if self.flux_Q != None:
@@ -898,12 +909,16 @@ class Spectrum( object ):
         else:
             return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
     
-    def calc_EW(self, wlStart, wlStop):
+    def calc_EW(self, wlStart, wlStop, findContinuum=False):
         if (wlStart > self.wl[-1]) or (wlStop < self.wl[0]):
             raise SpectrumError(2, 'Wavelength Regions do not overlap!')
 
         bm = scipy.where( (self.wl > wlStart) & (self.wl < wlStop) )[0]
         cont = numpy.ones(len(bm))
+        if findContinuum:
+            cont *= numpy.median(self.flux_I[bm])
+            print "%.4f - continuum level" % numpy.median(self.flux_I[bm])
+            #print asdf
         num = scipy.integrate.simps(self.flux_I[bm], self.wl[bm])
         denom = scipy.integrate.simps(cont, self.wl[bm])
         return (denom-num)
