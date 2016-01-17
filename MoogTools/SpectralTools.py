@@ -16,6 +16,7 @@ class SpectrumError( Exception ):
         self.message = {}
         self.message[0] = "Failure loading Raw Data!! %s" % errmsg
         self.message[1] = "Failure loading Processed Data!! %s" % errmsg
+        self.message[2] = "Failure calculating Equivalent Widths! %s" % errmsg
 
     def __str__(self):
         return repr(self.message[self.value])
@@ -595,7 +596,9 @@ class Spectrum( object ):
 
     def loadData(self):
         try:
-            data = pyfits.getdata(self.filename, ext=self.ext)
+            datafile = open(self.filename, 'rb')
+            data = pyfits.getdata(datafile, ext=self.ext, memmap=False)
+            datafile.close()
         except:
             raise SpectrumError(0, "Error reading extension %d from %s" %
                     (self.ext, self.filename))
@@ -895,6 +898,16 @@ class Spectrum( object ):
         else:
             return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
     
+    def calc_EW(self, wlStart, wlStop):
+        if (wlStart > self.wl[-1]) or (wlStop < self.wl[0]):
+            raise SpectrumError(2, 'Wavelength Regions do not overlap!')
+
+        bm = scipy.where( (self.wl > wlStart) & (self.wl < wlStop) )[0]
+        cont = numpy.ones(len(bm))
+        num = scipy.integrate.simps(self.flux_I[bm], self.wl[bm])
+        denom = scipy.integrate.simps(cont, self.wl[bm])
+        return (denom-num)
+
 class ObservedSpectrum ( object ):
     def __init__(self, observed=None):
         self.observed = observed             # Should be a Spectrum object
@@ -994,18 +1007,17 @@ class BeachBall( Integrator ):
             if R > 0:
                 self.convolved.append(integrated.resample(R, observedWl=observedWl))
 
-    def yank(self, vsini=0.0, R=0.0, observedWl = None):
-        if ((vsini == 0.0) and (R==0)):
-            return self.convolved[0]
-        if R <= 0:
+    def yank(self, vsini=0.0, R=0.0, observedWl = None, keySignature="CONVOLVED"):
+        if keySignature=="INTEGRATED":
             return self.findVsini(vsini)
 
-        for convol in self.convolved:
-            if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
-                if observedWl!= None:
-                    return rebin(convol, observedWl)
-                else:
-                    return convol
+        if keySignature=="CONVOLVED":
+            for convol in self.convolved:
+                if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
+                    if observedWl!= None:
+                        return rebin(convol, observedWl)
+                    else:
+                        return convol
 
         raise SpectrumError(1, "Spectrum with vsini=%.2f and R=%.1f NOT FOUND!!!" % 
                 (vsini, R))
