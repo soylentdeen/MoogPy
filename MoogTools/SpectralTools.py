@@ -17,6 +17,7 @@ class SpectrumError( Exception ):
         self.message[0] = "Failure loading Raw Data!! %s" % errmsg
         self.message[1] = "Failure loading Processed Data!! %s" % errmsg
         self.message[2] = "Failure calculating Equivalent Widths! %s" % errmsg
+        self.message[3] = "Failure Convolving Spectrum! %s" % errmsg
 
     def __str__(self):
         return repr(self.message[self.value])
@@ -609,6 +610,7 @@ class Spectrum( object ):
             datafile = open(self.filename, 'rb')
             data = pyfits.getdata(datafile, ext=self.ext, memmap=False)
             datafile.close()
+            del(datafile)
         except:
             raise SpectrumError(0, "Error reading extension %d from %s" %
                     (self.ext, self.filename))
@@ -908,6 +910,48 @@ class Spectrum( object ):
             return x1, retval
         else:
             return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
+
+    def blend(self, other, fraction):
+        """
+        Input:
+            other : [Spectrum] - the other spectrum
+            fraction : [float] - the ratio of blending, obeying the limits:
+                    0 - all Other spectrum
+                    0.5 - equal blend
+                    1 - all this spectrum
+
+        Returns:
+           blended: [Spectrum] - the blended spectrum
+        """
+        overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
+        overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl)])
+        overlap = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
+
+        newWl = self.wl[overlap]
+        newI = None
+        newQ = None
+        newU = None
+        newV = None
+        newCont = None
+
+        if (self.flux_I != None) & (other.flux_I != None):
+            I = scipy.interpolate.splrep(other.wl, other.flux_I)
+            newI = self.flux_I[overlap]*fraction + scipy.interpolate.splev(newWl, I)*(1.0-fraction)
+        if (self.flux_Q != None) & (other.flux_Q != None):
+            Q = scipy.interpolate.splrep(other.wl, other.flux_Q)
+            newQ = self.flux_I[overlap]*fraction + scipy.interpolate.splev(newWl, Q)*(1.0-fraction)
+        if (self.flux_U != None) & (other.flux_U != None):
+            U = scipy.interpolate.splrep(other.wl, other.flux_U)
+            newU = self.flux_I[overlap]*fraction + scipy.interpolate.splev(newWl, U)*(1.0-fraction)
+        if (self.flux_V != None) & (other.flux_V != None):
+            V = scipy.interpolate.splrep(other.wl, other.flux_V)
+            newV = self.flux_V[overlap]*fraction + scipy.interpolate.splev(newWl, V)*(1.0-fraction)
+        if (self.continuum != None) & (other.continuum != None):
+            continuum = scipy.interpolate.splrep(other.wl, other.flux_V)
+            newCont = self.flux_I[overlap]*fraction + scipy.interpolate.splev(newWl, I)*(1.0-fraction)
+
+        return Spectrum(wl=newWl, I=newI, Q=newQ, U=newU, V=newV, continuum=newCont, header=self.header,
+                        spectrum_type="Blended Spectrum")
     
     def calc_EW(self, wlStart, wlStop, findContinuum=False):
         if (wlStart > self.wl[-1]) or (wlStop < self.wl[0]):
@@ -931,19 +975,19 @@ class ObservedSpectrum ( object ):
         return self.observed
 
 class Integrator( object ):
-    def __init__(self, parent=None, interpolatedData=[], integratedData=[],
-                 convolvedData=[], deltav = 0.1, limb_darkening=None):
+    def __init__(self, parent=None, deltav = 0.1, limb_darkening=None):
         self.parent = parent
         self.deltav = deltav
-        self.interpolated = interpolatedData  # interpolated to uniform wl grid
+        self.interpolated = parent.interpolatedData  # interpolated to uniform wl grid
         for interp in self.interpolated:
             interp.loadData()
-        self.integrated = integratedData      # vsin i - needs interpolated
+        self.integrated = parent.integratedData      # vsin i - needs interpolated
         for integ in self.integrated:
             integ.loadData()
-        self.convolved = convolvedData        # R - needs integrated
+        self.convolved = parent.convolvedData        # R - needs integrated
         for convol in self.convolved:
-            convol.loadData()
+            if convol.wl == None:
+                convol.loadData()
         self.limb_darkening = None
 
 class BeachBall( Integrator ):
@@ -988,10 +1032,20 @@ class BeachBall( Integrator ):
 
 
     def diskInt(self, vsini=0.0):
+        """
+        Returns:
+            True:       if the requested VSINI disk integrated spectrum
+                        did not already exist and had to be created
+            False:      if the requested VSINI disk integrated spectrum was
+                        already existing, and did NOT have to be created
+        """
         if (self.parent.rawData[0].wl == None):
             for raw in self.parent.rawData:
                 raw.loadData()
             self.loadData()
+        for integrated in self.integrated:
+            if integrated.header.get('VSINI') == vsini:
+                return False
         I, V = self.rtint(vsini_in=vsini)
         header = self.interpolated[0].header.copy()
         header.set('VSINI', vsini)
@@ -1002,25 +1056,43 @@ class BeachBall( Integrator ):
             header.add_history(interp.header.get('SPECTRUM_TYPE')+' - '+interp.header.get('SPECTRUM_ID'))
 
         self.integrated.append(Spectrum(wl=self.interpolated[0].wl, I=I, V=V, header=header, spectrum_type='DISK INTEGRATED VSINI=%.2f' % vsini))
+        return True
 
     def findVsini(self, vsini):
         for integrated in self.integrated:
             if numpy.abs(integrated.header.get('VSINI') - vsini) < 0.01:
                 return integrated
-        self.diskInt(vsini=vsini)
-        return self.integrated[-1]
 
-    def resample(self, vsini, R, observedWl=None):
-        found = False
+        raise SpectrumError(1, "Integrated Spectrum with vsini=%.2f NOT FOUND!!!" % 
+                (vsini))
+        #self.diskInt(vsini=vsini)
+        #return self.integrated[-1]
+
+    def resample(self, vsini=0.0, R=0, observedWl=None):
+        """
+        Returns:
+            retval : List of strings containing types of spectra created
+                     "INTEGRATED" - If disk-integrated spectra with desired VSINI
+                                does not exist, it must be created
+                     "CONVOLVED" - If 
+        """
+        retval = []
         for convol in self.convolved:
             if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
-                found = True
-                break
+                return retval
 
-        if not(found):
+        try:
             integrated = self.findVsini(vsini)
-            if R > 0:
-                self.convolved.append(integrated.resample(R, observedWl=observedWl))
+        except SpectrumError:
+            self.diskInt(vsini=vsini)
+            retval.append("INTEGRATED")
+            integrated = self.findVsini(vsini)
+        if R > 0:
+            self.convolved.append(integrated.resample(R, observedWl=observedWl))
+            retval.append("CONVOLVED")
+            return retval
+        else:
+            raise SpectrumError(3, "Resolving Power must be greater than 0!")
 
     def yank(self, vsini=0.0, R=0.0, observedWl = None, keySignature="CONVOLVED"):
         if keySignature=="INTEGRATED":
