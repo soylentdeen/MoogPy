@@ -23,6 +23,13 @@ class Label( object ):
         #        (self.parameters["WLSTART"] == other.parameters["WLSTART"]) &
         #        (self.parameters["WLSTOP"] == other.parameters["WLSTOP"]))
 
+    def __cmp__(self, other):
+        if hasattr(other, 'getWlStart'):
+            return self.getWlStart().__cmp__(other.getWlStart())
+
+    def getWlStart(self):
+        return self.parameters["WLSTART"]
+
 class Moog960Error( Exception ):
     def __init__(self, value, errmsg):
         self.value = value
@@ -312,12 +319,19 @@ class SyntheticPhrase( Phrase ):
             Nothing
         """
         created = self.processedData.resample(vsini=vsini, R=R, observedWl=observedWl)
-        if created:
-            parameters = self.integratedLabels[0].parameters.copy()
+        if 'INTEGRATED' in created:
+            parameters = self.rawLabels[0].parameters.copy()
+            parameters["VSINI"] = vsini
+            parameters["WLSTART"] = self.wlStart
+            parameters["WLSTOP"] = self.wlStop
+            self.integratedLabels.append(Label(parameters))
+        if 'CONVOLVED' in created:
+            parameters = self.rawLabels[0].parameters.copy()
             parameters["VSINI"] = vsini
             parameters["R"] = R
+            parameters["WLSTART"] = self.wlStart
+            parameters["WLSTOP"] = self.wlStop
             self.convolvedLabels.append(Label(parameters))
-        # TODO: if a new Convolved Spectrum is created in processedData, update convolvedLabels list
 
     #def perform(self, vsini= 0.0, R = 0.0, observedWl = None, keySignature="CONVOLVED"):
     def perform(self, label=None, keySignature="CONVOLVED"):
@@ -854,7 +868,7 @@ class SyntheticMelody( Melody ):
                     (label.parameters["WLSTOP"] == self.phrases[i].wlStop)):
                 spectrum, lab = self.phrases[i].perform(label=label, 
                     keySignature=keySignature)
-        return spectrum, lab
+                return spectrum, lab
     
 class Score( object ):
     """
@@ -960,13 +974,13 @@ class Score( object ):
                     if convolved in selectedLabels:
                         convolved.parameters["SELECTED"] = True
 
-    def selectMelodies(self, wlRange=[]):
+    def selectMelodies(self, wlRange=[], selectAll=False):
         for melody in self.syntheticMelodies:
             #melody.muted=False
             #melody.inParameterRange(TeffRange=TeffRange,
             #    loggRange=loggRange, BfieldRange=BfieldRange)
             #if not(melody.muted):
-            melody.selectPhrases(wlRange=wlRange)
+            melody.selectPhrases(wlRange=wlRange, selectAll=selectAll)
 
         if not(self.observed==None):
             self.Observed.selectPhrases(wlRange=wlRange)
@@ -977,7 +991,7 @@ class Score( object ):
             melody.tune(save=save)
 
 
-    def rehearse(self, vsini=0.0, R=0.0, binToObserved=True):
+    def rehearse(self, vsini=0.0, R=0.0, binToObserved=False):
         '''
         Score.rehearse(vsini=0.0, R=0.0) - For the melodies and phrases selected by
              the parameter and wavelength ranges, generate spectra corresponding to

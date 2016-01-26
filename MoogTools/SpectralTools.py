@@ -775,7 +775,6 @@ class Spectrum( object ):
                             x=self.wl[inBin])
                     newSpec_continuum[i] = num/denom
             elif (len(inBin) == 1):
-                print "Woo!"
                 if self.flux_I != None:
                     newSpec_I[i] = 0.0
                 if self.flux_Q != None:
