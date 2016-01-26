@@ -54,4 +54,5 @@ class Symphony(object ):
     def compose(self):
         path_to_MoogSymphony = os.path.dirname(os.path.abspath(__file__))
         for f in self.filenames:
+            print self.moogInstance
             os.system('python '+path_to_MoogSymphony+'/generateSpectrum.py '+f+' '+self.flavor+' '+self.moogInstance)
