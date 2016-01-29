@@ -1233,6 +1233,7 @@ class New_VALD_Line( Spectral_Line ):
                     else:
                         self.g_lo = 0.0
                 except:
+                    print("Lower state of line at %.3f failed!" % self.wl)
                     self.g_lo = 0.0
     
                 # Upper State
@@ -1251,6 +1252,7 @@ class New_VALD_Line( Spectral_Line ):
                     else:
                         self.g_hi = 0.0
                 except:
+                    print("Upper state of line at %.3f failed!" % self.wl)
                     self.g_hi = 0.0
 
         self.lower = Observed_Level(self.J_lo, self.g_lo, self.expot_lo)
