@@ -118,7 +118,6 @@ class MoogStokes( object ):
             T - Temperature in Kelvin
             logg - Surface gravity
             B - Magnetic field strength in kG
-            vsini - rotational velocity in km/sec   - Can I get rid of this?
 
             fileName - name of the MoogStokes parameter file
             fileBase - base of the filename
@@ -128,20 +127,31 @@ class MoogStokes( object ):
         self.config = AstroUtils.parse_config(configurationFile)
         self.lineList = LineList(self, self.config)
         self.parameterFile = ParameterFile(self, self.config)
-        self.T = self.config["Teff"]
-        self.logg = self.config["logg"]
-        self.B = self.config["Bfield"]
-        #self.vsini = self.config["vsini"]
+        self.LineListFormat = "MOOGSTOKES"
+        if "MODELFILE" in kwargs.keys():
+            self.modelFile = kwargs["MODELFILE"]
+            self.T = 0.0
+            self.logg = 0.0
+            self.B = 0.0
+        elif "modelFile" in self.config.keys():
+            self.modelFile = self.config["modelFile"]
+            self.T = 0.0
+            self.logg = 0.0
+            self.B = 0.0
+        else:
+            self.T = self.config["Teff"]
+            self.logg = self.config["logg"]
+            self.B = self.config["Bfield"]
+            self.modelFile = None
         
+        if "diskInt" in kwargs.keys():
+            self.diskInt = kwargs["diskInt"]
+        elif "diskInt" in self.config.keys():
+            self.diskInt = self.config["diskInt"]
+        else:
+            self.diskInt = "BEACHBALL"
         self.fileName = fileBase+'.par'
         self.fileBase = fileBase
-        #self.wave = []
-        #self.flux = []
-        #self.flux_I = []
-        #self.flux_Q = []
-        #self.flux_U = []
-        #self.flux_V = []
-        #self.continuum = []
         self.Spectra = []
         self.logtau = []
 
@@ -168,6 +178,7 @@ class MoogStokes( object ):
         self.MoogPy.beachball = self.beachball
         self.MoogPy.diskoball = self.diskoball
         self.MoogPy.fluxtracer = self.fluxtracer
+        self.MoogPy.tennisball = self.tennisball
 
         if "progressBar" in kwargs.keys():
             if kwargs["progressBar"] == True:
@@ -185,8 +196,8 @@ class MoogStokes( object ):
         self.continuum.append(continuum)
 
     def recorder(self, x, y):
-        self.wave.append(x)
-        self.flux.append(1.0-y)
+        self.Spectra[-1].wl.append(x)
+        self.Spectra[-1].flux_I.append(1.0-y)
     
     def stokesrecorder(self, i, wave, Stokes, continuum):
         index = i-1
@@ -210,13 +221,39 @@ class MoogStokes( object ):
             header.set('WLSTART', self.config["wlStart"])
             header.set('WLSTOP', self.config["wlStop"])
             header.set('CELL', self.cells[i])
-            header.set('PHI_ANGLE', float('%.4f'% self.phi_angle[i]))
-            header.set('MU', float('%.4f'%self.mus[i]))
-            header.set('DISKFLAG', self.diskflag)
-            header.set('SPECTRUM_TYPE', 'Individual Emergent Spectrum')
-            self.Spectra.append(SpectralTools.Spectrum(wl = [],
-                I = [], Q = [], U = [], V = [], continuum = [], header=header, 
-                spectrum_type='Individual Emergent Spectrum'))
+            if self.diskInt == 'TENNISBALL':
+                header.set('SPECTRUM_TYPE', 'MOOG disk-integrated Spectrum')
+                self.Spectra.append(SpectralTools.Spectrum(wl = [],
+                    I = [], header=header,
+                    spectrum_type='MOOG disk-integrated Spectrum'))
+            elif self.diskInt == 'BEACHBALL':
+                header.set('PHI_ANGLE', float('%.4f'% self.phi_angle[i]))
+                header.set('MU', float('%.4f'%self.mus[i]))
+                header.set('DISKFLAG', self.diskflag)
+                header.set('SPECTRUM_TYPE', 'Individual Emergent Spectrum')
+                self.Spectra.append(SpectralTools.Spectrum(wl = [],
+                    I = [], Q = [], U = [], V = [], continuum = [], header=header, 
+                    spectrum_type='Individual Emergent Spectrum'))
+            elif self.diskInt == 'DISKOBALL':
+                header.set('PHI_ANGLE', float('%.4f'% self.phi_angle[i]))
+                header.set('CHI_ANGLE', float('%.4f'% self.chi_angle[i]))
+                header.set('AZIMUTH', float('%.4f' % self.azimuth[i]))
+                header.set('LONGITUDE', float('%.4f' % self.longitude[i]))
+                header.set('NRINGS', float('%d' % self.nrings))
+                header.set('INCLINATION', float('%.4f' % self.inclination))
+                header.set('POSANGLE', float('%.4f' % self.position_angle))
+                header.set('MU', float('%.4f'%self.mus[i]))
+                header.set('DISKFLAG', self.diskflag)
+                header.set('SPECTRUM_TYPE', 'Individual Emergent Spectrum')
+                self.Spectra.append(SpectralTools.Spectrum(wl = [],
+                    I = [], Q = [], U = [], V = [], continuum = [], header=header, 
+                    spectrum_type='Individual Emergent Spectrum'))
+
+    def tennisball(self):
+        self.ncells = 1
+        self.cells = numpy.arange(1)
+        self.LineListFormat = "MOOGSCALAR"
+        self.prepareFluxes()
 
     def beachball(self):
         self.diskflag = 1
@@ -245,15 +282,16 @@ class MoogStokes( object ):
 
     def finishSpectra(self):
         for spectrum in self.Spectra:
-            spectrum.preserve()
+            spectrum.preserve(I=spectrum.flux_I!=None, Q=spectrum.flux_Q!=None,
+                    U=spectrum.flux_U!=None, V=spectrum.flux_V!=None, 
+                    continuum=spectrum.continuum!=None)
 
-    def run(self, saveRaw=False):
-        self.wave = []
-        self.flux = []
+    def run(self, saveRaw=False, **kwargs):
         self.lineList.setBfield(self.B)
-        self.lineList.writeLineLists(parent=self, mode="MOOGSTOKES")
+        self.lineList.writeLineLists(parent=self, mode=self.LineListFormat, **kwargs)
         self.parameterFile.setName(self.fileBase)
-        self.parameterFile.setModel(self.T, self.logg)
+        self.parameterFile.setModel(teff=self.T, logg=self.logg, 
+                modelFile=self.modelFile)
         self.parameterFile.writeParFile()
         self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
         self.MoogPy.atmos.linecount = 0
@@ -262,68 +300,18 @@ class MoogStokes( object ):
         self.MoogPy.moogstokessilent()
         self.finishSpectra()
         self.Phrase = Moog960.SyntheticPhrase(rawData=self.Spectra,
-                diskInt="BEACHBALL")
+                diskInt=self.diskInt)
         if saveRaw:
             filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"])
             PHKWs = {"BFIELD":self.config["Bfield"], "TEFF":self.config["Teff"], "LOGG":self.config["logg"]}
             self.Phrase.saveRaw(filename=filename, primaryHeaderKWs=PHKWs)
-        """
-        if diskInt:
-            self.Phrase.integrate.
-            self.wave = self.integrator.new_wl
-            self.stokes_I = self.integrator.final_spectrum_I
-            self.stokes_V = self.integrator.final_spectrum_V
-            if save:
-                filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_V%.1f.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"], self.config["vsini"])
-                wave = pyfits.Column(name='Wavelength', format='D', array=self.wave)
-                flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.stokes_I)
-                flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.stokes_V)
-                columns = pyfits.ColDefs([wave, flux_I, flux_V])
-                SpectrumHDU = pyfits.BinTableHDU.from_columns(columns)
-                SpectrumHDU.header.set('CREATION_TIME', time.ctime())
-                SpectrumHDU.header.set('CREATION_USER', os.getlogin())
-                SpectrumHDU.header.set('CREATION_MACHINE', os.uname()[1])
-                SpectrumHDU.header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
-                SpectrumHDU.header.set('WLSTART', self.config["wlStart"])
-                SpectrumHDU.header.set('WLSTOP', self.config["wlStop"])
-                SpectrumHDU.name = "%.4fA - %.4fA" % (self.config["wlStart"], self.config["wlStop"])
-                if os.path.exists(filename):
-                    while os.path.exists(filename+'.lock'):
-                        print "Woah!  File is locked!"
-                        time.sleep(0.1)
-                    with open(filename+'.lock', 'w'):
-                        os.utime(filename+'.lock', None)
-                    HDUList = pyfits.open(filename, mode='update')
-                    for spectrum in HDUList[1:]:
-                        if ((spectrum.header.get('WLSTART') == self.config["wlStart"]) & 
-                            (spectrum.header.get('WLSTOP') == self.config["wlStop"])):
-                            HDUList.pop(HDUList.index_of(spectrum.name))
-                    HDUList.append(SpectrumHDU)
-                    HDUList.update_extend()
-                    HDUList.verify(option='silentfix')
-                    HDUList.close()
-                    os.remove(filename+'.lock')
-                else:
-                    HDUList = pyfits.HDUList()
-                    primary = pyfits.PrimaryHDU()
-                    primary.header.set('BFIELD', self.config["Bfield"])
-                    primary.header.set('TEFF', self.config["Teff"])
-                    primary.header.set('LOGG', self.config["logg"])
-                    primary.header.set('VSINI', self.config["vsini"])
-                    HDUList.append(primary)
-                    HDUList.append(SpectrumHDU)
-                    HDUList.update_extend()
-                    HDUList.verify(option='silentfix')
-                    HDUList.writeto(filename)
-            return self.wave, self.flux
-        #"""
 
     def trace(self, save=False):
         self.lineList.setBfield(self.B)
         self.lineList.writeLineLists(parent=self, mode="MOOGSTOKES")
         self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
         self.parameterFile.setName(self.fileBase)
-        self.parameterFile.setModel(self.T, self.logg)
+        self.parameterFile.setModel(teff = self.T, logg = self.logg)
         self.parameterFile.writeParFile()
         self.MoogPy.atmos.linecount = 0
         self.MoogPy.moogstokessilent()
@@ -335,74 +323,6 @@ class MoogStokes( object ):
             out.header.set('LOGG', self.config["logg"])
             out.writeto(self.config["outdir"]+self.config["outbase"]+'_'+str(self.config["wlProbe"])+'.fits', clobber=True)
         return self.logtau, self.flux_I, self.flux_Q, self.flux_U, self.flux_V, self.continuum
-
-"""
-class Spectrum( object ):
-    def __init__(self, config, spectrumName):
-        self.name = spectrumName
-        self.df = config[spectrumName]
-        self.wlStart = config['wlStart']
-        self.wlStop = config['wlStop']
-        self.wave = []
-        self.flux = []
-        self.loadSpectrum()
-        self.header = None
-
-    def loadSpectrum(self):
-        if self.df[-5:] == '.fits':
-            data = pyfits.getdata(self.df)
-            self.header = pyfits.getheader(self.df)
-            self.wave = data[0]
-            self.flux = data[1]
-        else:
-            spectrum=open(self.df, 'r').read().split('\n')
-            for line in spectrum:
-                if len(line) > 0:
-                    l = line.split()
-                    wave = float(l[0])
-                    if ((wave > self.wlStart) & (wave <= self.wlStop)):
-                        self.wave.append(wave)
-                        self.flux.append(float(l[1]))
-    
-            self.wave = numpy.array(self.wave)
-            self.flux = numpy.array(self.flux)
-
-    def flipWavelength(self):
-        self.wave = self.wave[::-1]
-        self.flux = self.flux[::-1]
-
-    def fixDiscontinuities(self):
-        deriv = numpy.array([self.flux[i] - self.flux[i-1] for i in 
-            range(len(self.flux))])
-        candidates = numpy.arange(len(deriv))[deriv > 0.03]
-        score = deriv[candidates]/(deriv[candidates-1]+deriv[candidates+1]/2.0)
-        discontinuities = candidates[numpy.arange(
-            len(candidates))[numpy.abs(score) > 5]]
-        plus = numpy.abs(numpy.mean(self.flux[discontinuities] - 
-            self.flux[discontinuities+1]))
-        minus = numpy.abs(numpy.mean(self.flux[discontinuities] - 
-            self.flux[discontinuities-1]))
-
-        if plus > minus:
-            print(asdf)
-        else:
-            deltaY = self.flux[discontinuities] - self.flux[discontinuities-1]
-            deltaX = [self.wave[discontinuities[i]] - self.wave[discontinuities[i+1]] 
-                    for i in range(len(discontinuities)-1)]
-            slopes = deltaY[1:]/deltaX
-            slopes = numpy.append(numpy.append(numpy.average(slopes), slopes), numpy.
-                    average(slopes))
-            origins = numpy.append(self.wave[discontinuities[0]]+deltaY[0]/slopes[0],
-                    self.wave[discontinuities])
-
-            index = 0
-            discontinuities = numpy.append(discontinuities, len(self.flux))
-            for i in range(len(self.flux)):
-                if i == discontinuities[index]:
-                    index += 1
-                self.flux[i] = self.flux[i] + slopes[index] * (origins[index] - 
-                        self.wave[i])
-#"""
 
 class ParameterFile( object ):
     def __init__(self, parent, config, **kwargs):
@@ -454,8 +374,14 @@ class ParameterFile( object ):
         self.file_labels['stronglines_in'] = self.config['Strong_FileName']+'_'+name
         self.parFileName = name+'.par'
         
-    def setModel(self, Temp, Grav):
-        self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH')+'Atmospheres/MARCS/MARCS_T'+ str(int(Temp))+'_G'+str(Grav)+'_M0.0_t1.0.md'
+    def setModel(self, teff=0.0, logg=0.0, modelFile=None):
+        if modelFile==None:
+            self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH')+ \
+                    'Atmospheres/MARCS/MARCS_T'+ str(int(teff))+'_G'+ \
+                    str(logg)+'_M0.0_t1.0.md'
+        else:
+            self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH') + \
+                    'Atmospheres/' + modelFile
 
     def writeParFile(self):
         pf = open(self.parFileName, 'w')
@@ -533,6 +459,7 @@ class LineList( object ):
     
         if self.applyCorrections:
             self.corrected = []
+            print "Reading in gf Corrections!"
             for line in open(self.gf_corrections, 'r'):
                 self.corrected.append(MOOG_Line(line))
     
@@ -561,21 +488,24 @@ class LineList( object ):
                     wl = float(lines[0].split(',')[1])
                     if ( (wl > self.wlStart) & (wl < self.wlStop) ):
                         current_line = New_VALD_Line(lines, pt)
-                        if self.applyCorrections:
-                            for cl in self.corrected:
-                                if (cl.wl == current_line.wl) & (cl.expot_lo == current_line.expot_lo):
-                                    print("Making a correction!")
-                                    current_line.loggf = cl.loggf
-                                    current_line.zeeman["NOFIELD"][1] = cl.loggf
-                                    current_line.VdW = cl.VdW
-                                    current_line.stark = cl.stark
-                                    current_line.radiative = cl.radiative
-                        current_line.zeeman_splitting(self.Bfield)
-                        species = current_line.species
-                        if ( [wl, species] in strong):
-                            self.strongLines.append(current_line)
-                        else:
-                            self.weakLines.append(current_line)
+                        if ( (current_line.expot_lo < 20.0) & 
+                                (current_line.species % 1 <= 0.2) ):
+                            if self.applyCorrections:
+                                for cl in self.corrected:
+                                    if (cl.wl == current_line.wl) & (cl.expot_lo == current_line.expot_lo):
+                                        print("Making a correction!")
+                                        current_line.loggf = cl.loggf
+                                        current_line.zeeman["NOFIELD"][1] = cl.loggf
+                                        if cl.VdW != 99.0:
+                                            current_line.VdW = cl.VdW
+                                            current_line.stark = cl.stark
+                                            current_line.radiative = cl.radiative
+                            current_line.zeeman_splitting(self.Bfield)
+                            species = current_line.species
+                            if ( [wl, species] in strong):
+                                self.strongLines.append(current_line)
+                            else:
+                                self.weakLines.append(current_line)
     
     def getGf(self, index, log=False):
         if index < self.nStrong:
@@ -601,6 +531,12 @@ class LineList( object ):
             else:
                 return 10.0**(self.weakLines[index-self.nStrong].VdW)
 
+    def getWl(self, index):
+        if index < self.nStrong:
+            return self.strongLines[index].wl
+        else:
+            return self.weakLines[index-self.nStrong].wl
+
     def perturbGf(self, index, delta):
         if index < self.nStrong:
             self.strongLines[index].modifyGf(delta)
@@ -613,6 +549,15 @@ class LineList( object ):
         else:
             self.weakLines[index-self.nStrong].modifyVdW(delta)
 
+    def saveLineList(self, mode="MOOGSCALAR", filename=''):
+        outfile = open(filename, 'w')
+        for strongLine in self.strongLines:
+            strongLine.dump(out=outfile, mode=mode)
+        for weakLine in self.weakLines:
+            weakLine.dump(out=outfile, mode=mode)
+        outfile.close()
+        self.sort_file(filename)
+
     def writeLineLists(self, lineIndex=-1, partial=False, mode="MOOGSCALAR", parent=None):
         if parent:
             strongFile = self.sfn + '_' + parent.fileBase
@@ -622,6 +567,10 @@ class LineList( object ):
             strongFile = self.sfn
             weakFile = self.wfn
             moogPointer = self.parent.MoogPy
+        self.parent.MoogPy.linex.start = self.wlStart
+        self.parent.MoogPy.linex.sstop = self.wlStop
+        self.parent.parameterFile.synlimits[0] = self.wlStart
+        self.parent.parameterFile.synlimits[1] = self.wlStop
         if lineIndex < 0:     #Normal case, write ALL the lines
             outfile = open(strongFile, 'w')
             for strongLine in self.strongLines:
@@ -661,11 +610,8 @@ class LineList( object ):
             self.sort_file(weakFile, weak=True)
 
             # Set Moog varibles
-            self.parent.MoogPy.linex.start = self.wlStart
-            self.parent.MoogPy.linex.sstop = self.wlStop
             self.parent.MoogPy.linex.nlines = 1
             self.parent.MoogPy.linex.nstrong = 1
-            
         else:
             # WEAK LINE
             index = lineIndex-self.nStrong
@@ -681,12 +627,12 @@ class LineList( object ):
                 self.parent.parameterFile.synlimits[1] = wlStop
                 self.parent.MoogPy.linex.start = wlStart
                 self.parent.MoogPy.linex.sstop = wlStop
-                self.parent.parameterFile.writeParFile()
-                self.parent.parameterFile.synlimits[0] = self.wlStart
-                self.parent.parameterFile.synlimits[1] = self.wlStop
-            else:
-                self.parent.MoogPy.linex.start = self.wlStart
-                self.parent.MoogPy.linex.sstop = self.wlStop
+                #self.parent.parameterFile.writeParFile()
+                #print self.parent.MoogPy.linex.start
+                #print self.parent.parameterFile.synlimits
+                #raw_input()
+                #self.parent.parameterFile.synlimits[0] = self.wlStart
+                #self.parent.parameterFile.synlimits[1] = self.wlStop
             self.parent.MoogPy.linex.nlines = 1
             self.parent.MoogPy.linex.nstrong = 0
             outfile = open(weakFile, 'w')
@@ -735,6 +681,18 @@ class LineList( object ):
                 self.strongLines[i].setVdW(VdWs[i])
             else:
                 self.weakLines[i-self.nStrong].setVdW(VdWs[i])
+
+    def tossLines(self, indices):
+        nTossed = 0
+        for index in indices:
+            index -= nTossed
+            if index < self.nStrong:
+                junk = self.strongLines.pop(index)
+                self.nStrong -= 1
+            else:
+                junk = self.weakLines.pop(index-self.nStrong)
+            nTossed+=1
+            self.numLines -= 1
 
 class Spectral_Line( object ):
     def __init__(self):

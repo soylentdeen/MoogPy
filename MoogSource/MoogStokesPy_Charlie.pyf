@@ -1,9 +1,16 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
+python module synth__user__routines 
+    interface synth_user_interface 
+        subroutine tennisball ! in :MoogStokesPy_Alpha:Synth.f:synth:unknown_interface
+            intent(callback,hide) tennisball
+        end subroutine tennisball
+    end interface synth_user_interface
+end python module synth__user__routines
 python module synspec__user__routines 
     interface synspec_user_interface 
-        subroutine recorder(wave,e_d_n_err) ! in :MoogStokesAlphaPy:Synspec.f:synspec:unknown_interface
+        subroutine recorder(wave,e_d_n_err) ! in :MoogStokesPy_Alpha:Synspec.f:synspec:unknown_interface
             intent(callback,hide) recorder
             real*8 :: wave
             real*8 :: e_d_n_err
@@ -12,24 +19,24 @@ python module synspec__user__routines
 end python module synspec__user__routines
 python module synstokes__user__routines 
     interface synstokes_user_interface 
-        subroutine stokesrecorder(e_1_err,wave,stokes,continuum) ! in :MoogStokesAlphaPy:SynStokes.f:synstokes:unknown_interface
+        subroutine stokesrecorder(e_1_err,wave,stokes,continuum) ! in :MoogStokesPy_Alpha:SynStokes.f:synstokes:unknown_interface
             intent(callback,hide) stokesrecorder
             integer :: e_1_err
             real*8 :: wave
             real*8 dimension(4) :: stokes
             real*8 :: continuum
         end subroutine stokesrecorder
-        subroutine beachball ! in :MoogStokesAlphaPy:SynStokes.f:synstokes:unknown_interface
+        subroutine beachball ! in :MoogStokesPy_Alpha:SynStokes.f:synstokes:unknown_interface
             intent(callback,hide) beachball
         end subroutine beachball
-        subroutine diskoball ! in :MoogStokesAlphaPy:SynStokes.f:synstokes:unknown_interface
+        subroutine diskoball ! in :MoogStokesPy_Alpha:SynStokes.f:synstokes:unknown_interface
             intent(callback,hide) diskoball
         end subroutine diskoball
     end interface synstokes_user_interface
 end python module synstokes__user__routines
 python module stokesdipstick__user__routines 
     interface stokesdipstick_user_interface 
-        subroutine fluxtracer(logtau,dtau,stokes,continuum) ! in :MoogStokesAlphaPy:StokesDipStick.f:stokesdipstick:unknown_interface
+        subroutine fluxtracer(logtau,dtau,stokes,continuum) ! in :MoogStokesPy_Alpha:StokesDipStick.f:stokesdipstick:unknown_interface
             intent(callback,hide) fluxtracer
             real*8 :: logtau
             real*8 :: dtau
@@ -40,10 +47,11 @@ python module stokesdipstick__user__routines
 end python module stokesdipstick__user__routines
 python module MoogStokesPy_Charlie ! in 
     interface  ! in :MoogStokesPy_Alpha
-        subroutine moogstokessilent ! in :MoogStokesAlphaPy:MoogStokessilent.f
+        subroutine moogstokessilent ! in :MoogStokesPy_Alpha:MoogStokessilent.f
             use synspec__user__routines
             use synstokes__user__routines
             use stokesdipstick__user__routines
+            use synth__user__routines
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -250,6 +258,8 @@ python module MoogStokesPy_Charlie ! in
             character*1 :: macroflag
             intent(callback, hide) recorder
             external recorder
+            intent(callback, hide) tennisball
+            external tennisball
             intent(callback, hide) beachball
             external beachball
             intent(callback, hide) diskoball
@@ -263,7 +273,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine moogstokessilent
-        subroutine begin ! in :MoogStokesAlphaPy:Begin.f
+        subroutine begin ! in :MoogStokesPy_Alpha:Begin.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -473,7 +483,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine begin
-        subroutine infile(type_bn,iunit,mode,irec,charcount,fname,line) ! in :MoogStokesAlphaPy:Infile.f
+        subroutine infile(type_bn,iunit,mode,irec,charcount,fname,line) ! in :MoogStokesPy_Alpha:Infile.f
             character*7 :: type_bn
             integer :: iunit
             character*11 :: mode
@@ -690,7 +700,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine infile
-        subroutine getasci(num,line) ! in :MoogStokesAlphaPy:Getasci.f
+        subroutine getasci(num,line) ! in :MoogStokesPy_Alpha:Getasci.f
             integer :: num
             integer :: line
             real*8 :: xxm1
@@ -806,7 +816,7 @@ python module MoogStokesPy_Charlie ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine getasci
-        function ivcleof(y,x) ! in :MoogStokesAlphaPy:Nansi.f
+        function ivcleof(y,x) ! in :MoogStokesPy_Alpha:Nansi.f
             integer :: y
             integer :: x
             real*8 :: xxm1
@@ -923,7 +933,7 @@ python module MoogStokesPy_Charlie ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end function ivcleof
-        function ivwrite(y,x,arr,ccount) ! in :MoogStokesAlphaPy:Nansi.f
+        function ivwrite(y,x,arr,ccount) ! in :MoogStokesPy_Alpha:Nansi.f
             integer :: y
             integer :: x
             character*79 :: arr
@@ -1042,7 +1052,7 @@ python module MoogStokesPy_Charlie ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end function ivwrite
-        function ivmove(y,x) ! in :MoogStokesAlphaPy:Nansi.f
+        function ivmove(y,x) ! in :MoogStokesPy_Alpha:Nansi.f
             integer :: y
             integer :: x
             real*8 :: xxm1
@@ -1159,22 +1169,23 @@ python module MoogStokesPy_Charlie ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end function ivmove
-        function ivcleol() ! in :MoogStokesAlphaPy:Nansi.f
+        function ivcleol() ! in :MoogStokesPy_Alpha:Nansi.f
             integer :: ivcleol
         end function ivcleol
-        function ivbold(on) ! in :MoogStokesAlphaPy:Nansi.f
+        function ivbold(on) ! in :MoogStokesPy_Alpha:Nansi.f
             integer :: on
             integer :: ivbold
         end function ivbold
-        function ivundl(on) ! in :MoogStokesAlphaPy:Nansi.f
+        function ivundl(on) ! in :MoogStokesPy_Alpha:Nansi.f
             integer :: on
             integer :: ivundl
         end function ivundl
-        subroutine getcount(num,linechars) ! in :MoogStokesAlphaPy:Getcount.f
+        subroutine getcount(num,linechars) ! in :MoogStokesPy_Alpha:Getcount.f
             integer :: num
             character*60 :: linechars
         end subroutine getcount
-        subroutine synth ! in :MoogStokesAlphaPy:Synth.f
+        subroutine synth ! in :MoogStokesPy_Alpha:Synth.f
+            use synth__user__routines
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -1571,6 +1582,8 @@ python module MoogStokesPy_Charlie ! in
             character*80 :: fstokesu
             character*80 :: fstokesv
             character*80 :: fcontinuum
+            intent(callback) tennisball
+            external tennisball
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /dummy/ dummy1,dummy2,dummy3,dummy4
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
@@ -1584,7 +1597,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine synth
-        subroutine synspec ! in :MoogStokesAlphaPy:Synspec.f
+        subroutine synspec ! in :MoogStokesPy_Alpha:Synspec.f
             use synspec__user__routines
             real*8 :: xxm1
             real*8 :: xxb1
@@ -1901,7 +1914,7 @@ python module MoogStokesPy_Charlie ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,moogversion,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine synspec
-        subroutine finish(number) ! in :MoogStokesAlphaPy:Finish.f
+        subroutine finish(number) ! in :MoogStokesPy_Alpha:Finish.f
             integer :: number
             real*8 :: xxm1
             real*8 :: xxb1
@@ -2112,7 +2125,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine finish
-        subroutine opacit(modeop,waveop) ! in :MoogStokesAlphaPy:Opacit.f
+        subroutine opacit(modeop,waveop) ! in :MoogStokesPy_Alpha:Opacit.f
             integer :: modeop
             real*8 :: waveop
             character*80 :: f1out
@@ -2235,7 +2248,7 @@ python module MoogStokesPy_Charlie ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /dummy/ dummy1,dummy2,dummy3,dummy4
         end subroutine opacit
-        subroutine opach1 ! in :MoogStokesAlphaPy:OpacHydrogen.f
+        subroutine opach1 ! in :MoogStokesPy_Alpha:OpacHydrogen.f
             real*8 dimension(110) :: amol
             real*8 dimension(7,110) :: datmol
             real*8 :: const
@@ -2366,7 +2379,7 @@ python module MoogStokesPy_Charlie ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /mol/ pmol,xmol,xatom,patom,xamol,neq,lev,nmol,natoms,iorder
         end subroutine opach1
-        subroutine opachminus ! in :MoogStokesAlphaPy:OpacHydrogen.f
+        subroutine opachminus ! in :MoogStokesPy_Alpha:OpacHydrogen.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -2482,7 +2495,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opachminus
-        subroutine linter(xold,yold,nold,xnew,ynew,nnew) ! in :MoogStokesAlphaPy:OpacHydrogen.f
+        subroutine linter(xold,yold,nold,xnew,ynew,nnew) ! in :MoogStokesPy_Alpha:OpacHydrogen.f
             real*8 dimension(*) :: xold
             real*8 dimension(*) :: yold
             integer :: nold
@@ -2490,7 +2503,7 @@ python module MoogStokesPy_Charlie ! in
             real*8 dimension(*) :: ynew
             integer :: nnew
         end subroutine linter
-        function map1(xold,fold,nold,xnew,fnew,nnew) ! in :MoogStokesAlphaPy:OpacHydrogen.f
+        function map1(xold,fold,nold,xnew,fnew,nnew) ! in :MoogStokesPy_Alpha:OpacHydrogen.f
             real*8 dimension(*) :: xold
             real*8 dimension(*) :: fold
             integer :: nold
@@ -2499,7 +2512,7 @@ python module MoogStokesPy_Charlie ! in
             integer :: nnew
             integer :: map1
         end function map1
-        subroutine opacheminus ! in :MoogStokesAlphaPy:OpacHelium.f
+        subroutine opacheminus ! in :MoogStokesPy_Alpha:OpacHelium.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -2615,7 +2628,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacheminus
-        subroutine opacc1 ! in :MoogStokesAlphaPy:Opacmetals.f
+        subroutine opacc1 ! in :MoogStokesPy_Alpha:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -2731,7 +2744,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacc1
-        subroutine opacmg1 ! in :MoogStokesAlphaPy:Opacmetals.f
+        subroutine opacmg1 ! in :MoogStokesPy_Alpha:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -2847,7 +2860,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacmg1
-        subroutine opacmg2 ! in :MoogStokesAlphaPy:Opacmetals.f
+        subroutine opacmg2 ! in :MoogStokesPy_Alpha:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -2963,7 +2976,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacmg2
-        subroutine opacal1 ! in :MoogStokesAlphaPy:Opacmetals.f
+        subroutine opacal1 ! in :MoogStokesPy_Alpha:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3079,7 +3092,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacal1
-        subroutine opacsi1 ! in :MoogStokesAlphaPy:Opacmetals.f
+        subroutine opacsi1 ! in :MoogStokesPy_Alpha:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3195,7 +3208,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacsi1
-        subroutine opacsi2 ! in :MoogStokesAlphaPy:Opacmetals.f
+        subroutine opacsi2 ! in :MoogStokesPy_Alpha:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3311,7 +3324,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacsi2
-        subroutine opacfe1 ! in :MoogStokesAlphaPy:Opacmetals.f
+        subroutine opacfe1 ! in :MoogStokesPy_Alpha:Opacmetals.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3427,7 +3440,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacfe1
-        function seaton(freq0,xsect,power,a) ! in :MoogStokesAlphaPy:Opacmetals.f
+        function seaton(freq0,xsect,power,a) ! in :MoogStokesPy_Alpha:Opacmetals.f
             real*8 :: freq0
             real*8 :: xsect
             real*8 :: power
@@ -3452,7 +3465,7 @@ python module MoogStokesPy_Charlie ! in
             real*8 :: seaton
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end function seaton
-        subroutine opacescat ! in :MoogStokesAlphaPy:Opacscat.f
+        subroutine opacescat ! in :MoogStokesPy_Alpha:Opacscat.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -3568,7 +3581,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
         end subroutine opacescat
-        subroutine opachscat ! in :MoogStokesAlphaPy:Opacscat.f
+        subroutine opachscat ! in :MoogStokesPy_Alpha:Opacscat.f
             character dimension(2500,7),intent(c) :: damptype
             character*80 :: f1out
             character*80 :: f2out
@@ -3761,7 +3774,7 @@ python module MoogStokesPy_Charlie ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine opachscat
-        subroutine opach2scat ! in :MoogStokesAlphaPy:Opacscat.f
+        subroutine opach2scat ! in :MoogStokesPy_Alpha:Opacscat.f
             character dimension(2500,7),intent(c) :: damptype
             character*80 :: f1out
             character*80 :: f2out
@@ -3954,7 +3967,7 @@ python module MoogStokesPy_Charlie ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine opach2scat
-        subroutine opachescat ! in :MoogStokesAlphaPy:Opacscat.f
+        subroutine opachescat ! in :MoogStokesPy_Alpha:Opacscat.f
             character dimension(2500,7),intent(c) :: damptype
             character*80 :: f1out
             character*80 :: f2out
@@ -4147,24 +4160,24 @@ python module MoogStokesPy_Charlie ! in
             common /kappa/ ah1,ahminus,aheminus,sigel,sigh,sigh2,sighe,ac1,amg1,amg2,aal1,asi1,asi2,afe1,evhkt,freq,freqlg
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine opachescat
-        function coulx(n,freq,z) ! in :MoogStokesAlphaPy:Opaccouls.f
+        function coulx(n,freq,z) ! in :MoogStokesPy_Alpha:Opaccouls.f
             integer :: n
             real*8 :: freq
             real*8 :: z
             real*8 :: coulx
         end function coulx
-        function coulbf1s(freq,z) ! in :MoogStokesAlphaPy:Opaccouls.f
+        function coulbf1s(freq,z) ! in :MoogStokesPy_Alpha:Opaccouls.f
             real*8 :: freq
             real*8 :: z
             real*8 :: coulbf1s
         end function coulbf1s
-        function coulff(nz,tlog,freq) ! in :MoogStokesAlphaPy:Opaccouls.f
+        function coulff(nz,tlog,freq) ! in :MoogStokesPy_Alpha:Opaccouls.f
             integer :: nz
             real*8 :: tlog
             real*8 :: freq
             real*8 :: coulff
         end function coulff
-        subroutine nearly(numpass) ! in :MoogStokesAlphaPy:Nearly.f
+        subroutine nearly(numpass) ! in :MoogStokesPy_Alpha:Nearly.f
             integer :: numpass
             real*8 dimension(100) :: dummy1
             real*8 dimension(100) :: dummy2
@@ -4392,7 +4405,7 @@ python module MoogStokesPy_Charlie ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,moogversion,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine nearly
-        subroutine eqlib ! in :MoogStokesAlphaPy:Eqlib.f
+        subroutine eqlib ! in :MoogStokesPy_Alpha:Eqlib.f
             real*8 dimension(100) :: dummy1
             real*8 dimension(100) :: dummy2
             real*8 dimension(5000) :: dummy3
@@ -4520,7 +4533,7 @@ python module MoogStokesPy_Charlie ! in
             common /mol/ pmol,xmol,xatom,patom,xamol,neq,lev,nmol,natoms,iorder
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,moogversion,names,modtype,control,machine,silent
         end subroutine eqlib
-        function partnew(atom,k,level) ! in :MoogStokesAlphaPy:Partnew.f
+        function partnew(atom,k,level) ! in :MoogStokesPy_Alpha:Partnew.f
             real*8 :: atom
             integer :: k
             integer :: level
@@ -4632,7 +4645,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /quants/ xsolar,xam,newpartdata,xchi1,xchi2,xchi3,nudata,partflag,nu
         end function partnew
-        subroutine cdcalc(number) ! in :MoogStokesAlphaPy:Cdcalc.f
+        subroutine cdcalc(number) ! in :MoogStokesPy_Alpha:Cdcalc.f
             integer :: number
             character*80 :: f1out
             character*80 :: f2out
@@ -4808,12 +4821,12 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine cdcalc
-        function expint(x,n) ! in :MoogStokesAlphaPy:Jexpint.f
+        function expint(x,n) ! in :MoogStokesPy_Alpha:Jexpint.f
             real*8 :: x
             integer :: n
             real*8 :: expint
         end function expint
-        subroutine linlimit ! in :MoogStokesAlphaPy:Linlimit.f
+        subroutine linlimit ! in :MoogStokesPy_Alpha:Linlimit.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -5004,7 +5017,7 @@ python module MoogStokesPy_Charlie ! in
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine linlimit
-        subroutine prinfo(line) ! in :MoogStokesAlphaPy:Prinfo.f
+        subroutine prinfo(line) ! in :MoogStokesPy_Alpha:Prinfo.f
             integer :: line
             real*8 :: xxm1
             real*8 :: xxb1
@@ -5215,12 +5228,12 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine prinfo
-        subroutine sunder(amol,i1,i2) ! in :MoogStokesAlphaPy:Sunder.f
+        subroutine sunder(amol,i1,i2) ! in :MoogStokesPy_Alpha:Sunder.f
             real*8 :: amol
             integer :: i1
             integer :: i2
         end subroutine sunder
-        subroutine gammabark ! in :MoogStokesAlphaPy:Gammabark.f
+        subroutine gammabark ! in :MoogStokesPy_Alpha:Gammabark.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -5518,7 +5531,7 @@ python module MoogStokesPy_Charlie ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,moogversion,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine gammabark
-        function rinteg(x,f,fint,n,start) ! in :MoogStokesAlphaPy:Rinteg.f
+        function rinteg(x,f,fint,n,start) ! in :MoogStokesPy_Alpha:Rinteg.f
             real*8 dimension(5000) :: x
             real*8 dimension(5000) :: f
             real*8 dimension(5000) :: fint
@@ -5526,7 +5539,7 @@ python module MoogStokesPy_Charlie ! in
             real*8 :: start
             real*8 :: rinteg
         end function rinteg
-        subroutine parcoe(f,x,a,b,c,n) ! in :MoogStokesAlphaPy:Rinteg.f
+        subroutine parcoe(f,x,a,b,c,n) ! in :MoogStokesPy_Alpha:Rinteg.f
             real*8 dimension(5000) :: f
             real*8 dimension(5000) :: x
             real*8 dimension(5000) :: a
@@ -5534,7 +5547,7 @@ python module MoogStokesPy_Charlie ! in
             real*8 dimension(5000) :: c
             integer :: n
         end subroutine parcoe
-        block data atomic ! in :MoogStokesAlphaPy:Batom.f
+        block data atomic ! in :MoogStokesPy_Alpha:Batom.f
             character*80 :: f1out
             character*80 :: f2out
             character*80 :: f3out
@@ -5642,7 +5655,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /quants/ xsolar,xam,newpartdata,xchi1,xchi2,xchi3,nudata,partflag,nu
         end block data atomic
-        block data molec ! in :MoogStokesAlphaPy:Bmolec.f
+        block data molec ! in :MoogStokesPy_Alpha:Bmolec.f
             real*8 dimension(110) :: amol
             real*8 dimension(7,110) :: datmol
             real*8 :: const
@@ -5660,7 +5673,7 @@ python module MoogStokesPy_Charlie ! in
             common /eqdata/ amol,datmol,const
             common /mol/ pmol,xmol,xatom,patom,xamol,neq,lev,nmol,natoms,iorder
         end block data molec
-        subroutine inlines(num) ! in :MoogStokesAlphaPy:Inlines.f
+        subroutine inlines(num) ! in :MoogStokesPy_Alpha:Inlines.f
             integer :: num
             real*8 :: xxm1
             real*8 :: xxb1
@@ -6081,7 +6094,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine inlines
-        subroutine params ! in :MoogStokesAlphaPy:Params.f
+        subroutine params ! in :MoogStokesPy_Alpha:Params.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -6525,7 +6538,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine params
-        subroutine putasci(num,line) ! in :MoogStokesAlphaPy:Putasci.f
+        subroutine putasci(num,line) ! in :MoogStokesPy_Alpha:Putasci.f
             integer :: num
             integer :: line
             real*8 :: xxm1
@@ -6641,7 +6654,7 @@ python module MoogStokesPy_Charlie ! in
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
         end subroutine putasci
-        subroutine taukap ! in :MoogStokesAlphaPy:Taukap.f
+        subroutine taukap ! in :MoogStokesPy_Alpha:Taukap.f
             real*8 dimension(100) :: dummy1
             real*8 dimension(100) :: dummy2
             real*8 dimension(5000) :: dummy3
@@ -6821,17 +6834,17 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine taukap
-        function voigt(a,v) ! in :MoogStokesAlphaPy:Voigt.f
+        function voigt(a,v) ! in :MoogStokesPy_Alpha:Voigt.f
             real*8 :: a
             real*8 :: v
             real*8 :: voigt
         end function voigt
-        subroutine discov(amol,i1,i2) ! in :MoogStokesAlphaPy:Discov.f
+        subroutine discov(amol,i1,i2) ! in :MoogStokesPy_Alpha:Discov.f
             real*8 :: amol
             integer :: i1
             integer :: i2
         end subroutine discov
-        subroutine inmodel ! in :MoogStokesAlphaPy:Inmodel.f
+        subroutine inmodel ! in :MoogStokesPy_Alpha:Inmodel.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -7170,7 +7183,7 @@ python module MoogStokesPy_Charlie ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,moogversion,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine inmodel
-        subroutine partfn(atom,jmark) ! in :MoogStokesAlphaPy:Partfn.f
+        subroutine partfn(atom,jmark) ! in :MoogStokesPy_Alpha:Partfn.f
             real*8 :: atom
             integer :: jmark
             character*80 :: f1out
@@ -7357,7 +7370,7 @@ python module MoogStokesPy_Charlie ! in
             common /quants/ xsolar,xam,newpartdata,xchi1,xchi2,xchi3,nudata,partflag,nu
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine partfn
-        subroutine damping(linnumber) ! in :MoogStokesAlphaPy:Damping.f
+        subroutine damping(linnumber) ! in :MoogStokesPy_Alpha:Damping.f
             integer :: linnumber
             character*80 :: f1out
             character*80 :: f2out
@@ -7533,7 +7546,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine damping
-        function ucalc(atom,level) ! in :MoogStokesAlphaPy:Ucalc.f
+        function ucalc(atom,level) ! in :MoogStokesPy_Alpha:Ucalc.f
             real*8 :: atom
             integer :: level
             character*80 :: f1out
@@ -7644,7 +7657,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /quants/ xsolar,xam,newpartdata,xchi1,xchi2,xchi3,nudata,partflag,nu
         end function ucalc
-        subroutine invert(order,a,i,nsiz) ! in :MoogStokesAlphaPy:Invert.f
+        subroutine invert(order,a,i,nsiz) ! in :MoogStokesPy_Alpha:Invert.f
             integer :: order
             real*8 dimension(nsiz,nsiz) :: a
             real*8 dimension(nsiz,nsiz),depend(nsiz,nsiz) :: i
@@ -7746,7 +7759,7 @@ python module MoogStokesPy_Charlie ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,moogversion,names,modtype,control,machine,silent
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
         end subroutine invert
-        subroutine trudamp(linnum) ! in :MoogStokesAlphaPy:Trudamp.f
+        subroutine trudamp(linnum) ! in :MoogStokesPy_Alpha:Trudamp.f
             integer :: linnum
             character*80 :: f1out
             character*80 :: f2out
@@ -7922,7 +7935,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end subroutine trudamp
-        subroutine lineinfo(number) ! in :MoogStokesAlphaPy:Lineinfo.f
+        subroutine lineinfo(number) ! in :MoogStokesPy_Alpha:Lineinfo.f
             integer :: number
             real*8 :: xxm1
             real*8 :: xxb1
@@ -8262,9 +8275,8 @@ python module MoogStokesPy_Charlie ! in
             common /charstuff/ f1out,f2out,f3out,f4out,f5out,f6out,f7out,f8out,f9out,f10out,fparam,fmodel,flines,fslines,fobs,ftable,fbarklem,fbarklemuv,atmosdir,outdir,moogpath,moogversion,names,modtype,control,machine,silent
             common /lindamp/ damptype
         end subroutine lineinfo
-        subroutine synstokes ! in :MoogStokesAlphaPy:SynStokes.f
+        subroutine synstokes ! in :MoogStokesPy_Alpha:SynStokes.f
             use synstokes__user__routines
-            use stokesdipstick__user__routines
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -8676,14 +8688,12 @@ python module MoogStokesPy_Charlie ! in
             character*80 :: fstokesu
             character*80 :: fstokesv
             character*80 :: fcontinuum
-            intent(callback, hide) beachball
+            intent(callback) beachball
             external beachball
-            intent(callback, hide) stokesrecorder
+            intent(callback) stokesrecorder
             external stokesrecorder
-            intent(callback, hide) diskoball
+            intent(callback) diskoball
             external diskoball
-            intent(callback, hide) fluxtracer
-            external fluxtracer
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
@@ -8697,7 +8707,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine synstokes
-        subroutine spline(x,y,n,yp1,ypn,y2) ! in :MoogStokesAlphaPy:Spline.f
+        subroutine spline(x,y,n,yp1,ypn,y2) ! in :MoogStokesPy_Alpha:Spline.f
             real*8 dimension(n) :: x
             real*8 dimension(n),depend(n) :: y
             integer, optional,check(len(x)>=n),depend(x) :: n=len(x)
@@ -8705,7 +8715,7 @@ python module MoogStokesPy_Charlie ! in
             real*8 :: ypn
             real*8 dimension(n),depend(n) :: y2
         end subroutine spline
-        subroutine splint(xa,ya,y2a,n,x,y) ! in :MoogStokesAlphaPy:Spline.f
+        subroutine splint(xa,ya,y2a,n,x,y) ! in :MoogStokesPy_Alpha:Spline.f
             real*8 dimension(n) :: xa
             real*8 dimension(n),depend(n) :: ya
             real*8 dimension(n),depend(n) :: y2a
@@ -8713,7 +8723,7 @@ python module MoogStokesPy_Charlie ! in
             real*8 :: x
             real*8 :: y
         end subroutine splint
-        subroutine spl_def(npts,x,y,knots,nknots,coeffs) ! in :MoogStokesAlphaPy:SplineDriver.f
+        subroutine spl_def(npts,x,y,knots,nknots,coeffs) ! in :MoogStokesPy_Alpha:SplineDriver.f
             integer, optional,check(len(x)>=npts),depend(x) :: npts=len(x)
             real*8 dimension(npts) :: x
             real*8 dimension(npts),depend(npts) :: y
@@ -8721,14 +8731,14 @@ python module MoogStokesPy_Charlie ! in
             integer :: nknots
             real*8 dimension(npts + 4),depend(npts) :: coeffs
         end subroutine spl_def
-        function spl_ev(knots,nknots,coeffs,x_new) ! in :MoogStokesAlphaPy:SplineDriver.f
+        function spl_ev(knots,nknots,coeffs,x_new) ! in :MoogStokesPy_Alpha:SplineDriver.f
             real*8 dimension(nknots) :: knots
             integer, optional,check(len(knots)>=nknots),depend(knots) :: nknots=len(knots)
             real*8 dimension(nknots),depend(nknots) :: coeffs
             real*8 :: x_new
             real*8 :: spl_ev
         end function spl_ev
-        subroutine wavegrid ! in :MoogStokesAlphaPy:WaveGrid.f
+        subroutine wavegrid ! in :MoogStokesPy_Alpha:WaveGrid.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -9096,7 +9106,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine wavegrid
-        subroutine sortwave ! in :MoogStokesAlphaPy:WaveGrid.f
+        subroutine sortwave ! in :MoogStokesPy_Alpha:WaveGrid.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -9464,7 +9474,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine sortwave
-        subroutine curfit(iopt,m,x,y,w,xb,xe,k,s,nest,n,t,c,fp,wrk,lwrk,iwrk,ier) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine curfit(iopt,m,x,y,w,xb,xe,k,s,nest,n,t,c,fp,wrk,lwrk,iwrk,ier) ! in :MoogStokesPy_Alpha:Curfit.f
             integer :: iopt
             integer, optional,check(len(x)>=m),depend(x) :: m=len(x)
             real*8 dimension(m) :: x
@@ -9484,7 +9494,7 @@ python module MoogStokesPy_Charlie ! in
             integer dimension(nest),depend(nest) :: iwrk
             integer :: ier
         end subroutine curfit
-        subroutine fpback(a,z,n,k,c,nest) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine fpback(a,z,n,k,c,nest) ! in :MoogStokesPy_Alpha:Curfit.f
             real*8 dimension(nest,k) :: a
             real*8 dimension(n) :: z
             integer, optional,check(len(z)>=n),depend(z) :: n=len(z)
@@ -9492,7 +9502,7 @@ python module MoogStokesPy_Charlie ! in
             real*8 dimension(n),depend(n) :: c
             integer, optional,check(shape(a,0)==nest),depend(a) :: nest=shape(a,0)
         end subroutine fpback
-        subroutine fpbspl(t,n,k,x,l,h) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine fpbspl(t,n,k,x,l,h) ! in :MoogStokesPy_Alpha:Curfit.f
             real*8 dimension(n) :: t
             integer, optional,check(len(t)>=n),depend(t) :: n=len(t)
             integer :: k
@@ -9500,7 +9510,7 @@ python module MoogStokesPy_Charlie ! in
             integer :: l
             real*8 dimension(6) :: h
         end subroutine fpbspl
-        subroutine fpchec(x,m,t,n,k,ier) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine fpchec(x,m,t,n,k,ier) ! in :MoogStokesPy_Alpha:Curfit.f
             real*8 dimension(m) :: x
             integer, optional,check(len(x)>=m),depend(x) :: m=len(x)
             real*8 dimension(n) :: t
@@ -9508,7 +9518,7 @@ python module MoogStokesPy_Charlie ! in
             integer :: k
             integer :: ier
         end subroutine fpchec
-        subroutine fpcurf(iopt,x,y,w,m,xb,xe,k,s,nest,tol,maxit,k1,k2,n,t,c,fp,fpint,z,a,b,g,q,nrdata,ier) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine fpcurf(iopt,x,y,w,m,xb,xe,k,s,nest,tol,maxit,k1,k2,n,t,c,fp,fpint,z,a,b,g,q,nrdata,ier) ! in :MoogStokesPy_Alpha:Curfit.f
             integer :: iopt
             real*8 dimension(m) :: x
             real*8 dimension(m),depend(m) :: y
@@ -9536,20 +9546,20 @@ python module MoogStokesPy_Charlie ! in
             integer dimension(nest),depend(nest) :: nrdata
             integer :: ier
         end subroutine fpcurf
-        subroutine fpdisc(t,n,k2,b,nest) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine fpdisc(t,n,k2,b,nest) ! in :MoogStokesPy_Alpha:Curfit.f
             real*8 dimension(n) :: t
             integer, optional,check(len(t)>=n),depend(t) :: n=len(t)
             integer, optional,check(shape(b,1)==k2),depend(b) :: k2=shape(b,1)
             real*8 dimension(nest,k2) :: b
             integer, optional,check(shape(b,0)==nest),depend(b) :: nest=shape(b,0)
         end subroutine fpdisc
-        subroutine fpgivs(piv,ww,cos,sin) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine fpgivs(piv,ww,cos,sin) ! in :MoogStokesPy_Alpha:Curfit.f
             real*8 :: piv
             real*8 :: ww
             real*8 :: cos
             real*8 :: sin
         end subroutine fpgivs
-        subroutine fpknot(x,m,t,n,fpint,nrdata,nrint,nest,istart) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine fpknot(x,m,t,n,fpint,nrdata,nrint,nest,istart) ! in :MoogStokesPy_Alpha:Curfit.f
             real*8 dimension(m) :: x
             integer, optional,check(len(x)>=m),depend(x) :: m=len(x)
             real*8 dimension(nest) :: t
@@ -9560,7 +9570,7 @@ python module MoogStokesPy_Charlie ! in
             integer, optional,check(len(t)>=nest),depend(t) :: nest=len(t)
             integer :: istart
         end subroutine fpknot
-        function fprati(p1,f1,p2,f2,p3,f3) ! in :MoogStokesAlphaPy:Curfit.f
+        function fprati(p1,f1,p2,f2,p3,f3) ! in :MoogStokesPy_Alpha:Curfit.f
             real*8 :: p1
             real*8 :: f1
             real*8 :: p2
@@ -9569,13 +9579,13 @@ python module MoogStokesPy_Charlie ! in
             real*8 :: f3
             real*8 :: fprati
         end function fprati
-        subroutine fprota(cos,sin,a,b) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine fprota(cos,sin,a,b) ! in :MoogStokesPy_Alpha:Curfit.f
             real*8 :: cos
             real*8 :: sin
             real*8 :: a
             real*8 :: b
         end subroutine fprota
-        subroutine splev(t,n,c,k,x,y,m,ier) ! in :MoogStokesAlphaPy:Curfit.f
+        subroutine splev(t,n,c,k,x,y,m,ier) ! in :MoogStokesPy_Alpha:Curfit.f
             real*8 dimension(n) :: t
             integer, optional,check(len(t)>=n),depend(t) :: n=len(t)
             real*8 dimension(n),depend(n) :: c
@@ -9585,7 +9595,7 @@ python module MoogStokesPy_Charlie ! in
             integer, optional,check(len(x)>=m),depend(x) :: m=len(x)
             integer :: ier
         end subroutine splev
-        subroutine calcgeom(az,long_bn,phi_ang,chi_ang,mu) ! in :MoogStokesAlphaPy:CalcGeom.f
+        subroutine calcgeom(az,long_bn,phi_ang,chi_ang,mu) ! in :MoogStokesPy_Alpha:CalcGeom.f
             real*8 :: az
             real*8 :: long_bn
             real*8 :: phi_ang
@@ -9612,7 +9622,7 @@ python module MoogStokesPy_Charlie ! in
             integer :: diskflag
             common /angles/ inclination,clocking,position_angle,azimuth,longitude,b_sph,b_xyz,t_rho,t_eta,t_i,rotation_matrix,zeros,chi_angle,phi_angle,mus,nrings,ncells,testflag,diskflag
         end subroutine calcgeom
-        subroutine tracestokes(phi_ang,chi_ang,mu) ! in :MoogStokesAlphaPy:DELOQuad.f
+        subroutine tracestokes(phi_ang,chi_ang,mu) ! in :MoogStokesPy_Alpha:DELOQuad.f
             real*8 :: phi_ang
             real*8 :: chi_ang
             real*8 :: mu
@@ -9896,7 +9906,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine tracestokes
-        subroutine interp_opacities(logtau,k_interp,k_ord,e_interp,e_ord,tau_interp,tau_interp_c,mu,deltau) ! in :MoogStokesAlphaPy:DELOQuad.f
+        subroutine interp_opacities(logtau,k_interp,k_ord,e_interp,e_ord,tau_interp,tau_interp_c,mu,deltau) ! in :MoogStokesPy_Alpha:DELOQuad.f
             real*8 :: logtau
             real*8 dimension(4,4,2) :: k_interp
             integer :: k_ord
@@ -10084,7 +10094,7 @@ python module MoogStokesPy_Charlie ! in
             common /atmos/ t,theta,tkev,tlog,pgas,ne,nhtot,numdens,molweight,vturb,scont,kapref,kaplam,tauref,taulam,kaplamabs,kaplamsca,rho,rhox,xref,xdepth,elem,xabund,xabu,u,flux,fudge,wavref,abscale,deltaabund,ntau,jtau5,iunits,itru,iraf,modelnum,nfparam,nfmodel,nflines,nfslines,nfobs,nftable,nf1out,nf2out,nf3out,nf4out,nf5out,nf6out,nf7out,nf8out,nf9out,nf10out,nfbarklem,nfbarklemuv,modprintopt,molopt,linprintopt,linprintalt,fluxintopt,plotopt,dampingopt,specfileopt,linfileopt,printstrong,linecount,oldcount,scatopt
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine interp_opacities
-        function planck(temperature) ! in :MoogStokesAlphaPy:DELOQuad.f
+        function planck(temperature) ! in :MoogStokesPy_Alpha:DELOQuad.f
             real*8 :: temperature
             character dimension(2500,7),intent(c) :: damptype
             real*8 dimension(2500,100) :: a
@@ -10165,7 +10175,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
         end function planck
-        subroutine calcopacities ! in :MoogStokesAlphaPy:CalcOpacities.f
+        subroutine calcopacities ! in :MoogStokesPy_Alpha:CalcOpacities.f
             real*8 dimension(100) :: dummy1
             real*8 dimension(100) :: dummy2
             real*8 dimension(5000) :: dummy3
@@ -10426,12 +10436,11 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine calcopacities
-        function w4(z) ! in :MoogStokesAlphaPy:ComplexVoigt.f
+        function w4(z) ! in :MoogStokesPy_Alpha:ComplexVoigt.f
             complex :: z
             complex :: w4
         end function w4
-        subroutine stokestrace ! in :MoogStokesAlphaPy:StokesTrace.f
-            use stokesdipstick__user__routines
+        subroutine stokestrace ! in :MoogStokesPy_Alpha:StokesTrace.f
             real*8 :: xxm1
             real*8 :: xxb1
             real*8 :: xxr1
@@ -10843,8 +10852,6 @@ python module MoogStokesPy_Charlie ! in
             character*80 :: fstokesu
             character*80 :: fstokesv
             character*80 :: fcontinuum
-            internal(callback, hide) fluxtracer
-            external fluxtracer
             common /pstuff/ xxm1,xxb1,xxr1,xxm2,xxb2,xxr2,xxm3,xxb3,xxr3,deltaep,deltarw,deltawv,p,prot,pmac,vsini,limbdark,vmac,fwhmgauss,fwhmloren,oldvsini,oldlimbdark,oldvmac,oldfwhmgauss,oldfwhmloren,origvsini,origlimbdark,origvmac,origfwhmgauss,origfwhmloren,half,power,powerrot,powermac,average,deviate,oldhalf,xobs,yobs,xlo,xhi,ylo,yhi,origxlo,origxhi,origylo,origyhi,oldxlo,oldxhi,oldylo,oldyhi,xadd,yadd,ymult,veladd,deltavel,origxadd,origyadd,origymult,origveladd,oldxadd,oldyadd,oldymult,oldveladd,bigxtic,bigytic,smlxtic,smlytic,xplotpos,yplotpos,addflux,ydelta,lount,kount,nsyn,lim1obs,lim2obs,iterm,iscale,maxline,histoyes,deviations,syncount,kounter,maxshift
             common /cstuff/ abitle,isoitle,smterm,smtotalterm,smt1,smt2,moditle,obsitle,linitle,smitle,array,chinfo,errmess,plotroutine,whichwin,origwhichwin,oldwhichwin,choice,smtype,oldsmtype,origsmtype,gaussflag,rotateflag,lorenflag,macroflag
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
@@ -10858,7 +10865,7 @@ python module MoogStokesPy_Charlie ! in
             common /lindamp/ damptype
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine stokestrace
-        subroutine stokesdipstick(phi_ang,chi_ang,mu) ! in :MoogStokesAlphaPy:StokesDipStick.f
+        subroutine stokesdipstick(phi_ang,chi_ang,mu) ! in :MoogStokesPy_Alpha:StokesDipStick.f
             use stokesdipstick__user__routines
             real*8 :: phi_ang
             real*8 :: chi_ang
@@ -11135,7 +11142,7 @@ python module MoogStokesPy_Charlie ! in
             character*80 :: fstokesu
             character*80 :: fstokesv
             character*80 :: fcontinuum
-            intent(callback, hide) fluxtracer
+            intent(callback) fluxtracer
             external fluxtracer
             common /dummy/ dummy1,dummy2,dummy3,dummy4
             common /linex/ a,dopp,kapnu0,deltamj,crad,c4,gf,wave1,atom1,e,chi,amass,charge,d0,dampnum,gf1,width,abundout,widout,strength,rdmass,gambark,alpbark,wid1comp,kapnu,taunu,cd,sline,d,dellam,w,rwtab,gftab,gfhold,delta,start,sstop,step,oldstart,oldstop,oldstep,olddelta,dipstickwave,rwlow,rwhigh,rwstep,wavestep,cogatom,delwave,wave,waveold,st1,gammatot,gammav,gammas,gammar,viewang,lim1,lim2,mode,ndepths,ncurve,nlines,nstrong,lim1line,iaa,ibb,lim2line,ntabtot,group,iabatom,molflag,dostrong,gfstyle
@@ -11146,7 +11153,7 @@ python module MoogStokesPy_Charlie ! in
             common /stokesparams/ phi_opacity,psi_opacity,stokes,continuum,emission,kref_knots,kref_coeffs,klam_knots,klam_coeffs,kaptot,ktot_knots,ktot_coeffs,phii,phii_knots,phii_coeffs,phiq,phiq_knots,phiq_coeffs,phiu,phiu_knots,phiu_coeffs,phiv,phiv_knots,phiv_coeffs,psiq,psiq_knots,psiq_coeffs,psiu,psiu_knots,psiu_coeffs,psiv,psiv_knots,psiv_coeffs,e_knots,e_coeffs,taus,tlam,tlam_knots,tlam_coeffs,ttot,ttot_knots,ttot_coeffs,zdepth,z_knots,z_coeffs,strong,weak,beta_strong,beta_weak,r_strong,r_weak,nz,n_phii_knots,n_phiq_knots,n_phiu_knots,n_phiv_knots,n_psiq_knots,n_psiu_knots,n_psiv_knots,n_kref_knots,n_klam_knots,n_ktot_knots,n_e_knots,n_z_knots,n_tlam_knots,n_ttot_knots,nfangles,nfstokesi,nfstokesq,nfstokesu,nfstokesv,nfcontinuum,nw_lines,ns_lines,fangles,fstokesi,fstokesq,fstokesu,fstokesv,fcontinuum
         end subroutine stokesdipstick
     end interface 
-end python module MoogStokesPy_Charlie
+end python module MoogStokesPy_Alpha
 
 ! This file was auto-generated with f2py (version:2).
 ! See http://cens.ioc.ee/projects/f2py2e/

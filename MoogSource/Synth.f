@@ -14,6 +14,8 @@ c******************************************************************************
       include 'Dummy.com'
       include 'Stokes.com'
 
+cf2py intent(callback, hide) tennisball
+      external tennisball
 
 c*****examine the parameter file
       call params
@@ -92,6 +94,7 @@ c*****open the line list file and the strong line list file
 
 c*****do the syntheses
       ncall = 1
+      call tennisball
 10    if (numpecatom .eq. 0 .or. numatomsyn .eq. 0) then
          isynth = 1
          isorun = 1

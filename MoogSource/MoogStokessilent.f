@@ -22,7 +22,7 @@ c     generate a reminder of this necessity
 c      write (moogpath,1001)
 c      moogpath = 
 c     .  '/home/deen/Code/Python/MoogPy/MoogSource/'
-      write (*,*) moogpath
+c      write (*,*) moogpath
 
 
 c*****What kind of machine are you using?  Possible ones are:

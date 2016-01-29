@@ -6,6 +6,7 @@ import SpectralTools
 import numpy
 import os
 import matplotlib.lines as Lines
+import time
 
 class Label( object ):
     def __init__(self, parameters):
@@ -88,37 +89,42 @@ class Phrase( object ):
         return ((self.wlStart < wlStop) & (self.wlStop > wlStart))
 
 class ObservedPhrase( Phrase ):
-    def __init__(self, observedData = None):
-        observedData = SpectralTools.ObservedSpectrum(observed=observedData)
-        wlStart = observedData.observed.header.get('WLSTART')
-        wlStop = observedData.observed.header.get('WLSTOP')
+    def __init__(self, observedData = [], observedLabels = []):
+        wlStart = observedData[0].header.get('WLSTART')
+        wlStop = observedData[0].header.get('WLSTOP')
         super(ObservedPhrase, self).__init__(wlStart, wlStop)
 
         self.observedData = observedData
+        self.observedLabels = observedLabels
 
     @classmethod
     def fromFile(self, header=None, data=None, filename=None, ext=None):
         observed = SpectralTools.Spectrum.from_file(header= header, data=data,
                 filename=filename, ext=ext)
-        return self(observedData=observed)
+        parameters = {}
+        parameters["WLSTART"] = observed.header.get('WLSTART')
+        parameters["WLSTOP"] = observed.header.get('WLSTOP')
+        return self(observedData=[observed], observedLabels = [Label(parameters)])
         
     def loadData(self):
-        self.observedData.observed.loadData()
+        for observed in self.observedData:
+            observed.loadData()
         
     def listen(self):
-        return self.observedData.observed
+        return self.observedData, self.observedLabels
         
     def record(self, filename = None):
         self.save(filename=filename)
 
     def save(self, filename = None):
         HDUs = []
-        spectrum = self.observedData.observed
-        hdr = spectrum.header.copy()
-        SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns, header=hdr)
-        SpectrumHDU.name = "%.4fA - %.4fA OBSERVED" % (hdr.get('wlStart'), 
-                hdr.get('wlStop'))
-        HDUs.append(SpectrumHDU)
+        for spectrum in self.observedData:
+            hdr = spectrum.header.copy()
+            spectrum.preserve(continuum=False, V=False)
+            SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns, header=hdr)
+            SpectrumHDU.name = "%.4fA - %.4fA OBSERVED" % (hdr.get('wlStart'), 
+                    hdr.get('wlStop'))
+            HDUs.append(SpectrumHDU)
 
         if filename == None:
             return HDUs
@@ -133,10 +139,13 @@ class ObservedPhrase( Phrase ):
             HDUList = pyfits.open(filename, mode='update')
             for spectrum in HDUs:
                 try:
+                    print spectrum.name
+                    print HDUList
                     HDUList.pop(HDUList.index_of(spectrum.name))
                 except:
                     pass
                 HDUList.append(spectrum)
+                print len(HDUList)
             HDUList.update_extend()
             HDUList.verify(option='silentfix')
             HDUList.close()
@@ -673,25 +682,6 @@ class Melody( object ):
                 self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
                     wlStop=wlRange[1]))
 
-    def inParameterRange(self, TeffRange=[], loggRange=[], BfieldRange=[]): #OBSOLETE?
-        self.muted = False
-        try:
-            if ((self.Teff < TeffRange[0]) or (self.Teff > TeffRange[1])):
-                self.muted = True
-        except:
-            pass
-        try:
-            if ((self.logg < loggRange[0]) | (self.logg > loggRange[1])):
-                self.muted = True
-        except:
-            pass
-        try:
-            if ((self.B < BfieldRange[0]) | (self.B > BfieldRange[1])):
-                self.muted = True
-        except:
-            pass
-    
-
     def record(self, labels=[], basename = None):
         """
         Moog960::Melody::record(self, labels=[], basename=None)
@@ -719,7 +709,8 @@ class Melody( object ):
 
 class ObservedMelody( Melody ):
     def __init__(self, phrases = [], filename=None, label=None, header=None):
-        super(ObservedMelody, self).__init__(phrases=phrases, filename=filename, label=label, header=header)
+        super(ObservedMelody, self).__init__(phrases=phrases, filename=filename, 
+                label=label, header=header)
 
     @classmethod
     def fromFile(self, filename=None, label=None):
@@ -740,14 +731,48 @@ class ObservedMelody( Melody ):
     def rehearse(self, **kwargs):
         return
 
+    def selectPhrases(self, wlRange=[], selectAll=False):
+        self.selectedPhrases = []
+        for phrase in self.phrases:
+            if selectAll:
+                self.selectedPhrases.append(True)
+            else:
+                self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
+                    wlStop=wlRange[1]))
+
     def perform(self):
         spectra = []
+        labels = []
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
-                spectra.append(self.phrases[i].listen())
+                sp, l = self.phrases[i].listen()
+                spectra.append(sp)
+                labels.append(l)
 
-        return spectra, self.label
+        return spectra, labels
 
+    def record(self, labels=[], basename = None):
+        """
+        Moog960::Melody::record(self, labels=[], basename=None)
+        
+        record() saves the selected phrases of a melody to disk
+        """
+        for label in labels:
+            print("Recording record \'%s\' to disk" % label.parameters["LABEL"])
+            if basename == None:
+                filename = self.filename[:-4]+'_saved.fits'
+            else:
+                filename = basename+".fits"
+            for i in range(self.nPhrases):
+                if (self.selectedPhrases[i] and (label in
+                    self.phrases[i].observedLabels)):
+                   print label.parameters
+                   print i
+                   print self.phrases[i].observedData[0].header.get('WLSTART')
+                   print "Howdy"
+                   raw_input()
+                   self.phrases[i].save(filename=filename)
+                           
 
 class SyntheticMelody( Melody ):
     def __init__(self, phrases = [], filename=None, label=None, header=None):
@@ -830,18 +855,6 @@ class SyntheticMelody( Melody ):
                 self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
                     wlStop=wlRange[1]))
 
-        #if keySignature=="CONVOLVED":
-        #    for convolved in self.convolvedLabels:
-        #        wlStart = convolved.parameters["WLSTART"]
-        #        wlStop = convolved.parameters["WLSTOP"]
-        #        if convolved.parameters["SELECTED"]:
-        #            print "hahah!"
-        #            print "Start: %.2f %.2f" % (wlStart, wlRange[0])
-        #            print "Stop: %.2f %.2f" % (wlStop, wlRange[1])
-        #        #if wlStart >
-        #        convolved.parameters["SELECTED"] = ((wlStart <= wlRange[0])
-        #                & (wlStop >= wlRange[1]))
-
     def rehearse(self, vsini = 0.0, R = 0, observedWl = None):
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
@@ -888,8 +901,9 @@ class Score( object ):
             self.syntheticMelodies.append(SyntheticMelody(filename=melody))
 
         if not(self.observed==None):
-            self.Observed = ObservedMelody.fromFile(filename=self.observed, label='TWHydra')
-            self.Observed.loadData()
+            self.ObservedMelodies = [ObservedMelody.fromFile(filename=self.observed, 
+                label='TWHydra')]
+            self.ObservedMelodies[0].loadData()
 
     def getMelodyParams(self):
         raw_labels = []
@@ -918,7 +932,10 @@ class Score( object ):
             #    for convolved in melody.convolvedLabels:
             #        convolved_labels.append(convolved)
         if not(self.observed==None):
-            observed_labels.append(self.Observed.label)
+            for melody in self.ObservedMelodies:
+                for phrase in melody.phrases:
+                    for obs in phrase.observedLabels:
+                        observed_labels.append(obs)
 
         return raw_labels, interpolated_labels, integrated_labels, convolved_labels, observed_labels
 
@@ -976,14 +993,11 @@ class Score( object ):
 
     def selectMelodies(self, wlRange=[], selectAll=False):
         for melody in self.syntheticMelodies:
-            #melody.muted=False
-            #melody.inParameterRange(TeffRange=TeffRange,
-            #    loggRange=loggRange, BfieldRange=BfieldRange)
-            #if not(melody.muted):
             melody.selectPhrases(wlRange=wlRange, selectAll=selectAll)
 
         if not(self.observed==None):
-            self.Observed.selectPhrases(wlRange=wlRange)
+            for observed in self.ObservedMelodies:
+                observed.selectPhrases(wlRange=wlRange, selectAll=selectAll)
 
     def tune(self, save=False):
         for melody in self.syntheticMelodies:
@@ -1056,14 +1070,23 @@ class Score( object ):
 
 
     def listen(self):   # gets the observed spectrum
-        spectra, label = self.Observed.perform()
-        compositeSpectrum = None
-        for sp in spectra:
-            compositeSpectrum = SpectralTools.mergeSpectra(first=compositeSpectrum,
-                    second=sp)
+        self.compositeObserved = []
+        spectra = []
+        labels = []
+        for observed in self.ObservedMelodies:
+            spectrum, label = observed.perform()
+            for sp, l in zip(spectrum, label):
+                spectra.append(sp)
+                labels.append(l)
+            #compositeSpectrum = None
+            #for sp in spectrum:
+            #    compositeSpectrum = SpectralTools.mergeSpectra(first=compositeSpectrum,
+            #            second=sp)
+                
         
-        self.compositeObserved = compositeSpectrum
-        return compositeSpectrum, label
+            #self.compositeObserved.append(compositeSpectrum)
+        #return self.compositeObserved, label
+        return spectra, labels
 
     def record(self, selected=[], basename=''):
         for melody in self.syntheticMelodies:

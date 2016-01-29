@@ -618,34 +618,34 @@ class Spectrum( object ):
 
     def preserve(self, prepareColumns=True, I=True, Q=False, U=False, V=True, continuum=True):
         self.wl = numpy.array(self.wl)
-        self.flux_I = numpy.array(self.flux_I)
-        self.flux_Q = numpy.array(self.flux_Q)
-        self.flux_U = numpy.array(self.flux_U)
-        self.flux_V = numpy.array(self.flux_V)
-        self.continuum = numpy.array(self.continuum)
         
         if prepareColumns:
             coldefs = []
             wave = pyfits.Column(name='Wavelength', format='D', array=self.wl)
             coldefs.append(wave)
             if I:
-                flux_I = pyfits.Column(name='Stokes_I', format='D', array=self.flux_I)
+                flux_I = pyfits.Column(name='Stokes_I', format='D', 
+                        array=numpy.array(self.flux_I))
                 coldefs.append(flux_I)
             if Q:
-                flux_Q = pyfits.Column(name='Stokes_Q', format='D', array=self.flux_Q)
+                flux_Q = pyfits.Column(name='Stokes_Q', format='D', 
+                        array=numpy.array(self.flux_Q))
                 coldefs.append(flux_Q)
             if U:
-                flux_U = pyfits.Column(name='Stokes_U', format='D', array=self.flux_U)
+                flux_U = pyfits.Column(name='Stokes_U', format='D',
+                        array=numpy.array(self.flux_U))
                 coldefs.append(flux_U)
             if V:
-                flux_V = pyfits.Column(name='Stokes_V', format='D', array=self.flux_V)
+                flux_V = pyfits.Column(name='Stokes_V', format='D',
+                        array=numpy.array(self.flux_V))
                 coldefs.append(flux_V)
             if continuum:
-                continuum = pyfits.Column(name='Continuum', format='D', array=self.continuum)
+                continuum = pyfits.Column(name='Continuum', format='D',
+                        array=numpy.array(self.continuum))
                 coldefs.append(continuum)
             self.columns = pyfits.ColDefs(coldefs)
     
-    def resample(self, R, nyquist=False, observedWl=None):
+    def resample(self, R=0.0, nyquist=False, observedWl=None):
         """
         This routine convolves a given spectrum to a resolution R
         :INPUTS:
@@ -720,8 +720,8 @@ class Spectrum( object ):
         if observedWl == None:
             return processed
         else:
-            binned = binSpectrum(processed, observedWl)
-            return binned
+            processed.bin(observedWl)
+            return processed
 
         #if nyquist:
         #    nyquistWl = []
@@ -734,11 +734,10 @@ class Spectrum( object ):
         #    self.processed.binSpectrum(newWl=newWl)
         
     
-    def bin(self, newWl):
+    def bin(self, newWl, pad=None):
         """
             This routine simulates the discrete nature of detector pixels.
         """
-    
         if self.flux_I != None:
             newSpec_I = numpy.zeros(len(newWl))
         if self.flux_Q != None:
@@ -879,8 +878,30 @@ class Spectrum( object ):
         if (self.continuum != None) & (other.continuum != None):
             continuum = self.continuum[overlap_self] - other.continuum[overlap_other]
         
-        return Spectrum(wl=self.wl[overlap_self], I=I, Q=Q, U=U, V=V, continuum=continuum, header=self.header,
-                        spectrum_type="Difference Spectrum")
+        return Spectrum(wl=self.wl[overlap_self], I=I, Q=Q, U=U, V=V, 
+                continuum=continuum, header=self.header,
+                spectrum_type="Difference Spectrum")
+
+    def __div__(self, factor):
+        I = None
+        Q = None
+        U = None
+        V = None
+        continuum = None
+
+        if (self.flux_I != None):
+            I = self.flux_I/factor
+        if (self.flux_Q != None):
+            Q = self.flux_Q/factor
+        if (self.flux_U != None):
+            U = self.flux_U/factor
+        if (self.flux_V != None):
+            V = self.flux_V/factor
+        if (self.continuum != None):
+            continuum = self.continuum/factor
+
+        return Spectrum(wl=self.wl, I=I, Q=Q, U=U, V=V, continuum=continuum,
+                header=self.header, spectrum_type="Scaled Spectrum")
 
     def diff_spectra(self, other, pad=False):
         '''
@@ -906,7 +927,8 @@ class Spectrum( object ):
         if pad:
             retval_I = numpy.zeros(len(self.wl))
             retval_I[overlap] = self.flux_I[overlap] - scipy.interpolate.splev(self.wl[overlap],I)
-            return x1, retval
+            return Spectrum(wl=self.wl, I=retval_I, header=self.header,
+                   spectrum_type='Difference Spectrum')
         else:
             return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
 
@@ -988,6 +1010,19 @@ class Integrator( object ):
             if convol.wl == None:
                 convol.loadData()
         self.limb_darkening = None
+
+class TennisBall( Integrator ):
+    def loadData(self):
+        return
+
+    def diskInt(self, vsini = 0.0):
+        self.integrated.append(self.parent.rawData[0])
+
+    def resample(self, vsini=0.0, R=0, observedWl=None):
+        self.convolved.append(self.parent.rawData[0].resample(vsini=vsini, R=R, observedWl=observedWl))
+
+    def yank(self, vsini=0.0, R=0.0, observedWl = None, keySignature="CONVOLVED"):
+        return self.convolved[0]
 
 class BeachBall( Integrator ):
     def loadData(self):
