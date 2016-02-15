@@ -127,7 +127,6 @@ class MoogStokes( object ):
         self.config = AstroUtils.parse_config(configurationFile)
         self.lineList = LineList(self, self.config)
         self.parameterFile = ParameterFile(self, self.config)
-        self.LineListFormat = "MOOGSTOKES"
         if "MODELFILE" in kwargs.keys():
             self.modelFile = kwargs["MODELFILE"]
             self.T = 0.0
@@ -150,6 +149,11 @@ class MoogStokes( object ):
             self.diskInt = self.config["diskInt"]
         else:
             self.diskInt = "BEACHBALL"
+
+        if self.diskInt == "TENNISBALL":
+            self.LineListFormat="MOOGSCALAR"
+        else:
+            self.LineListFormat = "MOOGSTOKES"
         self.fileName = fileBase+'.par'
         self.fileBase = fileBase
         self.Spectra = []
@@ -507,6 +511,12 @@ class LineList( object ):
                             else:
                                 self.weakLines.append(current_line)
     
+    def getWl(self, index):
+        if index < self.nStrong:
+            return self.strongLines[index].wl
+        else:
+            return self.weakLines[index-self.nStrong].wl
+
     def getGf(self, index, log=False):
         if index < self.nStrong:
             if log:
@@ -537,17 +547,17 @@ class LineList( object ):
         else:
             return self.weakLines[index-self.nStrong].wl
 
-    def perturbGf(self, index, delta):
+    def perturbGf(self, index, delta, push=False):
         if index < self.nStrong:
-            self.strongLines[index].modifyGf(delta)
+            self.strongLines[index].modifyGf(delta, push=push)
         else:
-            self.weakLines[index-self.nStrong].modifyGf(delta)
+            self.weakLines[index-self.nStrong].modifyGf(delta, push=push)
 
-    def perturbVdW(self, index, delta):
+    def perturbVdW(self, index, delta, push=False):
         if index < self.nStrong:
-            self.strongLines[index].modifyVdW(delta)
+            self.strongLines[index].modifyVdW(delta, push=push)
         else:
-            self.weakLines[index-self.nStrong].modifyVdW(delta)
+            self.weakLines[index-self.nStrong].modifyVdW(delta, push=push)
 
     def saveLineList(self, mode="MOOGSCALAR", filename=''):
         outfile = open(filename, 'w')
@@ -666,7 +676,7 @@ class LineList( object ):
                 self.weakLines[i-self.nStrong].modifyGf(corrections[i], push=True)
                 self.weakLines[i-self.nStrong].modifyVdW(corrections[i+self.numLines], push=True)
 
-        self.writeLineLists()
+        self.writeLineLists(parent=self.parent)
 
     def setLogGfs(self, loggfs):
         for i in range(self.numLines):
@@ -715,6 +725,14 @@ class Spectral_Line( object ):
         self.g_eff = None
         self.verbose = False
         self.Bfield = 0.0
+    
+    def __str__(self):
+        return "%.1f line at %.4f: log gf = %.3f, VdW = %.3f" % (self.species,
+                self.wl, self.loggf, self.VdW)
+
+    def __eq__(self, other):
+        return (self.wl == other.wl) & (self.species == 
+                other.species) & (self.expot_lo == other.expot_lo)
 
     def modifyGf(self, delta_loggf, push=False):
         if push:

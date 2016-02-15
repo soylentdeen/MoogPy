@@ -767,10 +767,6 @@ class ObservedMelody( Melody ):
                 if (self.selectedPhrases[i] and (label in
                     self.phrases[i].observedLabels)):
                    print label.parameters
-                   print i
-                   print self.phrases[i].observedData[0].header.get('WLSTART')
-                   print "Howdy"
-                   raw_input()
                    self.phrases[i].save(filename=filename)
                            
 
@@ -888,6 +884,7 @@ class Score( object ):
         This Score object contains many melodies.
     """
     def __init__(self, melodies = [], directory=None, observed=None, suffix='raw'):
+        self.syntheticMelodies = []
         self.syntheticMelodies = melodies
         self.directory = directory
         self.observed = observed
@@ -896,6 +893,7 @@ class Score( object ):
 
     def loadMelodies(self):
         melodyFiles = glob.glob(self.directory+'*'+self.suffix+'.fits')
+        self.syntheticMelodies = []
         for melody in melodyFiles:
             print("%s" % melody)
             self.syntheticMelodies.append(SyntheticMelody(filename=melody))
