@@ -154,7 +154,12 @@ class MoogStokes( object ):
             self.LineListFormat="MOOGSCALAR"
         else:
             self.LineListFormat = "MOOGSTOKES"
-        self.fileName = fileBase+'.par'
+
+        if "MoogSandbox" in self.config.keys():
+            self.MoogSandbox = self.config["MoogSandbox"]
+        else:
+            self.MoogSandbox = ''
+        self.fileName = self.MoogSandbox+fileBase+'.par'
         self.fileBase = fileBase
         self.Spectra = []
         self.logtau = []
