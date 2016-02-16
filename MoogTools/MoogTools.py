@@ -559,12 +559,12 @@ class LineList( object ):
         else:
             self.weakLines[index-self.nStrong].modifyVdW(delta, push=push)
 
-    def saveLineList(self, mode="MOOGSCALAR", filename=''):
+    def saveLineList(self, mode="MOOGSCALAR", filename='', changed=False):
         outfile = open(filename, 'w')
         for strongLine in self.strongLines:
-            strongLine.dump(out=outfile, mode=mode)
+            strongLine.dump(out=outfile, mode=mode, changed=changed)
         for weakLine in self.weakLines:
-            weakLine.dump(out=outfile, mode=mode)
+            weakLine.dump(out=outfile, mode=mode, changed=changed)
         outfile.close()
         self.sort_file(filename)
 
@@ -761,6 +761,10 @@ class Spectral_Line( object ):
         self.VdW = VdW
 
     def dump(self, **kwargs):
+        if "changed" in kwargs:
+            if kwargs["changed"] == True:
+                if ((len(self.loggfHistory) == 0) & (len(self.VdWHistory) == 0)):
+                    return
         if "out" in kwargs:
             out = kwargs["out"]
             if kwargs["mode"].upper() == 'MOOGSTOKES':
