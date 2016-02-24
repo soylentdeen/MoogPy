@@ -125,8 +125,6 @@ class MoogStokes( object ):
             flux = array containing the flux of the composite emergent spectrum
         """
         self.config = AstroUtils.parse_config(configurationFile)
-        self.lineList = LineList(self, self.config)
-        self.parameterFile = ParameterFile(self, self.config)
         if "MODELFILE" in kwargs.keys():
             self.modelFile = kwargs["MODELFILE"]
             self.T = 0.0
@@ -161,6 +159,8 @@ class MoogStokes( object ):
             self.MoogSandbox = ''
         self.fileName = self.MoogSandbox+fileBase+'.par'
         self.fileBase = fileBase
+        self.lineList = LineList(self, self.config)
+        self.parameterFile = ParameterFile(self, self.config)
         self.Spectra = []
         self.logtau = []
 
@@ -311,7 +311,8 @@ class MoogStokes( object ):
         self.Phrase = Moog960.SyntheticPhrase(rawData=self.Spectra,
                 diskInt=self.diskInt)
         if saveRaw:
-            filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits' % (self.config["Teff"], self.config["logg"], self.config["Bfield"])
+            filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits'%(self.config["Teff"],
+                    self.config["logg"], self.config["Bfield"])
             PHKWs = {"BFIELD":self.config["Bfield"], "TEFF":self.config["Teff"], "LOGG":self.config["logg"]}
             self.Phrase.saveRaw(filename=filename, primaryHeaderKWs=PHKWs)
 
@@ -379,9 +380,9 @@ class ParameterFile( object ):
                 self.file_labels[fl] = self.moogPars[fl]
 
     def setName(self, name):
-        self.file_labels['lines_in'] = self.config['Weak_FileName']+'_'+name
-        self.file_labels['stronglines_in'] = self.config['Strong_FileName']+'_'+name
-        self.parFileName = name+'.par'
+        self.file_labels['lines_in'] = self.parent.MoogSandbox + self.config['Weak_FileName']+'_'+name
+        self.file_labels['stronglines_in'] = self.parent.MoogSandbox + self.config['Strong_FileName']+'_'+name
+        self.parFileName = self.parent.MoogSandbox + name+'.par'
         
     def setModel(self, teff=0.0, logg=0.0, modelFile=None):
         if modelFile==None:
@@ -424,8 +425,8 @@ class LineList( object ):
         self.wlStart = config['wlStart']
         self.wlStop = config['wlStop']
         self.Bfield = config['Bfield']/10.0
-        self.sfn = config['Strong_FileName']
-        self.wfn = config['Weak_FileName']
+        self.sfn = parent.MoogSandbox + config['Strong_FileName']
+        self.wfn = parent.MoogSandbox + config['Weak_FileName']
         self.doMolecules = config['doMolecules']
         self.applyCorrections = config['applyCorrections']
 
@@ -505,7 +506,7 @@ class LineList( object ):
                                             (cl.loggf != -6.0) ):
                                         current_line.loggf = cl.loggf
                                         current_line.zeeman["NOFIELD"][1] = cl.loggf
-                                        if cl.VdW != 99.0:
+                                        if ((cl.VdW != 99.0) & (cl.species < 100.0)):
                                             current_line.VdW = cl.VdW
                                             current_line.stark = cl.stark
                                             current_line.radiative = cl.radiative
@@ -769,6 +770,10 @@ class Spectral_Line( object ):
         if "changed" in kwargs:
             if kwargs["changed"] == True:
                 if ((len(self.loggfHistory) == 0) & (len(self.VdWHistory) == 0)):
+                    return
+                if (self.VdW == -9.5):
+                    return
+                if (self.loggf == -6.0):
                     return
         if "out" in kwargs:
             out = kwargs["out"]
