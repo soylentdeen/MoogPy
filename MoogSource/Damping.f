@@ -171,14 +171,34 @@ c*****dampingopt = 3
          endif
 
 c*****now calculate radiative and Stark broadening (approximate formulae)
-         gammar = 2.223d15/wave1(j)**2
-         excdiff = chi(j,idint(charge(j)+0.001)) - e(j,2)
-         if (excdiff .gt. 0.0 .and. atom1(j).lt.100.) then
-            effn2 = 13.6*charge(j)**2/excdiff
-         else
-            effn2 = 25.
-         endif
-         gammas = 1.0e-8*ne(i)*effn2**2.5
+c         gammar = 2.223d15/wave1(j)**2
+c         excdiff = chi(j,idint(charge(j)+0.001)) - e(j,2)
+c         if (excdiff .gt. 0.0 .and. atom1(j).lt.100.) then
+c            effn2 = 13.6*charge(j)**2/excdiff
+c         else
+c            effn2 = 25.
+c         endif
+c         gammas = 1.0e-8*ne(i)*effn2**2.5
+
+c*****now calculate radiative and Stark broadening (approximate formulae)
+        if (crad(j) .eq. 0) then
+           gammar = 2.223d15/wave1(j)**2
+        else
+            gammar = 10.**crad(j)
+        endif
+        if (c4(j) .eq. 0) then
+           excdiff = chi(j,idint(charge(j)+0.001)) - e(j,2)
+           if (excdiff .gt. 0.0 .and. atom1(j).lt.100.) then
+              effn2 = 13.6*charge(j)**2/excdiff
+           else
+              effn2 = 25.
+           endif
+           gammas = 1.0e-8*ne(i)*effn2**2.5
+        else
+           gammas = 10.**c4(j)*ne(i)
+        endif
+         
+         
 
 
 c*****now finish by summing the gammas and computing the Voigt *a* values

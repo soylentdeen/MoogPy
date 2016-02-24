@@ -468,7 +468,6 @@ class LineList( object ):
     
         if self.applyCorrections:
             self.corrected = []
-            print "Reading in gf Corrections!"
             for line in open(self.gf_corrections, 'r'):
                 self.corrected.append(MOOG_Line(line))
     
@@ -501,8 +500,9 @@ class LineList( object ):
                                 (current_line.species % 1 <= 0.2) ):
                             if self.applyCorrections:
                                 for cl in self.corrected:
-                                    if (cl.wl == current_line.wl) & (cl.expot_lo == current_line.expot_lo):
-                                        print("Making a correction!")
+                                    if ((cl.wl == current_line.wl) & 
+                                            (cl.expot_lo == current_line.expot_lo) &
+                                            (cl.loggf != -6.0) ):
                                         current_line.loggf = cl.loggf
                                         current_line.zeeman["NOFIELD"][1] = cl.loggf
                                         if cl.VdW != 99.0:
@@ -753,10 +753,10 @@ class Spectral_Line( object ):
         if push:
             self.VdWHistory.append(self.VdW)
         self.VdW += delta_VdW
-        if self.VdW > -6.0:
-            self.VdW = -6.0
-        if self.VdW < -8.5:
-            self.VdW = -8.5
+        if self.VdW >= -5.0:
+            self.VdW = -4.999
+        if self.VdW < -9.5:
+            self.VdW = -9.5
 
     def setLogGf(self, loggf):
         self.loggf = loggf
@@ -1095,6 +1095,8 @@ class MOOG_Line( Spectral_Line ):
         self.VdWHistory = []
         self.expot_lo = float(line[20:31])
         self.Bfield = 0.0
+        self.zeeman = {}
+        self.zeeman["NOFIELD"] = [self.wl, self.loggf]
         try:
             self.VdW = float(line[40:51])
         except:
@@ -1233,8 +1235,12 @@ class New_VALD_Line( Spectral_Line ):
             self.g_hi = float(l1[8])
             self.g_eff = float(l1[9])
             self.radiative = float(l1[10])
-            self.stark = float(l1[11])
-            self.VdW = float(l1[12])
+            if self.element == 1.0:
+                self.stark = -4.0
+                self.VdW = -5.4
+            else:
+                self.stark = float(l1[11])
+                self.VdW = float(l1[12])
             self.loggfHistory = []
             self.VdWHistory = []
             self.DissE = None
