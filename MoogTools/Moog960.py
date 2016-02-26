@@ -333,6 +333,9 @@ class SyntheticPhrase( Phrase ):
             parameters["VSINI"] = vsini
             parameters["WLSTART"] = self.wlStart
             parameters["WLSTOP"] = self.wlStop
+            parameters["LABEL"] = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s" % ( 
+                            parameters["TEFF"], parameters["LOGG"], parameters["BFIELD"],
+                            vsini)
             self.integratedLabels.append(Label(parameters))
         if 'CONVOLVED' in created:
             parameters = self.rawLabels[0].parameters.copy()
@@ -340,6 +343,10 @@ class SyntheticPhrase( Phrase ):
             parameters["R"] = R
             parameters["WLSTART"] = self.wlStart
             parameters["WLSTOP"] = self.wlStop
+            parameters["LABEL"] = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" % ( 
+                            parameters["TEFF"], parameters["LOGG"], parameters["BFIELD"],
+                            vsini, R)
+
             self.convolvedLabels.append(Label(parameters))
 
     #def perform(self, vsini= 0.0, R = 0.0, observedWl = None, keySignature="CONVOLVED"):
@@ -547,7 +554,7 @@ class SyntheticPhrase( Phrase ):
             HDUList.close()
 
     def saveConvolved(self, vsini=None, R=None,filename = None, header=None, 
-            wlStart=None, wlStop=None, primaryHeaderKWs={}):
+            wlStart=None, wlStop=None, label=None, primaryHeaderKWs={}):
         """
         Moog960::SyntheticPhrase::saveConvolved(filename = None, primaryHeaderKWs={}
                 vsini=None, R=None, header=None, wlStart=None, wlStop=None)
@@ -563,37 +570,51 @@ class SyntheticPhrase( Phrase ):
         """
 
         HDUs = []
-        for spectrum in self.processedData.convolved:
-            hdr = spectrum.header.copy()
-            # TODO : implement Label stuff
-            if (not(vsini==None) and not(R==None) and not(wlStart==None) and
-                    not(wlStop==None)):
-                if ((vsini == hdr.get('VSINI')) and (R == hdr.get('RESOLVING_POWER')) 
-                        and (wlStart == hdr.get('WLSTART')) and (wlStop == hdr.get('WLSTOP'))):
-                    spectrum.preserve(continuum=False)
-                    SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
-                        header=hdr)
-                    SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.3f R=%.1f" % (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get('VSINI'), 
-                        hdr.get('RESOLVING_POWER'))
-            
-                    HDUs.append(SpectrumHDU)
-
-            elif (not(vsini==None) and not(R==None)):
-                if (vsini == hdr.get('VSINI')) and (R == hdr.get('RESOLVING_POWER')):
-                    spectrum.preserve(continuum=False)
-                    SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
-                        header=hdr)
-                    SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.3f R=%.1f" % (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get('VSINI'), 
-                        hdr.get('RESOLVING_POWER'))
-            
-                    HDUs.append(SpectrumHDU)
-            else:
+        if label != None:
+            try:
+                index = self.convolvedLabels.index(label)
+                spectrum = self.processedData.convolved[index]
+                hdr = spectrum.header.copy()
                 spectrum.preserve(continuum=False)
                 SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
-                    header=hdr)
+                        header = hdr)
                 SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.3f R=%.1f" % (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get('VSINI'), 
-                    hdr.get('RESOLVING_POWER'))
+                                            hdr.get('RESOLVING_POWER'))
                 HDUs.append(SpectrumHDU)
+            except:
+                raise Moog960Error (1, "The requested spectrum does not exist in the selected Phrase!")
+        else:
+            for spectrum in self.processedData.convolved:
+                hdr = spectrum.header.copy()
+                # TODO : implement Label stuff
+                if (not(vsini==None) and not(R==None) and not(wlStart==None) and
+                        not(wlStop==None)):
+                    if ((vsini == hdr.get('VSINI')) and (R == hdr.get('RESOLVING_POWER')) 
+                            and (wlStart == hdr.get('WLSTART')) and (wlStop == hdr.get('WLSTOP'))):
+                        spectrum.preserve(continuum=False)
+                        SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
+                            header=hdr)
+                        SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.3f R=%.1f" % (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get('VSINI'), 
+                            hdr.get('RESOLVING_POWER'))
+                
+                        HDUs.append(SpectrumHDU)
+
+                elif (not(vsini==None) and not(R==None)):
+                    if (vsini == hdr.get('VSINI')) and (R == hdr.get('RESOLVING_POWER')):
+                        spectrum.preserve(continuum=False)
+                        SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
+                            header=hdr)
+                        SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.3f R=%.1f" % (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get('VSINI'), 
+                            hdr.get('RESOLVING_POWER'))
+            
+                        HDUs.append(SpectrumHDU)
+                else:
+                    spectrum.preserve(continuum=False)
+                    SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
+                        header=hdr)
+                    SpectrumHDU.name = "%.4fA - %.4fA VSINI=%.3f R=%.1f" % (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get('VSINI'), 
+                        hdr.get('RESOLVING_POWER'))
+                    HDUs.append(SpectrumHDU)
 
         if filename == None:
             return HDUs
@@ -682,27 +703,33 @@ class Melody( object ):
                 self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
                     wlStop=wlRange[1]))
 
-    def record(self, labels=[], basename = None):
+    def record(self, labels=None, basename = None):
         """
         Moog960::Melody::record(self, labels=[], basename=None)
         
         record() saves the selected phrases of a melody to disk
         """
-        for label in labels:
-            R = label.parameters["R"]
-            vsini = label.parameters["VSINI"]
-            print("Recording record \'%s\' to disk" % label.parameters["LABEL"])
-            if basename == None:
-                filename = self.filename[:-4]+'_saved.fits'
-            else:
-                filename = basename+"_T%d_G%.2f_B%.2f_R%d_V%.2f.fits" % (
-                    self.Teff, self.logg, self.B, R, vsini)
+        
+        filename = self.filename[:-4]+'_saved.fits'
+        if labels != None:
+            for label in labels:
+                R = label.parameters["R"]
+                vsini = label.parameters["VSINI"]
+                if basename != None:
+                    filename = basename+"_T%d_G%.2f_B%.2f_R%d_V%.2f.fits" % (
+                        self.Teff, self.logg, self.B, R, vsini)
+                print("Recording record \'%s\' to disk" % label.parameters["LABEL"])
+                for i in range(self.nPhrases):
+                    if self.selectedPhrases[i]:
+                       self.phrases[i].saveConvolved(vsini=vsini, R=R,
+                               filename=filename, header=self.header, 
+                               wlStart=label.parameters["WLSTART"], 
+                               wlStop = label.parameters["WLSTOP"])
+        else:
             for i in range(self.nPhrases):
                 if self.selectedPhrases[i]:
-                   self.phrases[i].saveConvolved(vsini=vsini, R=R,
-                           filename=filename, header=self.header, 
-                           wlStart=label.parameters["WLSTART"], 
-                           wlStop = label.parameters["WLSTOP"])
+                    self.phrases[i].saveConvolved()
+
                            
             #TODO make Labels actually do what they are supposed to.
 
@@ -799,7 +826,6 @@ class SyntheticMelody( Melody ):
         parameters["LOGG"] = self.logg
         parameters["BFIELD"] = self.B
 
-
         for i in range(nSpectra):
             added = False
             hdr = pyfits.getheader(self.filename, ext=i+1, memmap=False)
@@ -851,10 +877,14 @@ class SyntheticMelody( Melody ):
                 self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
                     wlStop=wlRange[1]))
 
-    def rehearse(self, vsini = 0.0, R = 0, observedWl = None):
+    def rehearse(self, vsini = 0.0, R = 0, observedWl = None, returnLabels =False):
+        convolved = []
         for i in range(self.nPhrases):
             if self.selectedPhrases[i]:
                 self.phrases[i].rehearse(vsini = vsini, R=R, observedWl=observedWl)
+                convolved.append(self.phrases[i].convolvedLabels[-1])
+        if returnLabels:
+            return convolved
 
     def perform(self, label=None, keySignature="CONVOLVED"):
         """

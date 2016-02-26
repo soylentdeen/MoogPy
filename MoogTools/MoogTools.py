@@ -157,6 +157,11 @@ class MoogStokes( object ):
             self.MoogSandbox = self.config["MoogSandbox"]
         else:
             self.MoogSandbox = ''
+
+        if "wlStart" in kwargs.keys():
+            self.config["wlStart"] = kwargs["wlStart"]
+        if "wlStop" in kwargs.keys():
+            self.config["wlStop"] = kwargs["wlStop"]
         self.fileName = self.MoogSandbox+fileBase+'.par'
         self.fileBase = fileBase
         self.lineList = LineList(self, self.config)
