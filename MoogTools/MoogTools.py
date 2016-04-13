@@ -239,7 +239,7 @@ class MoogStokes( object ):
                 header.set('SPECTRUM_TYPE', 'MOOG disk-integrated Spectrum')
                 self.Spectra.append(SpectralTools.Spectrum(wl = [],
                     I = [], header=header,
-                    spectrum_type='MOOG disk-integrated Spectrum'))
+                    spectrum_type='MOOG DISK INTEGRATED'))
             elif self.diskInt == 'BEACHBALL':
                 header.set('PHI_ANGLE', float('%.4f'% self.phi_angle[i]))
                 header.set('MU', float('%.4f'%self.mus[i]))
@@ -247,7 +247,7 @@ class MoogStokes( object ):
                 header.set('SPECTRUM_TYPE', 'Individual Emergent Spectrum')
                 self.Spectra.append(SpectralTools.Spectrum(wl = [],
                     I = [], Q = [], U = [], V = [], continuum = [], header=header, 
-                    spectrum_type='Individual Emergent Spectrum'))
+                    spectrum_type='MOOG EMERGENT'))
             elif self.diskInt == 'DISKOBALL':
                 header.set('PHI_ANGLE', float('%.4f'% self.phi_angle[i]))
                 header.set('CHI_ANGLE', float('%.4f'% self.chi_angle[i]))
@@ -261,7 +261,7 @@ class MoogStokes( object ):
                 header.set('SPECTRUM_TYPE', 'Individual Emergent Spectrum')
                 self.Spectra.append(SpectralTools.Spectrum(wl = [],
                     I = [], Q = [], U = [], V = [], continuum = [], header=header, 
-                    spectrum_type='Individual Emergent Spectrum'))
+                    spectrum_type='MOOG EMERGENT'))
 
     def tennisball(self):
         self.ncells = 1

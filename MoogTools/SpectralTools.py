@@ -407,7 +407,7 @@ def mergeSpectra(first=None, second=None):
             new_C = None
         
     retval = Spectrum(wl=new_x, I = new_I, Q = new_Q, U = new_U, V = new_V, 
-            continuum = new_C, spectrum_type='Merged')
+            continuum = new_C, spectrum_type='MERGED')
 
     return retval
 
@@ -544,6 +544,30 @@ class Spectrum( object ):
     def __init__(self, wl=None, I=None, Q=None, U=None, V=None,
             continuum=None, header=pyfits.Header(), spectrum_type=None,
             filename=None, ext=None, preserve=False):
+        """
+            Spectrum.__init__(wl=None, I=None, Q=None, U=None, V=None,
+            continuum=None, header=pyfits.Header(), spectrum_type=None,
+            filename=None, ext=None, preserve=False)
+            
+            Creates a Spectrum object from arrays
+            
+            wl = numpy array of wavelength values (should be microns?)
+            I = numpy array of Stokes I flux values
+            Q = numpy array of Stokes Q flux values
+            U = numpy array of Stokes U flux values
+            V = numpy array of Stokes V flux values
+            continuum = numpy array of continuum values.  Can/should be omitted
+                if the flux values are normalized.
+            header = pyfits Header object containing the FITS header to be 
+                saved with the Spectrum when it is saved
+            spectrum_type = 'RAW', 'INTERPOLATED', 'DISK INTEGRATED',
+                'CONVOLVED', 'BLENDED', 'MERGED', 'ROTATED', 'DIFFERENCE',
+                'SCALED', 'MOOG DISK INTEGRATED', 'MOOG EMERGENT'
+            filename = Filename for saving (or reading)
+            ext = For FITS files with multiple parts, ext is the extention number
+            preserve = When True, prepares the fluxes and wavelengths for saving into
+                a FITS table.
+        """
         self.wl = wl
         self.flux_I = I
         self.flux_Q = Q
@@ -555,9 +579,23 @@ class Spectrum( object ):
         self.ext = ext
         if spectrum_type != None:
             self.addHistory(spectrum_type=spectrum_type)
+        if preserve == True:
+            self.preserve(I=I!=None, Q=Q!=None, U=U!=None, V=V!=None, continuum=continuum!=None)
 
     @classmethod
     def from_file(self, header=None, data=None, filename=None, ext=None):
+        """
+            Spectrum.from_file(header=None, data=None, filename=None, ext=None)
+            
+            Creates a Spectrum object by reading previously saved data from a file
+            
+            header = pyfits Header object to be used in place of any existing FITS
+                header.
+            data = object containing pyfits datafields (i.e. pyfits.getdata())
+            filename = full path of file containing data
+            ext = if multiple spectra are contained in the same file, ext 
+                specifies which extension to grab.
+        """
         if not(data==None):
             self.extractData(data)
         else:
@@ -575,6 +613,15 @@ class Spectrum( object ):
                 filename=filename, ext=ext)
 
     def addHistory(self, spectrum_type=""):
+        """
+            Spectrum.addHistory(spectrum_type="")
+            
+            addHistory allows the user to keep track of the provenance of the data
+                contained inside.  If an operation changes the type of data (say by 
+                convolving to a different resolution), this routine stores the
+                "parent's" SPECTRUM ID in the history.  Then, the spectrum is given
+                a new SPECTRUM_ID by generating a random string of ascii characters.
+        """
         if 'SPECTRUM_ID' in self.header.iterkeys():
             self.header.add_history(self.header.get('SPECTRUM_TYPE')+
                     ' - '+self.header.get('SPECTRUM_ID'))
@@ -583,6 +630,15 @@ class Spectrum( object ):
         self.header.set('SPECTRUM_TYPE', spectrum_type)
 
     def extractData(self, data):
+        """
+        Spectrum.extractData(data)
+        
+        This routine extracts spectrum data from a FITS binary table.
+        
+        data = pyfits binary table
+        
+        Note: the data object must contain a 'Wavelength' field.
+        """
         try:
             self.wl = data.field('Wavelength')
         except:
@@ -609,6 +665,15 @@ class Spectrum( object ):
             self.continuum = None
 
     def loadData(self):
+        """
+        Spectrum.loadData()
+        
+        Loads the data related to a spectrum stored in the self.filename.
+        
+        Once the data is loaded from the file, the file is closed, and 
+        removed from memory.  Then, the data is extracted and loaded into the
+        Spectrum object
+        """
         try:
             datafile = open(self.filename, 'rb')
             data = pyfits.getdata(datafile, ext=self.ext, memmap=False)
@@ -618,8 +683,36 @@ class Spectrum( object ):
             raise SpectrumError(0, "Error reading extension %d from %s" %
                     (self.ext, self.filename))
         self.extractData(data)
+        del(data)
 
     def preserve(self, prepareColumns=True, I=True, Q=False, U=False, V=True, continuum=True):
+        """
+        Spectrum.preserve(prepareColumns=True, I=True, Q=False, U=False, V=True, continuum=True)
+        
+        prepares the spectrum for saving in a FITS binary table by
+        creating the columns object (a pyfits.ColDefs object) from
+        the Spectrum data.
+        
+        prepareColumns = Boolean
+              True - self.columns is created
+              False - Nothing happens
+        I = Boolean
+              True = a Stokes_I column will be added to the ColDefs object
+              False = Stokes_I column is left out of the ColDefs object
+        Q = Boolean
+              True = a Stokes_Q column will be added to the ColDefs object
+              False = Stokes_Q column is left out of the ColDefs object
+        U = Boolean
+              True = a Stokes_U column will be added to the ColDefs object
+              False = Stokes_U column is left out of the ColDefs object
+        V = Boolean
+              True = a Stokes_V column will be added to the ColDefs object
+              False = Stokes_V column is left out of the ColDefs object
+        continuum = Boolean
+              True = a Continuum column will be added to the ColDefs object
+              False = Continuum column is left out of the ColDefs object
+        """
+        
         self.wl = numpy.array(self.wl)
         
         if prepareColumns:
@@ -648,26 +741,49 @@ class Spectrum( object ):
                 coldefs.append(continuum)
             self.columns = pyfits.ColDefs(coldefs)
 
-    def plot(self, I=True, Q=False, U=False, V=False, continuum=False, ax=None, **kwargs):
+    def plot(self, I=True, Q=False, U=False, V=False,
+                 continuum=False, ax=None, **kwargs):
+        """
+        Spectrum.plot(I=True, Q=False, U=False, V=False, continuum=False,
+            ax=pyplot.axis, **kwargs)
+            
+        plot allows a simple way to plot the contents of the spectrum.
+        
+        I = Boolean signifying whether or not Stokes_I is plotted
+        Q = Boolean signifying whether or not Stokes_Q is plotted
+        U = Boolean signifying whether or not Stokes_U is plotted
+        V = Boolean signifying whether or not Stokes_V is plotted
+        continuum = Boolean signifying whether or not the continuum is plotted
+        ax = a matplotlib.pyplot.axis object
+        **kwargs = arguments to pass to the plot command
+       """
         if I:
             ax.plot(self.wl, self.flux_I, **kwargs)
+        if Q:
+            ax.plot(self.wl, self.flux_Q, **kwargs)
+        if U:
+            ax.plot(self.wl, self.flux_U, **kwargs)
+        if V:
+            ax.plot(self.wl, self.flux_V, **kwargs)
+        if continuum:
+            ax.plot(self.wl, self.continuum, **kwargs)
     
     def resample(self, R=0.0, nyquist=False, observedWl=None, pad=None):
         """
-        This routine convolves a given spectrum to a resolution R
-        :INPUTS:
-            R: Desired resolving power
-            nyquist (optional): returns a nyquist-sampled spectrum
-                   (default: False)
+        Spectrum.resample(R=0.0, nyquist=False, observedWl=None, pad=None)
+        
+        resample convolves the spectrum to a resolution R, and optionally
+        nyquist samples it, or re-bins it to a different wavelength range,
+        padding the beginning and end of the wavelength range.
+        
+        R: Desired resolving power (Lambda/dLambda)
+        nyquist: Boolean.  If true, returns a nyquist-sampled spectrum
+        observedWl: numpy.array of wavelength points to which the spectrum
+             will be rebinned/interpolated
+        pad: If the spectrum is to be rebinned, pad contains the value to be
+             stored in the flux points which are not spanned by a complete
+             bin.
     
-        :RETURNS:
-            new_x: new wavelength array
-            new_y: new flux array
-
-        :EXAMPLE:
-         ::
-            highres = SpectralTools.Spectrum('highres.dat')
-            highres.resample(2000)
         """
         subsample = 16.0
 
@@ -735,11 +851,8 @@ class Spectrum( object ):
         header = self.header.copy()
         header.set('RESOLVING_POWER', R)
         processed = Spectrum(wl=newWl, I=flux_I, Q=flux_Q, U=flux_U, continuum=continuum,
-                V=flux_V, header=header, spectrum_type='RESOLVING POWER=%.1f' % R)
+                V=flux_V, header=header, spectrum_type='CONVOLVED')
                 
-
-        #if halt:
-        #    print asdf
         
         if nyquist:
             nyquistWl = []
@@ -761,10 +874,17 @@ class Spectrum( object ):
 
     def bin(self, newWl, pad=None):
         """
-            This routine simulates the discrete nature of detector pixels.
+        Spectrum.bin(newWl=[], pad=None)
+        
+        This routine simulates the binning of a synthetic spectra due to
+        the discrete nature of detector pixels.
+        
+        newWl = numpy.array of the new wavelengths to which the spectrum
+             should be binned.
+        pad: pad contains the value to be stored in the flux points
+             which are not spanned by a complete bin.
         """
         deltaWl = numpy.median(numpy.diff(newWl))/10.0
-        #interpWl = numpy.arange(newWl[0], newWl[-1], deltaWl)
         if pad == None:
             interpWl = numpy.arange(self.wl[0], self.wl[-1], deltaWl)
         else:
@@ -780,22 +900,18 @@ class Spectrum( object ):
         if self.flux_Q != None:
             Q = scipy.interpolate.splrep(self.wl, self.flux_Q)
             Q_interp = scipy.interpolate.splev(interpWl, Q, ext=1)
-            #Q_interp[Q_interp==0]=1.0
             newSpec_Q = numpy.zeros(len(newWl))
         if self.flux_U != None:
             U = scipy.interpolate.splrep(self.wl, self.flux_U)
             U_interp = scipy.interpolate.splev(interpWl, U, ext=1)
-            #U_interp[U_interp==0]=1.0
             newSpec_U = numpy.zeros(len(newWl))
         if self.flux_V != None:
             V = scipy.interpolate.splrep(self.wl, self.flux_V)
             V_interp = scipy.interpolate.splev(interpWl, V, ext=1)
-            #V_interp[V_interp==0]=1.0
             newSpec_V = numpy.zeros(len(newWl))
         if self.continuum != None:
             continuum = scipy.interpolate.splrep(self.wl, self.continuum)
             cont_interp = scipy.interpolate.splev(interpWl, continuum, ext=1)
-            #cont_interp[cont_interp==0]=1.0
             newSpec_continuum = numpy.zeros(len(newWl))
         for i in range(len(newWl)):
             if i==0:
@@ -814,7 +930,6 @@ class Spectrum( object ):
                 if self.flux_I != None:
                     num=scipy.integrate.simps(I_interp[inBin], 
                             x=interpWl[inBin])
-                    #newSpec_I[i] = num/denom
                     newSpec_I.append(num/denom)
                 if self.flux_Q != None:
                     num=scipy.integrate.simps(Q_interp[inBin], 
@@ -832,32 +947,7 @@ class Spectrum( object ):
                     num=scipy.integrate.simps(cont_interp[inBin], 
                             x=interpWl[inBin])
                     newSpec_continuum[i] = num/denom
-            """
-            elif (len(inBin) == 1):
-                if self.flux_I != None:
-                    newSpec_I[i] = 0.0
-                if self.flux_Q != None:
-                    newSpec_Q[i] = 0.0
-                if self.flux_U != None:
-                    newSpec_U[i] = 0.0
-                if self.flux_V != None:
-                    newSpec_V[i] = 0.0
-                if self.continuum != None:
-                    newSpec_continuum[i] = 0.0
-            else:
-                if self.flux_I != None:
-                    newSpec_I[i] = 0.0
-                if self.flux_Q != None:
-                    newSpec_Q[i] = 0.0
-                if self.flux_U != None:
-                    newSpec_U[i] = 0.0
-                if self.flux_V != None:
-                    newSpec_V[i] = 0.0
-                if self.continuum != None:
-                    newSpec_continuum[i] = 0.0
-            #"""
 
-        #self.wl = newWl
         self.wl = numpy.array(newWave)
         if self.flux_I != None:
             self.flux_I = numpy.array(newSpec_I)
@@ -872,6 +962,9 @@ class Spectrum( object ):
 
     def rotate(self, angle=0.0, wlPoint = None):
         """
+        Spectrum.rotate(angle=0.0, wlPoint = None)
+        
+        rotate rotates the 
         angle = arctan(rise/run).
 
         Units are continuum/angstrom
@@ -900,7 +993,7 @@ class Spectrum( object ):
 
         return Spectrum(wl=self.wl, I=I, Q=Q, U=U, V=V, 
                 continuum=continuum, header=self.header,
-                spectrum_type="Rotated Spectrum")
+                spectrum_type="ROTATED")
 
 
     def __sub__(self, other):
@@ -928,7 +1021,7 @@ class Spectrum( object ):
         
         return Spectrum(wl=self.wl[overlap_self], I=I, Q=Q, U=U, V=V, 
                 continuum=continuum, header=self.header,
-                spectrum_type="Difference Spectrum")
+                spectrum_type="DIFFERENCE")
 
     def __div__(self, factor):
         I = None
@@ -949,7 +1042,7 @@ class Spectrum( object ):
             continuum = self.continuum/factor
 
         return Spectrum(wl=self.wl, I=I, Q=Q, U=U, V=V, continuum=continuum,
-                header=self.header, spectrum_type="Scaled Spectrum")
+                header=self.header, spectrum_type="SCALED")
 
     def diff_spectra(self, other, pad=False):
         '''
@@ -976,7 +1069,7 @@ class Spectrum( object ):
             retval_I = numpy.zeros(len(self.wl))
             retval_I[overlap] = self.flux_I[overlap] - scipy.interpolate.splev(self.wl[overlap],I)
             return Spectrum(wl=self.wl, I=retval_I, header=self.header,
-                   spectrum_type='Difference Spectrum')
+                   spectrum_type='DIFFERENCE')
         else:
             return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
 
@@ -1020,7 +1113,7 @@ class Spectrum( object ):
             newCont = self.flux_I[overlap]*fraction + scipy.interpolate.splev(newWl, I)*(1.0-fraction)
 
         return Spectrum(wl=newWl, I=newI, Q=newQ, U=newU, V=newV, continuum=newCont, header=self.header,
-                        spectrum_type="Blended Spectrum")
+                        spectrum_type="BLENDED")
     
     def calc_EW(self, wlStart, wlStop, findContinuum=False):
         if (wlStart > self.wl[-1]) or (wlStop < self.wl[0]):
@@ -1035,6 +1128,141 @@ class Spectrum( object ):
         num = scipy.integrate.simps(self.flux_I[bm], self.wl[bm])
         denom = scipy.integrate.simps(cont, self.wl[bm])
         return (denom-num)
+
+    def mergeSpectra(self, second=None):
+        if second == None:
+            return self
+
+        x1 = self.wl
+        x2 = second.wl
+
+
+        overlap_start = numpy.max([numpy.min(x1), numpy.min(x2)])
+        overlap_stop = numpy.min([numpy.max(x1), numpy.max(x2)])
+        overlap = scipy.where((x1 >= overlap_start) & (x1 <= overlap_stop))
+        if (len(overlap[0]) > 1):
+            unique1 = scipy.where((x1 < overlap_start) | (x1 > overlap_stop))
+            unique2 = scipy.where((x2 < overlap_start) | (x2 > overlap_stop))
+
+            new_x = numpy.append(x1, x2[unique2])
+    
+            if (self.flux_I != None) & (second.flux_I != None):
+                I1 = self.flux_I
+                I2 = second.flux_I
+                I1[numpy.isnan(I1)] = 0.0
+                I2[numpy.isnan(I2)] = 0.0
+                I = scipy.interpolate.splrep(x2, I2)
+                Iinterp = scipy.interpolate.splev(x1[overlap], I)
+                mergedI = I1[overlap] + Iinterp
+                new_I = numpy.append(numpy.append(I1[unique1], mergedI), I2[unique2])
+            else:
+                new_I = None
+            if (self.flux_Q != None) & (second.flux_Q != None):
+                Q1 = self.flux_Q
+                Q2 = second.flux_Q
+                Q1[numpy.isnan(Q1)] = 0.0
+                Q2[numpy.isnan(Q2)] = 0.0
+                Q = scipy.interpolate.splrep(x2, Q2)
+                Qinterp = scipy.interpolate.splev(x1[overlap], Q)
+                mergedQ = Q1[overlap] + Qinterp
+                new_Q = numpy.append(numpy.append(Q1[unique1], mergedQ), Q2[unique2])
+            else:
+                new_Q = None
+            if (self.flux_U != None) & (second.flux_U != None):
+                U1 = self.flux_U
+                U2 = second.flux_U
+                U1[numpy.isnan(U1)] = 0.0
+                U2[numpy.isnan(U2)] = 0.0
+                U = scipy.interpolate.splrep(x2, U2)
+                Uinterp = scipy.interpolate.splev(x1[overlap], U)
+                mergedU = U1[overlap] + Uinterp
+                new_U = numpy.append(numpy.append(U1[unique1], mergedU), U2[unique2])
+            else:
+                new_U = None
+            if (self.flux_V != None) & (second.flux_V != None):
+                V1 = self.flux_V
+                V2 = second.flux_V
+                V1[numpy.isnan(V1)] = 0.0
+                V2[numpy.isnan(V2)] = 0.0
+                V = scipy.interpolate.splrep(x2, V2)
+                Vinterp = scipy.interpolate.splev(x1[overlap], V)
+                mergedV = V1[overlap] + Vinterp
+                new_V = numpy.append(numpy.append(V1[unique1], mergedV), V2[unique2])
+            else:
+                new_V = None
+            if (self.continuum != None) & (second.continuum != None):
+                C1 = self.continuum
+                C2 = second.continuum
+                C1[numpy.isnan(C1)] = 0.0
+                C2[numpy.isnan(C2)] = 0.0
+                C = scipy.interpolate.splrep(x2, C2)
+                Cinterp = scipy.interpolate.splev(x1[overlap], C)
+                mergedC = C1[overlap] + Cinterp
+                new_C = numpy.append(numpy.append(C1[unique1], mergedC), C2[unique2])
+            else:
+                new_C = None
+                if new_I != None:
+                    new_I /= 2.0
+                if new_Q != None:
+                    new_Q /= 2.0
+                if new_U != None:
+                    new_U /= 2.0
+                if new_V != None:
+                    new_V /= 2.0
+        else:
+            new_x = numpy.append(x1, x2)
+            if (self.flux_I != None) & (second.flux_I != None):
+                I1 = self.flux_I
+                I2 = second.flux_I
+                I1[numpy.isnan(I1)] = 0.0
+                I2[numpy.isnan(I2)] = 0.0
+                new_I = numpy.append(I1, I2)
+            else:
+                new_I = None
+            if (self.flux_Q != None) & (second.flux_Q != None):
+                Q1 = self.flux_Q
+                Q2 = second.flux_Q
+                Q1[numpy.isnan(Q1)] = 0.0
+                Q2[numpy.isnan(Q2)] = 0.0
+                new_Q = numpy.append(Q1, Q2)
+            else:
+                new_Q = None
+            if (self.flux_U != None) & (second.flux_U != None):
+                U1 = self.flux_U
+                U2 = second.flux_U
+                U1[numpy.isnan(U1)] = 0.0
+                U2[numpy.isnan(U2)] = 0.0
+                new_U = numpy.append(U1, U2)
+            else:
+                new_U = None
+            if (self.flux_V != None) & (second.flux_V != None):
+                V1 = self.flux_V
+                V2 = second.flux_V
+                V1[numpy.isnan(V1)] = 0.0
+                V2[numpy.isnan(V2)] = 0.0
+                new_V = numpy.append(V1, V2)
+            else:
+                new_V = None
+            if (self.continuum != None) & (second.continuum != None):
+                C1 = self.continuum
+                C2 = second.continuum
+                C1[numpy.isnan(C1)] = 0.0
+                C2[numpy.isnan(C2)] = 0.0
+                new_C = numpy.append(C1, C2)
+            else:
+                new_C = None
+            
+        header = self.header.copy()
+        header.set("WLSTART", numpy.min([header.get("WLSTART"), 
+            second.header.get("WLSTART")]))
+        header.set("WLSTOP", numpy.max([header.get("WLSTOP"), 
+            second.header.get("WLSTOP")]))
+
+
+        retval = Spectrum(wl=new_x, I = new_I, Q = new_Q, U = new_U, V = new_V, 
+                continuum = new_C, spectrum_type='MERGED', header=header)
+
+        return retval
 
 class ObservedSpectrum ( object ):
     def __init__(self, observed=None):
@@ -1104,7 +1332,7 @@ class BeachBall( Integrator ):
                     raw.flux_V/raw.continuum, s=0)
             self.interpolated.append(Spectrum(wl=newWl, I = fI(newWl)*limb_darkening[-1], V = fV(newWl)*limb_darkening[-1],
                 continuum = numpy.ones(len(newWl))*limb_darkening[-1],
-                header = raw.header.copy(), spectrum_type='INTERPOLATED DELTAV=%.2f' % self.deltav))
+                header = raw.header.copy(), spectrum_type='INTERPOLATED'))
 
         self.limb_darkening = numpy.array(limb_darkening)
         self.phi = numpy.array(phi)
@@ -1137,7 +1365,8 @@ class BeachBall( Integrator ):
         for interp in self.interpolated[1:]:
             header.add_history(interp.header.get('SPECTRUM_TYPE')+' - '+interp.header.get('SPECTRUM_ID'))
 
-        self.integrated.append(Spectrum(wl=self.interpolated[0].wl, I=I, V=V, header=header, spectrum_type='DISK INTEGRATED VSINI=%.2f' % vsini))
+        self.integrated.append(Spectrum(wl=self.interpolated[0].wl, I=I, V=V, header=header,
+             spectrum_type='DISK INTEGRATED'))
         return True
 
     def findVsini(self, vsini):
@@ -1160,7 +1389,8 @@ class BeachBall( Integrator ):
         """
         retval = []
         for convol in self.convolved:
-            if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
+            if ((numpy.abs(convol.header.get('VSINI') - vsini) < 0.01)
+             and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1)):
                 return retval
 
         try:
@@ -1182,7 +1412,8 @@ class BeachBall( Integrator ):
 
         if keySignature=="CONVOLVED":
             for convol in self.convolved:
-                if (numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1):
+                if ((numpy.abs(convol.header.get('VSINI') - vsini) < 0.01) and
+                    (numpy.abs(convol.header.get('RESOLVING_POWER') - R) < 0.1)):
                     if observedWl!= None:
                         return rebin(convol, observedWl)
                     else:
@@ -1681,9 +1912,11 @@ class photometrySynthesizer( object ):
             self.fdir = '/home/deen/Data/StarFormation/Photometry/FILTER_PROFILES/'
 
         filterNames = ['Uj', 'Bj', 'Vj', 'Rc', 'Ic', '2massj', '2massh', '2massk']
-        fileNames = ['U_Landolt.dat', 'B_Bessell.dat', 'V_Bessell.dat', 'cousins_Rband.dat', 'cousins_Iband.dat', 'J_2MASS.dat', 'H_2MASS.dat', 'K_2MASS.dat']
+        fileNames = ['U_Landolt.dat', 'B_Bessell.dat', 'V_Bessell.dat', 'cousins_Rband.dat', 
+                    'cousins_Iband.dat', 'J_2MASS.dat', 'H_2MASS.dat', 'K_2MASS.dat']
         fnu_zero = [1829, 4144, 3544, 2950, 2280.0, 1594.0, 1024.0, 666.7 ]
-        flam_zero = [4.0274905e-09, 6.3170333e-09, 3.6186341e-09, 2.1651655e-9, 1.1326593e-09, 3.129e-10, 1.133e-10, 4.283e-11] #erg/s/cm^2/Angstrom
+        flam_zero = [4.0274905e-09, 6.3170333e-09, 3.6186341e-09, 2.1651655e-9, 1.1326593e-09, 
+                  3.129e-10, 1.133e-10, 4.283e-11] #erg/s/cm^2/Angstrom
         lambda_eff = [3600, 4362, 5446, 6413, 7978, 12285, 16385, 21521]
         mVega = [0.02, 0.02, 0.03, 0.039, 0.035, -0.001, +0.019, -0.017]
 
