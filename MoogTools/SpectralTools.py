@@ -11,12 +11,19 @@ import string
 import random
 
 class SpectrumError( Exception ):
-	"""
-	SpectrumError
-	
-	Raised on execptions within Spectrum objects
-	"""
     def __init__(self, value, errmsg):
+        '''
+        SpectrumError
+        
+        Raised on execptions within Spectrum objects
+        
+        Error definitions are as follows:
+        0 | Failure loading Raw Data!!
+        1 | Failure loading Processed Data!!
+        2 | Failure calculating Equivalent Widths!
+        3 | Failure Convolving Spectrum!
+        4 | Failure Calculating Difference Spectrum!
+        '''
         self.value = value
         self.message = {}
         self.message[0] = "Failure loading Raw Data!! %s" % errmsg
@@ -52,7 +59,6 @@ def fitSawtooth(y, window_len=50):
     #retval = 0.96-0.04*scipy.signal.sawtooth(2.*numpy.pi*0.0004*x + 0)
     return (retval, newy, goodPoints)
     
-
 def resample(x, y, R, nyquist=False, halt=False):
     """
     This routine convolves a given spectrum to a resolution R
@@ -236,8 +242,7 @@ def binSpectrum(spectrum, new_wl):
                 preserve=spectrum.preserve)
                 
     return retval
-
-            
+        
 def binSpectrum_old(spectrum, native_wl, new_wl):
     """
         This routine pixelates a synthetic spectrum, in effect simulating the 
@@ -446,7 +451,6 @@ def merge_spectra(x1, y1, x2, y2):
         new_y = numpy.append(y1, y2)
 
     return new_x, new_y
-
 
 def interpolate_spectrum(x1, x2, y1, pad=None):
     overlap_start = numpy.max([numpy.min(x1), numpy.min(x2)])
@@ -699,22 +703,22 @@ class Spectrum( object ):
         creating the columns object (a pyfits.ColDefs object) from
         the Spectrum data.
         
-        prepareColumns = Boolean
+        prepareColumns [Boolean] =
               True - self.columns is created
               False - Nothing happens
-        I = Boolean
+        I [Boolean] =
               True = a Stokes_I column will be added to the ColDefs object
               False = Stokes_I column is left out of the ColDefs object
-        Q = Boolean
+        Q [Boolean] =
               True = a Stokes_Q column will be added to the ColDefs object
               False = Stokes_Q column is left out of the ColDefs object
-        U = Boolean
+        U [Boolean] =
               True = a Stokes_U column will be added to the ColDefs object
               False = Stokes_U column is left out of the ColDefs object
-        V = Boolean
+        V [Boolean] =
               True = a Stokes_V column will be added to the ColDefs object
               False = Stokes_V column is left out of the ColDefs object
-        continuum = Boolean
+        continuum [Boolean] =
               True = a Continuum column will be added to the ColDefs object
               False = Continuum column is left out of the ColDefs object
         """
@@ -755,12 +759,12 @@ class Spectrum( object ):
             
         plot allows a simple way to plot the contents of the spectrum.
         
-        I = Boolean signifying whether or not Stokes_I is plotted
-        Q = Boolean signifying whether or not Stokes_Q is plotted
-        U = Boolean signifying whether or not Stokes_U is plotted
-        V = Boolean signifying whether or not Stokes_V is plotted
-        continuum = Boolean signifying whether or not the continuum is plotted
-        ax = a matplotlib.pyplot.axis object
+        I [Boolean] = signifying whether or not Stokes_I is plotted
+        Q [Boolean] = signifying whether or not Stokes_Q is plotted
+        U [Boolean] = signifying whether or not Stokes_U is plotted
+        V [Boolean] = signifying whether or not Stokes_V is plotted
+        continuum [Boolean] = signifying whether or not the continuum is plotted
+        ax [matplotlib.pyplot.axis object]
         **kwargs = arguments to pass to the plot command
        """
         if I:
@@ -782,14 +786,13 @@ class Spectrum( object ):
         nyquist samples it, or re-bins it to a different wavelength range,
         padding the beginning and end of the wavelength range.
         
-        R: Desired resolving power (Lambda/dLambda)
-        nyquist: Boolean.  If true, returns a nyquist-sampled spectrum
-        observedWl: numpy.array of wavelength points to which the spectrum
+        R [float] = Desired resolving power (Lambda/dLambda)
+        nyquist [Boolean] = If true, returns a nyquist-sampled spectrum
+        observedWl [numpy.array] wavelength points to which the spectrum
              will be rebinned/interpolated
-        pad: If the spectrum is to be rebinned, pad contains the value to be
-             stored in the flux points which are not spanned by a complete
-             bin.
-    
+        pad [None/float] If the spectrum is to be rebinned, pad contains
+             the value to be stored in the flux points which are not spanned
+             by a complete bin.
         """
         subsample = 16.0
 
@@ -885,9 +888,9 @@ class Spectrum( object ):
         This routine simulates the binning of a synthetic spectra due to
         the discrete nature of detector pixels.
         
-        newWl = numpy.array of the new wavelengths to which the spectrum
+        newWl [numpy.array] the new wavelengths to which the spectrum
              should be binned.
-        pad: pad contains the value to be stored in the flux points
+        pad [None/float] pad contains the value to be stored in the flux points
              which are not spanned by a complete bin.
         """
         deltaWl = numpy.median(numpy.diff(newWl))/10.0
@@ -972,7 +975,7 @@ class Spectrum( object ):
         
         This routine rotates the spectra, to mimic errors in the continuum
              determination.
-        angle = arctan(rise/run).
+        angle [rad] = arctan(rise/run).
 
         Units are continuum/angstrom
         """
@@ -1004,14 +1007,14 @@ class Spectrum( object ):
 
 
     def __sub__(self, other):
-		"""
-		Spectrum.__sub__(other)
+        '''
+        Spectrum.__sub__(other)
 		
-		__sub__ overloads the subtraction operator.  It subtracts one spectrum 
-		from the other
-		
-		subtracted = Spectrum - other
-		"""
+        __sub__ overloads the subtraction operator.  It subtracts one spectrum 
+        from the other
+        
+        subtracted = Spectrum - other
+        '''
         overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
         overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl)])
         overlap_self = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
@@ -1039,14 +1042,14 @@ class Spectrum( object ):
                 spectrum_type="DIFFERENCE")
 
     def __div__(self, factor):
-		"""
-		Spectrum.__div__(factor)
-		
-		__div__ overloads the division operator.  It returns a spectrum object
-		divided by the scalar factor
-		
-		divided = Spectrum/factor
-		"""
+        """
+        Spectrum.__div__(factor)
+        
+        __div__ overloads the division operator.  It returns a spectrum object
+        divided by the scalar factor
+        
+        divided = Spectrum/factor
+        """
         I = None
         Q = None
         U = None
@@ -1100,41 +1103,41 @@ class Spectrum( object ):
         if pad:
             if (self.flux_I != None) & (other.flux_I != None):
                 I = scipy.interpolate.splrep(other.wl, other.flux_I)
-				retval_I = numpy.zeros(len(self.wl))
+                retval_I = numpy.zeros(len(self.wl))
                 retval_I[overlap] = self.flux_I[overlap] - scipy.interpolate.splev(self.wl[overlap],I)
             else:
 				retval_I = None
             if (self.flux_Q != None) & (other.flux_Q != None):
                 Q = scipy.interpolate.splrep(other.wl, other.flux_Q)
-				retval_Q = numpy.zeros(len(self.wl))
+                retval_Q = numpy.zeros(len(self.wl))
                 retval_Q[overlap] = self.flux_Q[overlap] - scipy.interpolate.splev(self.wl[overlap],Q)
             else:
 				retval_Q = None
             if (self.flux_U != None) & (other.flux_U != None):
                 U = scipy.interpolate.splrep(other.wl, other.flux_U)
-				retval_U = numpy.zeros(len(self.wl))
+                retval_U = numpy.zeros(len(self.wl))
                 retval_U[overlap] = self.flux_U[overlap] - scipy.interpolate.splev(self.wl[overlap],U)
             else:
 				retval_U = None
             if (self.flux_V != None) & (other.flux_V != None):
                 V = scipy.interpolate.splrep(other.wl, other.flux_V)
-				retval_V = numpy.zeros(len(self.wl))
+                retval_V = numpy.zeros(len(self.wl))
                 retval_V[overlap] = self.flux_V[overlap] - scipy.interpolate.splev(self.wl[overlap],V)
             else:
 				retval_V = None
             if (self.continuum != None) & (other.continuum != None):
                 continuum = scipy.interpolate.splrep(other.wl, other.continuum)
-				retval_continuum = numpy.zeros(len(self.wl))
+                retval_continuum = numpy.zeros(len(self.wl))
                 retval_continuum[overlap] = self.continuum[overlap] - scipy.interpolate.splev(self.wl[overlap],continuum)
             else:
 				retval_continuum = None
-		    return Spectrum(wl=self.wl, I=retval_I, Q=retval_Q, U=retval_U,
+            return Spectrum(wl=self.wl, I=retval_I, Q=retval_Q, U=retval_U,
 		           V=retval_V, continuum=retval_continuum, header=self.header,
                    spectrum_type='DIFFERENCE')
         else:
-			"""
-			To be consistent, this case should return a Spectrum object.
-			"""
+            """
+            To be consistent, this case should return a Spectrum object.
+            """
             return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
 
     def blend(self, other, fraction):
@@ -1183,20 +1186,20 @@ class Spectrum( object ):
                         spectrum_type="BLENDED")
     
     def calc_EW(self, wlStart, wlStop, findContinuum=False):
-		"""
-		EW = Spectrum.calc_EW(wlStart, wlStop, findContinuum=False)
-		
-		calc_EW calculates the equivalent width of the Spectrum object between the 
-		     given start and stop wavelengths.
-		     
-		wlStart [float] = start of the EW interval.  Must be same units as the
-		     Spectrum.wl array
-		wlStop [float] = stop of the EW interval.  Must be same units as the
-		     Spectrum.wl array
-		findContinuum [Boolean] = Whether or not to attempt to automatically find
-		     the continuum.  Should probably only be used if Spectrum.flux_I is 
-		     not normalized
-		"""
+        """
+        EW = Spectrum.calc_EW(wlStart, wlStop, findContinuum=False)
+        
+        calc_EW calculates the equivalent width of the Spectrum object between the 
+             given start and stop wavelengths.
+             
+        wlStart [float] = start of the EW interval.  Must be same units as the
+             Spectrum.wl array
+        wlStop [float] = stop of the EW interval.  Must be same units as the
+             Spectrum.wl array
+        findContinuum [Boolean] = Whether or not to attempt to automatically find
+             the continuum.  Should probably only be used if Spectrum.flux_I is 
+             not normalized
+        """
         if (wlStart > self.wl[-1]) or (wlStop < self.wl[0]):
             raise SpectrumError(2, 'Wavelength Regions do not overlap!')
 
@@ -1210,14 +1213,14 @@ class Spectrum( object ):
         return (denom-num)
 
     def mergeSpectra(self, second=None):
-		"""
-		merged = Spectrum.mergeSpectra(second=None)
-		
-		Spectrum.mergeSpectra merges the spectrum with another spectrum which
-		    covers a different spectral region.
-		    
-		second [Spectrum] = Spectrum object to be merged
-		"""
+        """
+        merged = Spectrum.mergeSpectra(second=None)
+        
+        Spectrum.mergeSpectra merges the spectrum with another spectrum which
+            covers a different spectral region.
+            
+        second [Spectrum] = Spectrum object to be merged
+        """
         if second == None:
             return self
 
@@ -1360,30 +1363,30 @@ class ObservedSpectrum ( object ):
         return self.observed
 
 class Integrator( object ):
-	"""
-	Integrator(parent=None, deltav=0.1, limb_darkening=None)
-	
-	An Integrator object handles the interpolating, integrating, and
-	    convolving of raw data produced by MoogStokes
-	    
-	Input:
-	    parent [Moog960.SyntheticPhrase] = reference to the Integrator's parent
-	    deltav [float] = kernel size used for interpolating (km/s)
-	    limb_darkening [numpy.array(float)] = custom limb darkening coefficients for
-	        the disk integration routines.  There should be as many coefficients as 
-	        there are unique emergent spectral elements.
-	Contents:
-	
-	Integrator.parent = reference to Integrator's parent.  Necessary to find the
-	    location of the raw/processed data
-	Integrator.deltav = kernel size used for interpolating (km/s)
-	Integrator.interpolatedData = reference to interpolated data
-	Integrator.integratedData = reference to integrated data
-	Integrator.convolvedData = reference to convolved data
-    Integrator.limb_darkening = custom limb darkening coefficients for disk integration 
-        routines	
-	"""
     def __init__(self, parent=None, deltav = 0.1, limb_darkening=None):
+        """
+        Integrator(parent=None, deltav=0.1, limb_darkening=None)
+            
+        An Integrator object handles the interpolating, integrating, and
+            convolving of raw data produced by MoogStokes
+        
+        Input:
+            parent [Moog960.SyntheticPhrase] = reference to the Integrator's parent
+            deltav [float] = velocity resolution used for interpolating (km/s)
+            limb_darkening [numpy.array(float)] = custom limb darkening coefficients for
+                the disk integration routines.  There should be as many coefficients as 
+                there are unique emergent spectral elements.
+        Contents:
+        
+        Integrator.parent = reference to Integrator's parent.  Necessary to find the
+            location of the raw/processed data
+        Integrator.deltav = velocity resolution used for interpolating (km/s)
+        Integrator.interpolatedData = reference to interpolated data
+        Integrator.integratedData = reference to integrated data
+        Integrator.convolvedData = reference to convolved data
+        Integrator.limb_darkening = custom limb darkening coefficients for disk integration 
+            routines	
+        """
         self.parent = parent
         self.deltav = deltav
         self.interpolated = parent.interpolatedData  # interpolated to uniform wl grid
@@ -1399,20 +1402,74 @@ class Integrator( object ):
         self.limb_darkening = limb_darkening
 
 class TennisBall( Integrator ):
+    """
+    TennisBall - inherits from Integrator
+    
+    TennisBall is used to handle data processing from the normal, non-magnetic
+    Moog.  Tennis balls are all one color (I know, I know, except for the seam)
+    and the scalar version of Moog produces disk-averaged spectra.  There is
+    no need to actually process the output of Moog, so the diskInt, resample
+    """
     def loadData(self):
+        """
+        TennisBall.loadData()
+        
+        placeholder function.  Since no data processing is necessary,
+        nothing is done.
+        """
         return
 
-    def diskInt(self, vsini = 0.0):
+    def diskInt(self):
+        """
+        TennisBall.diskInt()
+        
+        Copies the first entry in the parent.rawData list to the list of 
+        integrated spectra.
+        
+        Since the TennisBall object is used with Moog-produced disk-averaged
+        spectra, no processing is performed.
+        """
         self.integrated.append(self.parent.rawData[0])
 
-    def resample(self, vsini=0.0, R=0, observedWl=None):
-        self.convolved.append(self.parent.rawData[0].resample(vsini=vsini, R=R, observedWl=observedWl))
+    def resample(self, R=0, observedWl=None):
+        """
+        TennisBall.resample(R=0, observedWl=None)
+        
+        Resamples the first entry in the list of integrated spectra and 
+        saves the result in the list of convolved spectra.
+        """
+        self.convolved.append(self.integrated[0].resample(R=R, observedWl=observedWl))
 
     def yank(self, vsini=0.0, R=0.0, observedWl = None, keySignature="CONVOLVED"):
-        return self.convolved[0]
+        """
+        TennisBall.yank(vsini=0.0, R=0.0, observedWl = None, 
+               keySignature= "RAW", "INTEGRATED", "CONVOLVED")
+        """
+        if keySignature == "CONVOLVED":
+            return self.convolved[0]
+        if keySignature == "RAW":
+            return self.parent.rawData[0]
+        if keySignature == "INTEGRATED":
+            return self.integrated[0]
 
 class BeachBall( Integrator ):
+    """
+    A BeachBall object is an extension of the Integrator class and is used to
+    handle MoogStokes output generated with the MoogStokes parameter diskflag=1
+    
+    The case of the BeachBall disk integration algorithm divides the stellar surface into
+    N 
+    """
     def loadData(self):
+        """
+        BeachBall.loadData()
+        
+        Loads raw data from the parent Moog960.SyntheticPhrase.  Then, 
+        interpolates each emergent spectra to the wavelength spacing denoted
+        by the velocity resolution (BeachBall.deltav), weighting each
+        slice by a limb darkening coefficient.  The interpolated and weighted
+        emergent fluxes are then stored in the interpolated list
+        """
         c = 3e5              #km/s
         phi = []
         mu = []
@@ -1441,9 +1498,13 @@ class BeachBall( Integrator ):
                     raw.flux_I/raw.continuum, s=0)
             fV = scipy.interpolate.UnivariateSpline(raw.wl, 
                     raw.flux_V/raw.continuum, s=0)
-            self.interpolated.append(Spectrum(wl=newWl, I = fI(newWl)*limb_darkening[-1], V = fV(newWl)*limb_darkening[-1],
-                continuum = numpy.ones(len(newWl))*limb_darkening[-1],
+            self.interpolated.append(Spectrum(wl=newWl, I = fI(newWl)*limb_darkening[-1],
+                V = fV(newWl)*limb_darkening[-1], continuum = numpy.ones(len(newWl))*limb_darkening[-1],
                 header = raw.header.copy(), spectrum_type='INTERPOLATED'))
+                
+            """
+            Probably should do something with the labels here...
+            """
 
         self.limb_darkening = numpy.array(limb_darkening)
         self.phi = numpy.array(phi)
@@ -1454,6 +1515,11 @@ class BeachBall( Integrator ):
 
     def diskInt(self, vsini=0.0):
         """
+        BeachBall.diskInt(vsini=0.0)
+        
+        Input:
+            vsini [float] = rotational velocity * sin (inclination) (in km/s)
+        
         Returns:
             True:       if the requested VSINI disk integrated spectrum
                         did not already exist and had to be created
@@ -1479,7 +1545,12 @@ class BeachBall( Integrator ):
         self.integrated.append(Spectrum(wl=self.interpolated[0].wl, I=I, V=V, header=header,
              spectrum_type='DISK INTEGRATED'))
         return True
+        
+        """
+        Probably should do something with the labels here
+        """
 
+    """
     def findVsini(self, vsini):
         for integrated in self.integrated:
             if numpy.abs(integrated.header.get('VSINI') - vsini) < 0.01:
@@ -1489,9 +1560,14 @@ class BeachBall( Integrator ):
                 (vsini))
         #self.diskInt(vsini=vsini)
         #return self.integrated[-1]
+    """
 
     def resample(self, vsini=0.0, R=0, observedWl=None):
         """
+        BeachBall.resample(vsini=0.0, R=0, observedWl=None)
+        
+        Resample 
+        
         Returns:
             retval : List of strings containing types of spectra created
                      "INTEGRATED" - If disk-integrated spectra with desired VSINI

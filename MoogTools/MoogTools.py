@@ -244,7 +244,7 @@ class MoogStokes( object ):
                 header.set('PHI_ANGLE', float('%.4f'% self.phi_angle[i]))
                 header.set('MU', float('%.4f'%self.mus[i]))
                 header.set('DISKFLAG', self.diskflag)
-                header.set('SPECTRUM_TYPE', 'Individual Emergent Spectrum')
+                header.set('SPECTRUM_TYPE', 'BeachBall Emergent Spectrum')
                 self.Spectra.append(SpectralTools.Spectrum(wl = [],
                     I = [], Q = [], U = [], V = [], continuum = [], header=header, 
                     spectrum_type='MOOG EMERGENT'))
@@ -258,7 +258,7 @@ class MoogStokes( object ):
                 header.set('POSANGLE', float('%.4f' % self.position_angle))
                 header.set('MU', float('%.4f'%self.mus[i]))
                 header.set('DISKFLAG', self.diskflag)
-                header.set('SPECTRUM_TYPE', 'Individual Emergent Spectrum')
+                header.set('SPECTRUM_TYPE', 'DiskoBall Emergent Spectrum')
                 self.Spectra.append(SpectralTools.Spectrum(wl = [],
                     I = [], Q = [], U = [], V = [], continuum = [], header=header, 
                     spectrum_type='MOOG EMERGENT'))
