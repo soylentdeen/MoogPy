@@ -11,6 +11,11 @@ import string
 import random
 
 class SpectrumError( Exception ):
+	"""
+	SpectrumError
+	
+	Raised on execptions within Spectrum objects
+	"""
     def __init__(self, value, errmsg):
         self.value = value
         self.message = {}
@@ -18,6 +23,7 @@ class SpectrumError( Exception ):
         self.message[1] = "Failure loading Processed Data!! %s" % errmsg
         self.message[2] = "Failure calculating Equivalent Widths! %s" % errmsg
         self.message[3] = "Failure Convolving Spectrum! %s" % errmsg
+        self.message[4] = "Failure Calculating Difference Spectrum! %s" % errmsg
 
     def __str__(self):
         return repr(self.message[self.value])
@@ -964,7 +970,8 @@ class Spectrum( object ):
         """
         Spectrum.rotate(angle=0.0, wlPoint = None)
         
-        rotate rotates the 
+        This routine rotates the spectra, to mimic errors in the continuum
+             determination.
         angle = arctan(rise/run).
 
         Units are continuum/angstrom
@@ -997,6 +1004,14 @@ class Spectrum( object ):
 
 
     def __sub__(self, other):
+		"""
+		Spectrum.__sub__(other)
+		
+		__sub__ overloads the subtraction operator.  It subtracts one spectrum 
+		from the other
+		
+		subtracted = Spectrum - other
+		"""
         overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
         overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl)])
         overlap_self = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
@@ -1024,6 +1039,14 @@ class Spectrum( object ):
                 spectrum_type="DIFFERENCE")
 
     def __div__(self, factor):
+		"""
+		Spectrum.__div__(factor)
+		
+		__div__ overloads the division operator.  It returns a spectrum object
+		divided by the scalar factor
+		
+		divided = Spectrum/factor
+		"""
         I = None
         Q = None
         U = None
@@ -1046,15 +1069,23 @@ class Spectrum( object ):
 
     def diff_spectra(self, other, pad=False):
         '''
+        Spectrum.diff_spectrum(other, pad=False)
+        
+        diff_spectrum computes the difference between this spectrum and another
+        
+        other = Spectrum object containing the comparison spectrum
+        pad = Boolean determining whether or not the difference spectrum should
+            be zero-padded
         '''
-        #if self.R != other.R:
-        #    print("ERROR!  The resolutions of the two spectra are not compatible!")
-        #    return
+        if self.R != other.R:
+            errmsg = "The resolutions of the two spectra are not compatible!"
+            raise SpectrumError(4, errmsg)
 
         overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
         overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl)])
         overlap = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
 
+        """
         if (self.flux_I != None) & (other.flux_I != None):
             I = scipy.interpolate.splrep(other.wl, other.flux_I)
         if (self.flux_Q != None) & (other.flux_Q != None):
@@ -1064,26 +1095,62 @@ class Spectrum( object ):
         if (self.flux_V != None) & (other.flux_V != None):
             V = scipy.interpolate.splrep(other.wl, other.flux_V)
         if (self.continuum != None) & (other.continuum != None):
-            continuum = scipy.interpolate.splrep(other.wl, other.flux_V)
+            continuum = scipy.interpolate.splrep(other.wl, other.continuum)
+        """
         if pad:
-            retval_I = numpy.zeros(len(self.wl))
-            retval_I[overlap] = self.flux_I[overlap] - scipy.interpolate.splev(self.wl[overlap],I)
-            return Spectrum(wl=self.wl, I=retval_I, header=self.header,
+            if (self.flux_I != None) & (other.flux_I != None):
+                I = scipy.interpolate.splrep(other.wl, other.flux_I)
+				retval_I = numpy.zeros(len(self.wl))
+                retval_I[overlap] = self.flux_I[overlap] - scipy.interpolate.splev(self.wl[overlap],I)
+            else:
+				retval_I = None
+            if (self.flux_Q != None) & (other.flux_Q != None):
+                Q = scipy.interpolate.splrep(other.wl, other.flux_Q)
+				retval_Q = numpy.zeros(len(self.wl))
+                retval_Q[overlap] = self.flux_Q[overlap] - scipy.interpolate.splev(self.wl[overlap],Q)
+            else:
+				retval_Q = None
+            if (self.flux_U != None) & (other.flux_U != None):
+                U = scipy.interpolate.splrep(other.wl, other.flux_U)
+				retval_U = numpy.zeros(len(self.wl))
+                retval_U[overlap] = self.flux_U[overlap] - scipy.interpolate.splev(self.wl[overlap],U)
+            else:
+				retval_U = None
+            if (self.flux_V != None) & (other.flux_V != None):
+                V = scipy.interpolate.splrep(other.wl, other.flux_V)
+				retval_V = numpy.zeros(len(self.wl))
+                retval_V[overlap] = self.flux_V[overlap] - scipy.interpolate.splev(self.wl[overlap],V)
+            else:
+				retval_V = None
+            if (self.continuum != None) & (other.continuum != None):
+                continuum = scipy.interpolate.splrep(other.wl, other.continuum)
+				retval_continuum = numpy.zeros(len(self.wl))
+                retval_continuum[overlap] = self.continuum[overlap] - scipy.interpolate.splev(self.wl[overlap],continuum)
+            else:
+				retval_continuum = None
+		    return Spectrum(wl=self.wl, I=retval_I, Q=retval_Q, U=retval_U,
+		           V=retval_V, continuum=retval_continuum, header=self.header,
                    spectrum_type='DIFFERENCE')
         else:
+			"""
+			To be consistent, this case should return a Spectrum object.
+			"""
             return numpy.array(x1)[overlap], numpy.array(y1)[overlap] - scipy.interpolate.splev(x1[overlap],y)
 
     def blend(self, other, fraction):
         """
-        Input:
-            other : [Spectrum] - the other spectrum
-            fraction : [float] - the ratio of blending, obeying the limits:
-                    0 - all Other spectrum
+        blended = Spectrum.blend(other, fraction)
+        
+        Spectrum.blend returns a linear blend of the current spectrum with the other
+              Spectrum object weighted by the scalar fraction
+              
+        other : [Spectrum] - the other spectrum
+        fraction : [float] - the ratio of blending, obeying the limits:
+                    0 - all other spectrum
                     0.5 - equal blend
                     1 - all this spectrum
 
-        Returns:
-           blended: [Spectrum] - the blended spectrum
+        The function returns a Spectrum object containing the blended spectrum
         """
         overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
         overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl)])
@@ -1116,6 +1183,20 @@ class Spectrum( object ):
                         spectrum_type="BLENDED")
     
     def calc_EW(self, wlStart, wlStop, findContinuum=False):
+		"""
+		EW = Spectrum.calc_EW(wlStart, wlStop, findContinuum=False)
+		
+		calc_EW calculates the equivalent width of the Spectrum object between the 
+		     given start and stop wavelengths.
+		     
+		wlStart [float] = start of the EW interval.  Must be same units as the
+		     Spectrum.wl array
+		wlStop [float] = stop of the EW interval.  Must be same units as the
+		     Spectrum.wl array
+		findContinuum [Boolean] = Whether or not to attempt to automatically find
+		     the continuum.  Should probably only be used if Spectrum.flux_I is 
+		     not normalized
+		"""
         if (wlStart > self.wl[-1]) or (wlStop < self.wl[0]):
             raise SpectrumError(2, 'Wavelength Regions do not overlap!')
 
@@ -1124,12 +1205,19 @@ class Spectrum( object ):
         if findContinuum:
             cont *= numpy.median(self.flux_I[bm])
             print "%.4f - continuum level" % numpy.median(self.flux_I[bm])
-            #print asdf
         num = scipy.integrate.simps(self.flux_I[bm], self.wl[bm])
         denom = scipy.integrate.simps(cont, self.wl[bm])
         return (denom-num)
 
     def mergeSpectra(self, second=None):
+		"""
+		merged = Spectrum.mergeSpectra(second=None)
+		
+		Spectrum.mergeSpectra merges the spectrum with another spectrum which
+		    covers a different spectral region.
+		    
+		second [Spectrum] = Spectrum object to be merged
+		"""
         if second == None:
             return self
 
@@ -1272,6 +1360,29 @@ class ObservedSpectrum ( object ):
         return self.observed
 
 class Integrator( object ):
+	"""
+	Integrator(parent=None, deltav=0.1, limb_darkening=None)
+	
+	An Integrator object handles the interpolating, integrating, and
+	    convolving of raw data produced by MoogStokes
+	    
+	Input:
+	    parent [Moog960.SyntheticPhrase] = reference to the Integrator's parent
+	    deltav [float] = kernel size used for interpolating (km/s)
+	    limb_darkening [numpy.array(float)] = custom limb darkening coefficients for
+	        the disk integration routines.  There should be as many coefficients as 
+	        there are unique emergent spectral elements.
+	Contents:
+	
+	Integrator.parent = reference to Integrator's parent.  Necessary to find the
+	    location of the raw/processed data
+	Integrator.deltav = kernel size used for interpolating (km/s)
+	Integrator.interpolatedData = reference to interpolated data
+	Integrator.integratedData = reference to integrated data
+	Integrator.convolvedData = reference to convolved data
+    Integrator.limb_darkening = custom limb darkening coefficients for disk integration 
+        routines	
+	"""
     def __init__(self, parent=None, deltav = 0.1, limb_darkening=None):
         self.parent = parent
         self.deltav = deltav
@@ -1285,7 +1396,7 @@ class Integrator( object ):
         for convol in self.convolved:
             if convol.wl == None:
                 convol.loadData()
-        self.limb_darkening = None
+        self.limb_darkening = limb_darkening
 
 class TennisBall( Integrator ):
     def loadData(self):
