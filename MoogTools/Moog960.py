@@ -9,21 +9,55 @@ import matplotlib.lines as Lines
 import time
 
 class Label( object ):
+    """
+    Label
+    
+    A Label contains information about a Spectrum, as well as a reference
+    to the spectrum.
+    
+    Parameters are stored in a dictionary object called 'parameters'
+    
+    The reference to the Spectrum is stored in an object called 'reference'
+    """
     def __init__(self, parameters, reference = None):
         self.parameters = parameters
         self.reference = reference
 
 
     def addReference(self, reference):
+        """
+        Label.addReference(reference)
+        
+        Adds/replaces a reference to the label.
+        
+        reference [SpectralTools.Spectrum] = object referenced by the Label
+        """
         self.reference = reference
 
     def copy(self):
+        """
+        Label.copy()
+        
+        provides a copy of the Label
+        """
+        
         parameters = {}
         for key in self.parameters.keys():
             parameters[key] = self.parameters[key]
-        return Label(parameters)
+        return Label(parameters, self.reference)
 
     def merge(self, other):
+        """
+        merged = Label.merge(other)
+        
+        Merges the current label with another label.  The merge function
+        is used when spectra from the same underlying model (Teff, log g,
+        B-field, Resolving power, etc...) are merged together.  If the
+        spectra referred to by the two labels do not have the same underlying
+        model, a Moog960 Error is thrown.
+        
+        other [Label] = other label.
+        """
         parameters = {}
         for key in self.parameters.keys():
             if not(key in ['WLSTART', 'WLSTOP', 'SELECTED', 'LABEL']):
@@ -41,6 +75,11 @@ class Label( object ):
         return Label(parameters)
 
     def __eq__(self, other):
+        """
+        Label.__eq__(other)
+        
+        Determines whether or not two labels are equal to one another.
+        """
         if other == None:
             return False
         for key in self.parameters.keys():

@@ -1106,33 +1106,33 @@ class Spectrum( object ):
                 retval_I = numpy.zeros(len(self.wl))
                 retval_I[overlap] = self.flux_I[overlap] - scipy.interpolate.splev(self.wl[overlap],I)
             else:
-				retval_I = None
+                retval_I = None
             if (self.flux_Q != None) & (other.flux_Q != None):
                 Q = scipy.interpolate.splrep(other.wl, other.flux_Q)
                 retval_Q = numpy.zeros(len(self.wl))
                 retval_Q[overlap] = self.flux_Q[overlap] - scipy.interpolate.splev(self.wl[overlap],Q)
             else:
-				retval_Q = None
+                retval_Q = None
             if (self.flux_U != None) & (other.flux_U != None):
                 U = scipy.interpolate.splrep(other.wl, other.flux_U)
                 retval_U = numpy.zeros(len(self.wl))
                 retval_U[overlap] = self.flux_U[overlap] - scipy.interpolate.splev(self.wl[overlap],U)
             else:
-				retval_U = None
+                retval_U = None
             if (self.flux_V != None) & (other.flux_V != None):
                 V = scipy.interpolate.splrep(other.wl, other.flux_V)
                 retval_V = numpy.zeros(len(self.wl))
                 retval_V[overlap] = self.flux_V[overlap] - scipy.interpolate.splev(self.wl[overlap],V)
             else:
-				retval_V = None
+                retval_V = None
             if (self.continuum != None) & (other.continuum != None):
                 continuum = scipy.interpolate.splrep(other.wl, other.continuum)
                 retval_continuum = numpy.zeros(len(self.wl))
                 retval_continuum[overlap] = self.continuum[overlap] - scipy.interpolate.splev(self.wl[overlap],continuum)
             else:
-				retval_continuum = None
+                retval_continuum = None
             return Spectrum(wl=self.wl, I=retval_I, Q=retval_Q, U=retval_U,
-		           V=retval_V, continuum=retval_continuum, header=self.header,
+                   V=retval_V, continuum=retval_continuum, header=self.header,
                    spectrum_type='DIFFERENCE')
         else:
             """
@@ -1566,13 +1566,15 @@ class BeachBall( Integrator ):
         """
         BeachBall.resample(vsini=0.0, R=0, observedWl=None)
         
-        Resample 
+        Resample resamples the current spectrum to a desired resolving power
         
         Returns:
             retval : List of strings containing types of spectra created
                      "INTEGRATED" - If disk-integrated spectra with desired VSINI
                                 does not exist, it must be created
                      "CONVOLVED" - If 
+                     
+        This should be done with the Labels.
         """
         retval = []
         for convol in self.convolved:
