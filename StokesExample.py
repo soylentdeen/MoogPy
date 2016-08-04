@@ -7,8 +7,8 @@ fig.clear()
 ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
 moogPyConfigFile = 'StokesExample.cfg'
-Moog = MoogTools.MoogStokesSpectrum(moogPyConfigFile, fileBase = 'example')
-Moog.run(save=True, saveRaw=True)
+Moog = MoogTools.MoogStokes(moogPyConfigFile, fileBase = 'example')
+Moog.run(saveRaw=True)
 
 
 ax.plot(wavelength, flux)

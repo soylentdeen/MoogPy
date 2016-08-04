@@ -1,4 +1,4 @@
-import pyfits
+import astropy.io.fits as pyfits
 import AstroUtils
 import glob
 import MoogTools
@@ -552,8 +552,8 @@ class SyntheticPhrase( Phrase ):
             hdr = spectrum.header.copy()
             SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
                     header=hdr)
-            SpectrumHDU.name = "%.4fA - %.4fA PHI=%.3f MU=%.3f DELTAV=%.3f" \
-                (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get("PHI_ANGLE"), hdr.get("MU"), hdr.get('DELTAV'))
+            SpectrumHDU.name = "%.4fA - %.4fA PHI=%.3f MU=%.3f DELTAV=%.3f" % \
+                     (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get("PHI_ANGLE"), hdr.get("MU"), hdr.get('DELTAV'))
 
             HDUs.append(SpectrumHDU)
 
