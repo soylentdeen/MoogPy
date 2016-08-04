@@ -19,12 +19,18 @@ class Label( object ):
     
     The reference to the Spectrum is stored in an object called 'reference'
     """
-    def __init__(self, parameters, reference = None):
+    def __init__(self, parameters, reference = None, Spectrum = None, Phrase = None,
+            Melody = None, Score = None):
         self.parameters = parameters
         self.reference = reference
+        self.Spectrum = Spectrum
+        self.Phrase = Phrase
+        self.Melody = Melody
+        self.Score = Score
 
 
-    def addReference(self, reference):
+    def addReference(self, Spectrum=None, Phrase=None, Melody=None, Score=None,
+            reference=None):
         """
         Label.addReference(reference)
         
@@ -32,7 +38,16 @@ class Label( object ):
         
         reference [SpectralTools.Spectrum] = object referenced by the Label
         """
-        self.reference = reference
+        if Spectrum != None:
+            self.Spectrum = Spectrum
+        if Phrase != None:
+            self.Phrase = Phrase
+        if Melody != None:
+            self.Melody = Melody
+        if Score != None:
+            self.Score = Score
+        if reference != None:
+            self.reference = reference
 
     def copy(self):
         """
@@ -44,7 +59,8 @@ class Label( object ):
         parameters = {}
         for key in self.parameters.keys():
             parameters[key] = self.parameters[key]
-        return Label(parameters, self.reference)
+        return Label(parameters, reference = self.reference, Spectrum = self.Spectrum,
+                Phrase = self.Phrase, Melody = self.Melody, Score = self.Score)
 
     def merge(self, other):
         """
@@ -286,7 +302,7 @@ class SyntheticPhrase( Phrase ):
             convolvedData = []
             
             rawLabels = []
-            rawLabels.append(Label(parameters, reference=rawData[-1]))
+            rawLabels.append(Label(parameters, reference=rawData[-1], Phrase=self))
             interpolatedLabels = []
             integratedLabels = []
             convolvedLabels = []
@@ -300,7 +316,8 @@ class SyntheticPhrase( Phrase ):
 
             rawLabels = []
             interpolatedLabels = []
-            interpolatedLabels.append(Label(parameters, reference = interpolatedData[-1]))
+            interpolatedLabels.append(Label(parameters, reference = interpolatedData[-1],
+                Phrase=self))
             integratedLabels = []
             convolvedLabels = []
         elif sourceType == "INTEGRATED":
@@ -314,7 +331,8 @@ class SyntheticPhrase( Phrase ):
             rawLabels = []
             interpolatedLabels = []
             integratedLabels = []
-            integratedLabels.append(Label(parameters, reference = integratedData[-1]))
+            integratedLabels.append(Label(parameters, reference = integratedData[-1],
+                Phrase=self))
             convolvedLabels = []
         elif sourceType == "CONVOLVED":
             rawData = []
@@ -328,7 +346,8 @@ class SyntheticPhrase( Phrase ):
             interpolatedLabels = []
             integratedLabels = []
             convolvedLabels = []
-            convolvedLabels.append(Label(parameters, reference=convolvedData[-1]))
+            convolvedLabels.append(Label(parameters, reference=convolvedData[-1], 
+                Phrase=self))
 
         return self(rawData=rawData, interpolatedData=interpolatedData, 
                 integratedData=integratedData, convolvedData=convolvedData, 
@@ -533,7 +552,7 @@ class SyntheticPhrase( Phrase ):
             hdr = spectrum.header.copy()
             SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
                     header=hdr)
-            SpectrumHDU.name = "%.4fA - %.4fA PHI=%.3f MU=%.3f DELTAV=%.3f" %
+            SpectrumHDU.name = "%.4fA - %.4fA PHI=%.3f MU=%.3f DELTAV=%.3f" \
                 (hdr.get("wlStart"), hdr.get("wlStop"), hdr.get("PHI_ANGLE"), hdr.get("MU"), hdr.get('DELTAV'))
 
             HDUs.append(SpectrumHDU)
@@ -1309,9 +1328,9 @@ class Score( object ):
            Moog960::SyntheticMelody::master()
            This routine merges all phrases into a single master phrase
         """
-        compositePhrase = SpectralTools.Spectrum()
-        self.selectMelodies(selectAll=True)
-        self.selectEnsemble(selectedLabels=selectedLabels, keySignature=keySignature)
+        #compositePhrase = SpectralTools.Spectrum()
+        #self.selectMelodies(selectAll=True)
+        #self.selectEnsemble(selectedLabels=selectedLabels, keySignature=keySignature)
         for synthetic in self.syntheticMelodies:
             synthetic.master(keySignature=keySignature)
 

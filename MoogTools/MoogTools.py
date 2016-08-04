@@ -367,7 +367,7 @@ class ParameterFile( object ):
                       'damping':1,
                       'freeform':2,
                       'flux/int':0,
-                      'diskflag':0,
+                      'diskflag':1,
                       'testflag':0}
         self.file_labels = {'summary_out':'./Output/summary.out',
                             'standard_out':'./Output/out1',
@@ -1188,8 +1188,8 @@ class VALD_Line( Spectral_Line ):
                 self.g_lo = 0.0
                 self.g_hi = 0.0
    
-        self.lower = Observed_Level(self.J_lo, self.g_lo, self.expot_lo)
-        self.upper = Observed_Level(self.J_hi, self.g_hi,
+        self.lower = Energy_Level(self.J_lo, self.g_lo, self.expot_lo)
+        self.upper = Energy_Level(self.J_hi, self.g_hi,
                 self.expot_lo+12400.0/self.wl)
         self.zeeman = {}
         self.zeeman["NOFIELD"] = [self.wl,self.loggf]
@@ -1298,8 +1298,8 @@ class New_VALD_Line( Spectral_Line ):
                     print("Upper state of line at %.3f failed!" % self.wl)
                     self.g_hi = 0.0
 
-        self.lower = Observed_Level(self.J_lo, self.g_lo, self.expot_lo)
-        self.upper = Observed_Level(self.J_hi, self.g_hi,
+        self.lower = Energy_Level(self.J_lo, self.g_lo, self.expot_lo)
+        self.upper = Energy_Level(self.J_hi, self.g_hi,
                 self.expot_lo+12400.0/self.wl)
         self.zeeman = {}
         self.zeeman["NOFIELD"] = [self.wl,self.loggf]
@@ -1445,7 +1445,7 @@ class zeemanTransition( object):
         return ( (self.wavelength == other.wavelength) &
                 (self.m_up == other.m_up) & (self.m_low == other.m_low) )
 
-class Observed_Level( object ):
+class Energy_Level( object ):
     def __init__(self, J, g, E):
         self.E = E
         self.J = J

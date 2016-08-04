@@ -638,6 +638,9 @@ class Spectrum( object ):
         self.header.set('SPECTRUM_ID', ''.join(random.choice(string.ascii_letters)
             for _ in range(10)))
         self.header.set('SPECTRUM_TYPE', spectrum_type)
+    
+    def addLabel(self, label=None):
+        self.label = label
 
     def extractData(self, data):
         """
