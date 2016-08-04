@@ -11,7 +11,7 @@ Moog = MoogTools.MoogStokes(moogPyConfigFile, fileBase = 'example')
 Moog.run(saveRaw=True)
 
 
-ax.plot(wavelength, flux)
+ax.plot(Moog.Phrase.rawData[0].wl, Moog.Phrase.rawData[0].flux_I)
 
 fig.show()
 
