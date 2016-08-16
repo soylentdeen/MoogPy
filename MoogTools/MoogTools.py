@@ -5,7 +5,7 @@ import os
 import sys
 import SpectralTools
 import AstroUtils
-import pyfits
+import astropy.io.fits as pyfits
 import time
 import Moog960
 

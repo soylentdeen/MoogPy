@@ -2,7 +2,7 @@ import MoogTools
 import sys
 import AstroUtils
 import os
-import pyfits
+import astropy.io.fits as pyfits
 import SpectralTools
 import numpy
 import random
