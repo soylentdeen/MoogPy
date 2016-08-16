@@ -229,7 +229,10 @@ class MoogStokes( object ):
         for i in range(self.ncells):
             header = pyfits.Header()
             header.set('CREATION_TIME', time.ctime())
-            header.set('CREATION_USER', os.getlogin())
+            try:
+               header.set('CREATION_USER', os.getlogin())
+            except:
+               header.set('CREATION_USER', os.getenv('USER'))
             header.set('CREATION_MACHINE', os.uname()[1])
             header.set('MOOGVERSION', self.MoogPy.charstuff.moogversion.tostring())
             header.set('WLSTART', self.config["wlStart"])
