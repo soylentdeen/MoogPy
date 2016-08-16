@@ -13,7 +13,7 @@ class Label( object ):
     Label
     
     A Label contains information about a Spectrum, as well as a reference
-    to the spectrum. 
+    to the spectrum.
     
     Parameters are stored in a dictionary object called 'parameters'
     
