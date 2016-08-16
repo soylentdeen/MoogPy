@@ -3,7 +3,7 @@ import scipy.interpolate
 import scipy.optimize
 import scipy.integrate
 import numpy
-import pyfits
+import astropy.io.fits as pyfits
 import string
 import glob
 import os
@@ -1498,9 +1498,9 @@ class BeachBall( Integrator ):
             limb_darkening.append(1.0-(1.0-mu[-1]**(self.alpha)))
             cell.append(raw.header.get('CELL'))
             fI = scipy.interpolate.UnivariateSpline(raw.wl, 
-                    raw.flux_I/raw.continuum, s=0)
+                    numpy.array(raw.flux_I)/numpy.array(raw.continuum), s=0)
             fV = scipy.interpolate.UnivariateSpline(raw.wl, 
-                    raw.flux_V/raw.continuum, s=0)
+                    numpy.array(raw.flux_V)/numpy.array(raw.continuum), s=0)
             self.interpolated.append(Spectrum(wl=newWl, I = fI(newWl)*limb_darkening[-1],
                 V = fV(newWl)*limb_darkening[-1], continuum = numpy.ones(len(newWl))*limb_darkening[-1],
                 header = raw.header.copy(), spectrum_type='INTERPOLATED'))
@@ -1553,7 +1553,7 @@ class BeachBall( Integrator ):
         Probably should do something with the labels here
         """
 
-    """
+    #"""
     def findVsini(self, vsini):
         for integrated in self.integrated:
             if numpy.abs(integrated.header.get('VSINI') - vsini) < 0.01:
@@ -1563,7 +1563,7 @@ class BeachBall( Integrator ):
                 (vsini))
         #self.diskInt(vsini=vsini)
         #return self.integrated[-1]
-    """
+    #"""
 
     def resample(self, vsini=0.0, R=0, observedWl=None):
         """

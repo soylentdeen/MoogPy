@@ -1,4 +1,4 @@
-import astropy.io.fits as pyfits
+import pyfits
 import AstroUtils
 import glob
 import MoogTools
