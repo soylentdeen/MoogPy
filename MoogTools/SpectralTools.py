@@ -553,7 +553,7 @@ def read_3col_spectrum(filename):
 class Spectrum( object ):
     def __init__(self, wl=None, I=None, Q=None, U=None, V=None,
             continuum=None, header=pyfits.Header(), spectrum_type=None,
-            filename=None, ext=None, preserve=False):
+            filename=None, ext=None, preserve=False, label=None):
         """
             Spectrum.__init__(wl=None, I=None, Q=None, U=None, V=None,
             continuum=None, header=pyfits.Header(), spectrum_type=None,
@@ -587,13 +587,14 @@ class Spectrum( object ):
         self.header = header
         self.filename = filename
         self.ext = ext
+        self.label = label
         if spectrum_type != None:
             self.addHistory(spectrum_type=spectrum_type)
         if preserve == True:
             self.preserve(I=I!=None, Q=Q!=None, U=U!=None, V=V!=None, continuum=continuum!=None)
 
     @classmethod
-    def from_file(self, header=None, data=None, filename=None, ext=None):
+    def from_file(self, header=None, data=None, filename=None, ext=None, label=None):
         """
             Spectrum.from_file(header=None, data=None, filename=None, ext=None)
             
@@ -620,7 +621,7 @@ class Spectrum( object ):
                 raise SpectrumError(0, errmsg)
 
         return self(wl=wl, I=I, Q=Q, U=U, V=V, continuum=continuum, header=header,
-                filename=filename, ext=ext)
+                filename=filename, ext=ext, label=label)
 
     def addHistory(self, spectrum_type=""):
         """
@@ -1247,7 +1248,7 @@ class Spectrum( object ):
                 I2[numpy.isnan(I2)] = 0.0
                 I = scipy.interpolate.splrep(x2, I2)
                 Iinterp = scipy.interpolate.splev(x1[overlap], I)
-                mergedI = I1[overlap] + Iinterp
+                mergedI = (I1[overlap] + Iinterp)/2.0
                 new_I = numpy.append(numpy.append(I1[unique1], mergedI), I2[unique2])
             else:
                 new_I = None
@@ -1258,7 +1259,7 @@ class Spectrum( object ):
                 Q2[numpy.isnan(Q2)] = 0.0
                 Q = scipy.interpolate.splrep(x2, Q2)
                 Qinterp = scipy.interpolate.splev(x1[overlap], Q)
-                mergedQ = Q1[overlap] + Qinterp
+                mergedQ = (Q1[overlap] + Qinterp)/2.0
                 new_Q = numpy.append(numpy.append(Q1[unique1], mergedQ), Q2[unique2])
             else:
                 new_Q = None
@@ -1269,7 +1270,7 @@ class Spectrum( object ):
                 U2[numpy.isnan(U2)] = 0.0
                 U = scipy.interpolate.splrep(x2, U2)
                 Uinterp = scipy.interpolate.splev(x1[overlap], U)
-                mergedU = U1[overlap] + Uinterp
+                mergedU = (U1[overlap] + Uinterp)/2.0
                 new_U = numpy.append(numpy.append(U1[unique1], mergedU), U2[unique2])
             else:
                 new_U = None
@@ -1280,7 +1281,7 @@ class Spectrum( object ):
                 V2[numpy.isnan(V2)] = 0.0
                 V = scipy.interpolate.splrep(x2, V2)
                 Vinterp = scipy.interpolate.splev(x1[overlap], V)
-                mergedV = V1[overlap] + Vinterp
+                mergedV = (V1[overlap] + Vinterp)/2.0
                 new_V = numpy.append(numpy.append(V1[unique1], mergedV), V2[unique2])
             else:
                 new_V = None
@@ -1291,18 +1292,10 @@ class Spectrum( object ):
                 C2[numpy.isnan(C2)] = 0.0
                 C = scipy.interpolate.splrep(x2, C2)
                 Cinterp = scipy.interpolate.splev(x1[overlap], C)
-                mergedC = C1[overlap] + Cinterp
+                mergedC = (C1[overlap] + Cinterp)/2.0
                 new_C = numpy.append(numpy.append(C1[unique1], mergedC), C2[unique2])
             else:
                 new_C = None
-                if new_I != None:
-                    new_I /= 2.0
-                if new_Q != None:
-                    new_Q /= 2.0
-                if new_U != None:
-                    new_U /= 2.0
-                if new_V != None:
-                    new_V /= 2.0
         else:
             new_x = numpy.append(x1, x2)
             if (self.flux_I != None) & (second.flux_I != None):
