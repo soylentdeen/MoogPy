@@ -704,8 +704,8 @@ class SyntheticPhrase( Phrase ):
         HDUs = []
         if label != None:
             try:
-                index = self.convolvedLabels.index(label)
-                spectrum = self.processedData.convolved[index]
+                #index = self.convolvedLabels.index(label)
+                spectrum = label.Spectrum
                 hdr = spectrum.header.copy()
                 spectrum.preserve(continuum=False)
                 SpectrumHDU = pyfits.BinTableHDU.from_columns(spectrum.columns,
@@ -800,7 +800,7 @@ class Melody( object ):
         label = text label describing the melody (Teff, logg, B) - obsolete?
     
     """
-    def __init__(self, phrases = [], filename=None, label=None, header=None, parent=None):
+    def __init__(self, phrases = [], filename=None, label=None, header=None, Score=None):
         self.phrases = phrases
         self.header = header
         self.nPhrases = len(self.phrases)
@@ -808,7 +808,7 @@ class Melody( object ):
         self.selectedPhrases = [False for i in range(self.nPhrases)]
         self.muted = True
         self.label = label
-        self.parent = parent
+        self.Score = Score   # Pointer to Score which contains this melody (optional)
         
     def addPhrases(self, phrases=[]):    # WTF?  This doesn't look right
         for phrase in phrases:
@@ -829,16 +829,6 @@ class Melody( object ):
             Nothing
         """
 
-        """
-        # DO SOMETHING WITH THE LABELS and SELECTED!?!?!?!
-        self.selectedPhrases = []
-        for phrase in self.phrases:
-            if selectAll:
-                self.selectedPhrases.append(True)
-            else:
-                self.selectedPhrases.append(phrase.inWlRange(wlStart=wlRange[0],
-                       wlStop=wlRange[1], exact = exact))
-        #"""
         for phrase in self.phrases:
             if selectAll:
                 for convolved in phrase.convolvedData:
@@ -867,12 +857,13 @@ class Melody( object ):
                     filename = basename+"_T%d_G%.2f_B%.2f_R%d_V%.2f.fits" % (
                         self.Teff, self.logg, self.B, R, vsini)
                 print("Recording record \'%s\' to disk" % label.parameters["LABEL"])
-                for i in range(self.nPhrases):
-                    if self.selectedPhrases[i]:
-                       self.phrases[i].saveConvolved(vsini=vsini, R=R,
-                               filename=filename, header=self.header, 
-                               wlStart=label.parameters["WLSTART"], 
-                               wlStop = label.parameters["WLSTOP"])
+                label.parameters["PHRASE"].saveConvolved(label=label)
+                #for i in range(self.nPhrases):
+                #    if self.selectedPhrases[i]:
+                #       self.phrases[i].saveConvolved(vsini=vsini, R=R,
+                #               filename=filename, header=self.header, 
+                #               wlStart=label.parameters["WLSTART"], 
+                #               wlStop = label.parameters["WLSTOP"])
         else:
             for i in range(self.nPhrases):
                 if self.selectedPhrases[i]:
@@ -883,9 +874,9 @@ class Melody( object ):
 
 
 class ObservedMelody( Melody ):
-    def __init__(self, phrases = [], filename=None, label=None, header=None, parent=None):
+    def __init__(self, phrases = [], filename=None, label=None, header=None, Score=None):
         super(ObservedMelody, self).__init__(phrases=phrases, filename=filename, 
-                label=label, header=header, parent=parent)
+                label=label, header=header, Score=Score)
 
     @classmethod
     def fromFile(self, filename=None, label=None, parent=None):
@@ -946,9 +937,9 @@ class ObservedMelody( Melody ):
                            
 
 class SyntheticMelody( Melody ):
-    def __init__(self, phrases = [], filename=None, label=None, header=None, parent=None):
+    def __init__(self, phrases = [], filename=None, label=None, header=None, Score=None):
         super(SyntheticMelody, self).__init__(phrases = phrases, filename=filename,
-                label=label, header=header, parent=parent)
+                label=label, header=header, Score=Score)
         if len(self.phrases) == 0:
             self.loadMelody()
         else:
