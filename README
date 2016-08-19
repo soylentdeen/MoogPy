@@ -4,14 +4,14 @@ Python-Fortran hybrid version of MOOG spectral synthesis code
 # Requirements (Probably not complete, let me know if something complains)
 numpy/scipy
 matplotlib
-pyfits
+astropy
 --NOTE-- Astute observers may note that supermongo is no longer required!! (Sorry, Chris)
 
 
 # Installation
 1) Fork (or download) the repository
 2) Ensure that the MoogPy/MoogTools/ directory is in your PYTHONPATH, or otherwise visible from your python session.  To test, you should be able to import the following libraries: AstroUtils.py, MoogTools.py, and SpectralTools.py
-3) Enter the MoogPy/MoogSource/ directory, and run the recompile.sh script.  The script will compile the FORTRAN part of Moog, wrap it in python, and automatically copy the MoogPy.so file to the MoogPy/MoogTools/ directory
-4) Download the MoogPyData.tar.gz file from http://www.mpia.de/~deen/Software/MoogPy/MoogPy.html, place it in the MoogPy/data/ directory, and unzip it.  It should create 3 directories (AbsorptionLines, Atmospheres, and ObservedSpectra) filled to the brim with useful data.  If you decide to put the data files elsewhere, ensure that the config files (moogPy.cfg and moogPar.cfg) point to the proper directories/files.
-5) Start up python
+3) Enter the MoogPy/MoogSource/ directory, and run the recompileMoogstokes.sh script corresponding to your installation.  If you just want to run individual models, it is sufficient to compile a single shared object (i.e. recompileMoogStokes.sh).  However, if you're going to be doing heavy-duty processing, I recommend to run the recompileMoogStokes_ABCD.sh, which generates four shared object files.  The script will compile the FORTRAN part of Moog, wrap it in python, and automatically copy the MoogPy.so file to the MoogPy/MoogTools/ directory
+4) Unzip the tarballs in the MoogPy/data/ directory.  They should create 2 directories (AbsorptionLines, Atmospheres) filled to the brim with useful data.  If you decide to put the data files elsewhere, ensure that the config files (moogPy.cfg and moogPar.cfg) point to the proper directories/files.
+5) Start up ipython
 6) run StokesExample.py
