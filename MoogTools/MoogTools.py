@@ -427,7 +427,6 @@ class LineList( object ):
         self.parent = parent
         self.MoogPyDataPath = os.environ.get('MOOGPYDATAPATH')
         self.strong_file = self.MoogPyDataPath+config['strong_file']
-        self.molecules = self.MoogPyDataPath+config['molecules']
         self.VALD_list = self.MoogPyDataPath+config['VALD_file']
         self.gf_corrections = self.MoogPyDataPath+config['gf_file']
         self.wlStart = config['wlStart']
@@ -435,7 +434,6 @@ class LineList( object ):
         self.Bfield = config['Bfield']/10.0
         self.sfn = parent.MoogSandbox + config['Strong_FileName']
         self.wfn = parent.MoogSandbox + config['Weak_FileName']
-        self.doMolecules = config['doMolecules']
         self.applyCorrections = config['applyCorrections']
 
         self.readInLineLists()
@@ -453,24 +451,6 @@ class LineList( object ):
 
     def readInLineLists(self):
         self.parse_new_VALD()
-
-        """
-        if self.doMolecules:
-            #     CO
-            self.weakLines = numpy.append(self.weakLines, parse_HITRAN(
-               self.molecules+'05_HITEMP2010new.par', self.wlStart, self.wlStop,
-               self.Bfield, self.gf_corrections, weedout=2.5))
-            #     OH
-            self.weakLines = numpy.append(self.weakLines, parse_HITRAN(
-               self.molecules+'13_HITEMP2010.par', self.wlStart, self.wlStop,
-               self.Bfield, self.gf_corrections))
-
-            #     CN
-            self.weakLines = numpy.append(self.weakLines, parse_Plez_CN(
-               self.molecules+'CN_Plez_linelist.dat', self.wlStart, self.wlStop,
-               self.Bfield, self.gf_corrections))
-
-        #"""
 
     def parse_new_VALD(self):
         pt = periodicTable()
