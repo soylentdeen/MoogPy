@@ -551,7 +551,7 @@ def read_3col_spectrum(filename):
     return x, y, z
 
 class Spectrum( object ):
-    def __init__(self, wl=None, I=None, Q=None, U=None, V=None,
+    def __init__(self, wl=None, I=None, dI=None, Q=None, U=None, V=None,
             continuum=None, header=pyfits.Header(), spectrum_type=None,
             filename=None, ext=None, preserve=False, label=None):
         """
@@ -580,6 +580,7 @@ class Spectrum( object ):
         """
         self.wl = wl
         self.flux_I = I
+        self.dflux_I = dI
         self.flux_Q = Q
         self.flux_U = U
         self.flux_V = V
@@ -591,7 +592,7 @@ class Spectrum( object ):
         if spectrum_type != None:
             self.addHistory(spectrum_type=spectrum_type)
         if preserve == True:
-            self.preserve(I=I!=None, Q=Q!=None, U=U!=None, V=V!=None, continuum=continuum!=None)
+            self.preserve(I=I!=None, dI=dI!=None, Q=Q!=None, U=U!=None, V=V!=None, continuum=continuum!=None)
 
     @classmethod
     def from_file(self, header=None, data=None, filename=None, ext=None, label=None):
@@ -612,6 +613,7 @@ class Spectrum( object ):
         else:
             wl = None
             I = None
+            dI = None
             Q = None
             U = None
             V = None
@@ -620,7 +622,7 @@ class Spectrum( object ):
                 errmsg = "Filename or extension not provided!"
                 raise SpectrumError(0, errmsg)
 
-        return self(wl=wl, I=I, Q=Q, U=U, V=V, continuum=continuum, header=header,
+        return self(wl=wl, I=I, dI=dI, Q=Q, U=U, V=V, continuum=continuum, header=header,
                 filename=filename, ext=ext, label=label)
 
     def addHistory(self, spectrum_type=""):
@@ -662,6 +664,10 @@ class Spectrum( object ):
         except:
             self.flux_I = None
         try:
+            self.dflux_I = data.field('dStokes_I')
+        except:
+            self.dflux_I = None
+        try:
             self.flux_Q = data.field('Stokes_Q')
         except:
             self.flux_Q = None
@@ -699,7 +705,7 @@ class Spectrum( object ):
         self.extractData(data)
         del(data)
 
-    def preserve(self, prepareColumns=True, I=True, Q=False, U=False, V=True, continuum=True):
+    def preserve(self, prepareColumns=True, I=True, dI=False, Q=False, U=False, V=True, continuum=True):
         """
         Spectrum.preserve(prepareColumns=True, I=True, Q=False, U=False, V=True, continuum=True)
         
@@ -737,6 +743,10 @@ class Spectrum( object ):
                 flux_I = pyfits.Column(name='Stokes_I', format='D', 
                         array=numpy.array(self.flux_I))
                 coldefs.append(flux_I)
+            if dI:
+                dflux_I = pyfits.Column(name='dStokes_I', format='D',
+                        array=numpy.array(self.dflux_I))
+                coldefs.append(dflux_I)
             if Q:
                 flux_Q = pyfits.Column(name='Stokes_Q', format='D', 
                         array=numpy.array(self.flux_Q))
@@ -772,7 +782,10 @@ class Spectrum( object ):
         **kwargs = arguments to pass to the plot command
        """
         if I:
-            ax.plot(self.wl, self.flux_I, **kwargs)
+            if self.dflux_I != None:
+                ax.errorbar(self.wl, self.flux_I, yerr=self.dflux_I, **kwargs)
+            else:
+                ax.plot(self.wl, self.flux_I, **kwargs)
         if Q:
             ax.plot(self.wl, self.flux_Q, **kwargs)
         if U:
@@ -1248,9 +1261,40 @@ class Spectrum( object ):
                 I2[numpy.isnan(I2)] = 0.0
                 I = scipy.interpolate.splrep(x2, I2)
                 Iinterp = scipy.interpolate.splev(x1[overlap], I)
-                mergedI = (I1[overlap] + Iinterp)/2.0
+                if (self.dflux_I != None) & (second.dflux_I != None):
+                    dI1 = self.dflux_I
+                    dI2 = second.dflux_I
+                    dI1[numpy.isnan(dI1)] = 1000000.0
+                    dI2[numpy.isnan(dI2)] = 1000000.0
+                    dI1[I1==0.0] = 100000000.0
+                    dI2[I2==0.0] = 100000000.0
+                    dI = scipy.interpolate.splrep(x2, dI2)
+                    dIinterp = scipy.interpolate.splev(x1[overlap], dI)
+                    """
+                    import matplotlib.pyplot as pyplot
+                    fig = pyplot.figure(1)
+                    fig.clear()
+                    ax1 = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+                    #print dIinterp
+                    print overlap_start, overlap_stop
+                    #raw_input()
+                    #"""
+                    mergedI = (I1[overlap]/dI1[overlap] + Iinterp/dIinterp)/(1.0/dI1[overlap]+1.0/dIinterp)
+                    merged_dI = 1.0/(1.0/dI1[overlap] + 1.0/dIinterp)
+                    new_dI = numpy.append(numpy.append(dI1[unique1], merged_dI), dI2[unique2])
+                    """
+                    ax1.errorbar(x1[overlap], I1[overlap], yerr=dI1[overlap], color = 'r')
+                    ax1.errorbar(x2, I2, yerr=dI2, color = 'b')
+                    ax1.errorbar(x1[overlap], mergedI, yerr=merged_dI, color = 'g')
+                    fig.show()
+                    raw_input()
+                    #"""
+                else:
+                    mergedI = (I1[overlap] + Iinterp)/2.0
+                    new_dI = None
                 new_I = numpy.append(numpy.append(I1[unique1], mergedI), I2[unique2])
             else:
+                new_dI = None
                 new_I = None
             if (self.flux_Q != None) & (second.flux_Q != None):
                 Q1 = self.flux_Q
@@ -1304,8 +1348,17 @@ class Spectrum( object ):
                 I1[numpy.isnan(I1)] = 0.0
                 I2[numpy.isnan(I2)] = 0.0
                 new_I = numpy.append(I1, I2)
+                if (self.dflux_I != None) & (second.dflux_I != None):
+                    dI1 = self.dflux_I
+                    dI2 = second.dflux_I
+                    dI1[numpy.isnan(dI1)] = 0.0
+                    dI2[numpy.isnan(dI2)] = 0.0
+                    new_dI = numpy.append(dI1, dI2)
+                else:
+                    new_dI = None
             else:
                 new_I = None
+                new_dI = None
             if (self.flux_Q != None) & (second.flux_Q != None):
                 Q1 = self.flux_Q
                 Q2 = second.flux_Q
@@ -1346,7 +1399,7 @@ class Spectrum( object ):
             second.header.get("WLSTOP")]))
 
 
-        retval = Spectrum(wl=new_x, I = new_I, Q = new_Q, U = new_U, V = new_V, 
+        retval = Spectrum(wl=new_x, I = new_I, dI = new_dI, Q = new_Q, U = new_U, V = new_V, 
                 continuum = new_C, spectrum_type='MERGED', header=header)
 
         return retval
