@@ -767,6 +767,9 @@ class SyntheticPhrase( Phrase ):
 
         HDUs = []
         if not(label == None):
+            spectrum = label.Spectrum
+            hdr = spectrum.header.copy()
+            spectrum.preserve(continuum=False)
             try:
                 #index = self.convolvedLabels.index(label)
                 spectrum = label.Spectrum
@@ -1841,12 +1844,16 @@ class Score( object ):
         print rv
         blended, blendedLabels = self.blend(desiredParameters=desiredParams,
                   appendTheBlend=False)
+        print "Blend Finished!"
         blendedLabels[0].Spectrum.rv(rv)
+        print "RV Finished!"
         blendedLabels[0].Spectrum.bin(self.compositeObservedLabel.Spectrum.wl)
+        print "Binning Finished!"
         difference = blendedLabels[0].Spectrum - self.compositeObservedLabel.Spectrum
+        print "Difference Finished!"
         lnlike = -0.5*numpy.sum( 
                   (difference/self.compositeObservedLabel.Spectrum).flux_I**2.0)
-
+        print "ln_likelihood Finished!"
         print lnlike
         if ax != None:
             ax.clear()

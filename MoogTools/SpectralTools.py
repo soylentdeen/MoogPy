@@ -924,7 +924,7 @@ class Spectrum( object ):
         pad [None/float] pad contains the value to be stored in the flux points
              which are not spanned by a complete bin.
         """
-        deltaWl = numpy.median(numpy.diff(newWl))/10.0
+        deltaWl = numpy.median(numpy.diff(newWl))/5.0
         if pad == None:
             interpWl = numpy.arange(self.wl[0], self.wl[-1], deltaWl)
         else:
@@ -948,7 +948,9 @@ class Spectrum( object ):
         if self.flux_V != None:
             V = scipy.interpolate.splrep(self.wl, self.flux_V)
             V_interp = scipy.interpolate.splev(interpWl, V, ext=1)
-            newSpec_V = numpy.zeros(len(newWl))
+            if pad != None:
+                V_interp[V_interp==0]=0.0
+            newSpec_V = []
         if self.continuum != None:
             continuum = scipy.interpolate.splrep(self.wl, self.continuum)
             cont_interp = scipy.interpolate.splev(interpWl, continuum, ext=1)
@@ -982,7 +984,7 @@ class Spectrum( object ):
                 if self.flux_V != None:
                     num=scipy.integrate.simps(V_interp[inBin], 
                             x=interpWl[inBin])
-                    newSpec_V[i] = num/denom
+                    newSpec_V.append(num/denom)
                 if self.continuum != None:
                     num=scipy.integrate.simps(cont_interp[inBin], 
                             x=interpWl[inBin])
