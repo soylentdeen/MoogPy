@@ -900,6 +900,18 @@ class Spectrum( object ):
             processed.bin(observedWl, pad=pad)
             return processed
 
+    def rv(self, rv=0.0):
+        """
+        Spectrum.rv(rv=0.0)
+
+        This routine simulates the effect of a radial velocity on the target spectrum
+
+        rv = radial velocity in km/s
+
+        """
+        beta = rv/299792.0
+        self.wl = self.wl * (1 + beta)/(1.0 - beta**2.0)**(-0.5)
+
     def bin(self, newWl, pad=None):
         """
         Spectrum.bin(newWl=[], pad=None)
@@ -1064,30 +1076,73 @@ class Spectrum( object ):
         """
         Spectrum.__div__(factor)
         
-        __div__ overloads the division operator.  It returns a spectrum object
-        divided by the scalar factor
+        __div__ overloads the division operator.  If factor is a scalar, div
+                  returns a spectrum object divided by the scalar factor.  If
+                  factor is instead another Spectrum object, div returns a
+                  Spectrum object of one spectrum divided by the other.
         
         divided = Spectrum/factor
         """
-        I = None
-        Q = None
-        U = None
-        V = None
-        continuum = None
 
-        if (self.flux_I != None):
-            I = self.flux_I/factor
-        if (self.flux_Q != None):
-            Q = self.flux_Q/factor
-        if (self.flux_U != None):
-            U = self.flux_U/factor
-        if (self.flux_V != None):
-            V = self.flux_V/factor
-        if (self.continuum != None):
-            continuum = self.continuum/factor
+        if isinstance(factor, float):
+            I = None
+            Q = None
+            U = None
+            V = None
+            continuum = None
 
-        return Spectrum(wl=self.wl, I=I, Q=Q, U=U, V=V, continuum=continuum,
-                header=self.header, spectrum_type="SCALED")
+            if (self.flux_I != None):
+                I = self.flux_I/factor
+            if (self.flux_Q != None):
+                Q = self.flux_Q/factor
+            if (self.flux_U != None):
+                U = self.flux_U/factor
+            if (self.flux_V != None):
+                V = self.flux_V/factor
+            if (self.continuum != None):
+                continuum = self.continuum/factor
+
+            return Spectrum(wl=self.wl, I=I, Q=Q, U=U, V=V, continuum=continuum,
+                    header=self.header, spectrum_type="SCALED")
+
+        elif isinstance(factor, Spectrum):
+            overlap_start = numpy.max([numpy.min(self.wl), numpy.min(factor.wl)])
+            overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(factor.wl)])
+            overlap = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
+
+            if (self.flux_I != None) & (factor.flux_I != None):
+                I = scipy.interpolate.splrep(factor.wl, factor.flux_I)
+                retval_I = numpy.zeros(len(self.wl))
+                retval_I[overlap] = self.flux_I[overlap] - scipy.interpolate.splev(self.wl[overlap],I)
+            else:
+                retval_I = None
+            if (self.flux_Q != None) & (factor.flux_Q != None):
+                Q = scipy.interpolate.splrep(factor.wl, factor.flux_Q)
+                retval_Q = numpy.zeros(len(self.wl))
+                retval_Q[overlap] = self.flux_Q[overlap] - scipy.interpolate.splev(self.wl[overlap],Q)
+            else:
+                retval_Q = None
+            if (self.flux_U != None) & (factor.flux_U != None):
+                U = scipy.interpolate.splrep(factor.wl, factor.flux_U)
+                retval_U = numpy.zeros(len(self.wl))
+                retval_U[overlap] = self.flux_U[overlap] - scipy.interpolate.splev(self.wl[overlap],U)
+            else:
+                retval_U = None
+            if (self.flux_V != None) & (factor.flux_V != None):
+                V = scipy.interpolate.splrep(factor.wl, factor.flux_V)
+                retval_V = numpy.zeros(len(self.wl))
+                retval_V[overlap] = self.flux_V[overlap] - scipy.interpolate.splev(self.wl[overlap],V)
+            else:
+                retval_V = None
+            if (self.continuum != None) & (factor.continuum != None):
+                continuum = scipy.interpolate.splrep(factor.wl, factor.continuum)
+                retval_continuum = numpy.zeros(len(self.wl))
+                retval_continuum[overlap] = self.continuum[overlap] - scipy.interpolate.splev(self.wl[overlap],continuum)
+            else:
+                retval_continuum = None
+            return Spectrum(wl=self.wl, I=retval_I, Q=retval_Q, U=retval_U, V=retval_V,
+                    continuum=retval_continuum, header=self.header, 
+                    spectrum_type="DIVIDED")
 
     def diff_spectra(self, other, pad=False):
         '''

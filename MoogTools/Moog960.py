@@ -1626,6 +1626,8 @@ class Score( object ):
         #    compositeSpectrum.. = SpectralTools.mergeSpectra(first=compositeSpectrum,
         #            second=sp)
 
+        self.compositeObservedLabel = mergedLabel
+
         return mergedSpectra, mergedLabel
 
     def record(self, selected=[], filename='', keySignature='CONVOLVED', dI = False):
@@ -1661,7 +1663,7 @@ class Score( object ):
         return mastered
 
 
-    def blend(self, desiredParameters={}):
+    def blend(self, desiredParameters={}, appendTheBlend=True):
         gridPoints = {}
         for key in desiredParameters.keys():
             points = self.convolvedGridPoints[key]
@@ -1827,8 +1829,32 @@ class Score( object ):
             p.addReference(Melody=blended)
             self.appendLabel(label=p, keySignature='CONVOLVED')
 
-        self.syntheticMelodies.append(blended)
+        if appendTheBlend:
+            self.syntheticMelodies.append(blended)
         return blended, interpolatedParams
+        
+    def calc_lnlike(self, Teff=0.0, logg=0.0, Bfield=0.0, rv=0.0, ax=None):
+        desiredParams = {}
+        desiredParams["TEFF"] = Teff
+        desiredParams["LOGG"] = logg
+        desiredParams["BFIELD"] = Bfield
+        print rv
+        blended, blendedLabels = self.blend(desiredParameters=desiredParams,
+                  appendTheBlend=False)
+        blendedLabels[0].Spectrum.rv(rv)
+        blendedLabels[0].Spectrum.bin(self.compositeObservedLabel.Spectrum.wl)
+        difference = blendedLabels[0].Spectrum - self.compositeObservedLabel.Spectrum
+        lnlike = -0.5*numpy.sum( 
+                  (difference/self.compositeObservedLabel.Spectrum).flux_I**2.0)
+
+        print lnlike
+        if ax != None:
+            ax.clear()
+            blendedLabels[0].Spectrum.plot(ax=ax)
+            self.compositeObservedLabel.Spectrum.plot(ax=ax)
+            ax.figure.show()
+            raw_input()
+        return lnlike
 
 class Moog960( object ):
     def __init__(self, configFile):
