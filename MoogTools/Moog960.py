@@ -903,7 +903,7 @@ class Melody( object ):
                     convolved.label.parameters["SELECTED"] = phrase.inWlRange(wlStart=wlRange[0],
                         wlStop=wlRange[1], exact=exact)
 
-    def record(self, labels=None, basename = None):
+    def record(self, labels=None, outdir='', basename = None):
         """
         Moog960::Melody::record(self, labels=[], basename=None)
         
@@ -919,7 +919,7 @@ class Melody( object ):
                 R = label.parameters["R"]
                 vsini = label.parameters["VSINI"]
                 if basename != None:
-                    filename = basename+"_T%d_G%.2f_B%.2f_R%d_V%.2f.fits" % (
+                    filename = outdir+basename+"_T%d_G%.2f_B%.2f_R%d_V%.2f.fits" % (
                         self.Teff, self.logg, self.B, R, vsini)
                 print("Recording record \'%s\' to disk" % label.parameters["LABEL"])
                 label.Phrase.saveConvolved(label=label, filename=filename, header=self.header,
@@ -1211,18 +1211,22 @@ class Score( object ):
     """
         This Score object contains many melodies.
     """
-    def __init__(self, melodies = [], directory='', observed=None, suffix='raw'):
+    def __init__(self, melodies = [], directory='', observed=None, suffix='raw', files=[]):
         self.ID = ''.join(random.choice(string.ascii_letters) for _ in range(10))
         self.syntheticMelodies = melodies
         self.directory = directory
         self.observed = observed
         self.suffix = suffix
+        self.files = files
         self.loadMelodies()
         self.computeGridPoints()
         #self.getMelodyParams(retLabels = False)
 
     def loadMelodies(self):
-        melodyFiles = glob.glob(self.directory+'*'+self.suffix+'.fits')
+        if len(self.files) == 0:
+            melodyFiles = glob.glob(self.directory+'*'+self.suffix+'.fits')
+        else:
+            melodyFiles = self.files
         self.syntheticMelodies = []
         self.raw_labels = {}
         self.interpolated_labels = {} 

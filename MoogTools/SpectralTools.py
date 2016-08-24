@@ -780,20 +780,22 @@ class Spectrum( object ):
         continuum [Boolean] = signifying whether or not the continuum is plotted
         ax [matplotlib.pyplot.axis object]
         **kwargs = arguments to pass to the plot command
-       """
+        """
+        plotLabel = self.header.get('EXTNAME')
         if I:
             if self.dflux_I != None:
-                ax.errorbar(self.wl, self.flux_I, yerr=self.dflux_I, **kwargs)
+                ax.errorbar(self.wl, self.flux_I, yerr=self.dflux_I, 
+                            label=plotLabel, **kwargs)
             else:
-                ax.plot(self.wl, self.flux_I, **kwargs)
+                ax.plot(self.wl, self.flux_I, label=plotLabel, **kwargs)
         if Q:
-            ax.plot(self.wl, self.flux_Q, **kwargs)
+            ax.plot(self.wl, self.flux_Q, label=plotLabel, **kwargs)
         if U:
-            ax.plot(self.wl, self.flux_U, **kwargs)
+            ax.plot(self.wl, self.flux_U, label=plotLabel, **kwargs)
         if V:
-            ax.plot(self.wl, self.flux_V, **kwargs)
+            ax.plot(self.wl, self.flux_V, label=plotLabel, **kwargs)
         if continuum:
-            ax.plot(self.wl, self.continuum, **kwargs)
+            ax.plot(self.wl, self.continuum, label=plotLabel, **kwargs)
     
     def resample(self, R=0.0, nyquist=False, observedWl=None, pad=None):
         """
