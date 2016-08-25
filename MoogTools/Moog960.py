@@ -1663,7 +1663,7 @@ class Score( object ):
             low = numpy.min(points)
             high = numpy.max(points)
             desired = desiredParameters[key]
-            print desired
+            #print desired
             if ( (desired > high) | (desired < low) ):
                 raise Moog960Error (2, "%.2f not within range (%.2f, %.2f)" % (desired, low, high))
             gridPoints[key] = [numpy.sort(points[points<=desired])[-1],
@@ -1831,19 +1831,19 @@ class Score( object ):
         desiredParams["TEFF"] = Teff
         desiredParams["LOGG"] = logg
         desiredParams["BFIELD"] = Bfield
-        print rv
+        #print rv
         blended, blendedLabels = self.blend(desiredParameters=desiredParams,
                   appendTheBlend=False)
-        print "Blend Finished!"
+        #print "Blend Finished!"
         blendedLabels[0].Spectrum.rv(rv)
-        print "RV Finished!"
+        #print "RV Finished!"
         blendedLabels[0].Spectrum.bin(self.compositeObservedLabel.Spectrum.wl, pad=0.0)
-        print "Binning Finished!"
+        #print "Binning Finished!"
         difference = blendedLabels[0].Spectrum - self.compositeObservedLabel.Spectrum
-        print "Difference Finished!"
+        #print "Difference Finished!"
         lnlike = -0.5*numpy.sum( 
                   (difference/self.compositeObservedLabel.Spectrum).flux_I**2.0)
-        print "ln_likelihood Finished!"
+        #print "ln_likelihood Finished!"
         print lnlike
         if ax != None:
             ax.clear()
@@ -1851,6 +1851,10 @@ class Score( object ):
             self.compositeObservedLabel.Spectrum.plot(ax=ax)
             ax.figure.show()
             raw_input()
+
+        del(difference)
+        del(blendedLabels[0])
+        del(blended)
         return lnlike
 
 class Moog960( object ):

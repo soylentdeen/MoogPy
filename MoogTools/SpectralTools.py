@@ -1136,6 +1136,8 @@ class Spectrum( object ):
         
         if (self.flux_I != None) & (other.flux_I != None):
             I = self.flux_I[overlap_self] - other.flux_I[overlap_other]
+            I[self.flux_I[overlap_self] == 0.0] = 0.0
+            I[other.flux_I[overlap_other] == 0.0] = 0.0
         if (self.flux_Q != None) & (other.flux_Q != None):
             Q = self.flux_Q[overlap_self] - other.flux_Q[overlap_other]
         if (self.flux_U != None) & (other.flux_U != None):
@@ -1190,31 +1192,31 @@ class Spectrum( object ):
             if (self.flux_I != None) & (factor.flux_I != None):
                 I = scipy.interpolate.splrep(factor.wl, factor.flux_I)
                 retval_I = numpy.zeros(len(self.wl))
-                retval_I[overlap] = self.flux_I[overlap] - scipy.interpolate.splev(self.wl[overlap],I)
+                retval_I[overlap] = self.flux_I[overlap]/scipy.interpolate.splev(self.wl[overlap],I)
             else:
                 retval_I = None
             if (self.flux_Q != None) & (factor.flux_Q != None):
                 Q = scipy.interpolate.splrep(factor.wl, factor.flux_Q)
                 retval_Q = numpy.zeros(len(self.wl))
-                retval_Q[overlap] = self.flux_Q[overlap] - scipy.interpolate.splev(self.wl[overlap],Q)
+                retval_Q[overlap] = self.flux_Q[overlap]/scipy.interpolate.splev(self.wl[overlap],Q)
             else:
                 retval_Q = None
             if (self.flux_U != None) & (factor.flux_U != None):
                 U = scipy.interpolate.splrep(factor.wl, factor.flux_U)
                 retval_U = numpy.zeros(len(self.wl))
-                retval_U[overlap] = self.flux_U[overlap] - scipy.interpolate.splev(self.wl[overlap],U)
+                retval_U[overlap] = self.flux_U[overlap]/scipy.interpolate.splev(self.wl[overlap],U)
             else:
                 retval_U = None
             if (self.flux_V != None) & (factor.flux_V != None):
                 V = scipy.interpolate.splrep(factor.wl, factor.flux_V)
                 retval_V = numpy.zeros(len(self.wl))
-                retval_V[overlap] = self.flux_V[overlap] - scipy.interpolate.splev(self.wl[overlap],V)
+                retval_V[overlap] = self.flux_V[overlap]/scipy.interpolate.splev(self.wl[overlap],V)
             else:
                 retval_V = None
             if (self.continuum != None) & (factor.continuum != None):
                 continuum = scipy.interpolate.splrep(factor.wl, factor.continuum)
                 retval_continuum = numpy.zeros(len(self.wl))
-                retval_continuum[overlap] = self.continuum[overlap] - scipy.interpolate.splev(self.wl[overlap],continuum)
+                retval_continuum[overlap] = self.continuum[overlap]/scipy.interpolate.splev(self.wl[overlap],continuum)
             else:
                 retval_continuum = None
             return Spectrum(wl=self.wl, I=retval_I, Q=retval_Q, U=retval_U, V=retval_V,
