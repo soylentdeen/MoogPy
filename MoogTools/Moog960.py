@@ -81,7 +81,7 @@ class Label( object ):
         """
         parameters = {}
         for key in self.parameters.keys():
-            if not(key in ['WLSTART', 'WLSTOP', 'SELECTED', 'LABEL', 'PHRASE']):
+            if not(key in ['WLSTART', 'WLSTOP', 'SELECTED', 'NAME', 'PHRASE']):
                 if self.parameters[key] != other.parameters[key]:
                     raise Moog960Error(2, '[%s] %s != %s' % (key, self.parameters[key],
                             other.parameters[key]))
@@ -238,10 +238,10 @@ class ObservedPhrase( Phrase ):
     def listen(self):
         return self.observedData
         
-    def record(self, filename = None, dI=False):
-        self.save(filename=filename, dI=dI)
+    def record(self, filename = None, dI=False, primaryHeaderKWs=None):
+        self.save(filename=filename, dI=dI, primaryHeaderKWs=primaryHeaderKWs)
 
-    def save(self, filename = None, dI=False):
+    def save(self, filename = None, dI=False, primaryHeaderKWs=None):
         HDUs = []
         for spectrum in self.observedData:
             hdr = spectrum.header.copy()
@@ -278,6 +278,9 @@ class ObservedPhrase( Phrase ):
         else:
             HDUList = pyfits.HDUList()
             primary = pyfits.PrimaryHDU()
+            if primaryHeaderKWs != None:
+                for key in primaryHeaderKWs.keys():
+                    primary.header.set(key, primaryHeaderKWs[key])
             HDUList.append(primary)
             for spectrum in HDUs:
                 HDUList.append(spectrum)
@@ -487,7 +490,7 @@ class SyntheticPhrase( Phrase ):
             parameters["WLSTART"] = self.wlStart
             parameters["WLSTOP"] = self.wlStop
             parameters["SELECTED"] = False
-            parameters["LABEL"] = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s" % ( 
+            parameters["NAME"] = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s" % ( 
                             parameters["TEFF"], parameters["LOGG"], parameters["BFIELD"],
                             vsini)
             if self.Melody.ID in self.Melody.Score.integrated_labels.keys():
@@ -512,7 +515,7 @@ class SyntheticPhrase( Phrase ):
             parameters["WLSTART"] = self.wlStart
             parameters["WLSTOP"] = self.wlStop
             parameters["SELECTED"] = False
-            parameters["LABEL"] = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" % ( 
+            parameters["NAME"] = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" % ( 
                             parameters["TEFF"], parameters["LOGG"], parameters["BFIELD"],
                             vsini, R)
 
@@ -867,14 +870,14 @@ class Melody( object ):
         label = text label describing the melody (Teff, logg, B) - obsolete?
     
     """
-    def __init__(self, phrases = [], filename=None, label=None, header=None, Score=None):
+    def __init__(self, phrases = [], filename=None, name=None, header=None, Score=None):
         self.phrases = phrases
         self.header = header
         self.nPhrases = len(self.phrases)
         self.filename = filename
         self.selectedPhrases = [False for i in range(self.nPhrases)]
         self.muted = True
-        self.label = label
+        self.name = name
         self.Score = Score   # Pointer to Score which contains this melody (optional)
         self.ID = ''.join(random.choice(string.ascii_letters) for _ in range(10))
         
@@ -924,7 +927,7 @@ class Melody( object ):
                 if basename != None:
                     filename = outdir+basename+"_T%d_G%.2f_B%.2f_R%d_V%.2f.fits" % (
                         self.Teff, self.logg, self.B, R, vsini)
-                print("Recording record \'%s\' to disk" % label.parameters["LABEL"])
+                print("Recording record \'%s\' to disk" % label.parameters["NAME"])
                 label.Phrase.saveConvolved(label=label, filename=filename, header=self.header,
                         wlStart = label.parameters["WLSTART"],
                         wlStop = label.parameters["WLSTOP"])
@@ -944,9 +947,9 @@ class Melody( object ):
 
 
 class ObservedMelody( Melody ):
-    def __init__(self, phrases = [], filename=None, label=None, header=None, Score=None):
+    def __init__(self, phrases = [], filename=None, name=None, header=None, Score=None):
         super(ObservedMelody, self).__init__(phrases=phrases, filename=filename, 
-                label=label, header=header, Score=Score)
+                name=name, header=header, Score=Score)
         if len(self.phrases) == 0:
             if filename != None:
                 self.loadMelody()
@@ -956,7 +959,7 @@ class ObservedMelody( Melody ):
 
 
     @classmethod
-    def fromFile(self, filename=None, label=None, Score=None):
+    def fromFile(self, filename=None, name=None, Score=None):
         info = pyfits.info(filename, output='')
         nPhrases = len(info)-1
         header = pyfits.getheader(filename, ext=0)
@@ -965,7 +968,7 @@ class ObservedMelody( Melody ):
             hdr = pyfits.getheader(filename, ext=i+1)
             phrases.append(ObservedPhrase.fromFile(header=hdr, filename=filename, ext=i+1))
 
-        return self(phrases=phrases, filename=filename, label=label, header=header, Score=Score)
+        return self(phrases=phrases, filename=filename, name=name, header=header, Score=Score)
         
     def loadMelody(self):
         info = pyfits.info(self.filename, output='')
@@ -976,7 +979,7 @@ class ObservedMelody( Melody ):
         if self.contents == None:
             self.contents = "OBSERVED"
         parameters = {}
-        parameters["LABEL"] = "OBSERVED SPECTRUM - %s" % self.label
+        parameters["NAME"] = "OBSERVED SPECTRUM - %s" % self.name
         parameters["SELECTED"] = False
 
         for i in range(nSpectra):
@@ -992,7 +995,7 @@ class ObservedMelody( Melody ):
                 parameters = {}
                 #label = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" % (
                 #        self.Teff, self.logg, self.B, hdr.get('VSINI'), hdr.get('RESOLVING_POWER'))
-                parameters["LABEL"] = self.label
+                parameters["NAME"] = self.name
                 #parameters["VSINI"] = hdr.get('VSINI')
                 #parameters["R"] = hdr.get('RESOLVING_POWER')
                 #parameters["WLSTART"] = hdr.get('WLSTART')
@@ -1007,7 +1010,7 @@ class ObservedMelody( Melody ):
 
     def addPhrase(self, phrase = None):
         parameters = {}
-        parameters["SELECTED"] = True
+        parameters["SELECTED"] = True   #TODO: What is done with this parameters object?  Nothing!
         self.phrases.append(phrase)
         self.nPhrases = len(self.phrases)
 
@@ -1043,7 +1046,7 @@ class ObservedMelody( Melody ):
         record() saves the selected phrases of a melody to disk
         """
         for label in labels:
-            print("Recording record \'%s\' to disk" % label.parameters["LABEL"])
+            print("Recording record \'%s\' to disk" % label.parameters["NAME"])
             if basename == None:
                 filename = self.filename[:-4]+'_saved.fits'
             else:
@@ -1056,9 +1059,9 @@ class ObservedMelody( Melody ):
                            
 
 class SyntheticMelody( Melody ):
-    def __init__(self, phrases = [], filename=None, label=None, header=None, Score=None):
+    def __init__(self, phrases = [], filename=None, name=None, header=None, Score=None):
         super(SyntheticMelody, self).__init__(phrases = phrases, filename=filename,
-                label=label, header=header, Score=Score)
+                name=name, header=header, Score=Score)
         if len(self.phrases) == 0:
             self.loadMelody()
         else:
@@ -1080,12 +1083,12 @@ class SyntheticMelody( Melody ):
             self.contents = "RAW"
         parameters = {}
         try:
-            parameters["LABEL"] = "T = %dK log g = %.1f B = %.2f kG" % (self.Teff, self.logg, self.B)
+            parameters["NAME"] = "T = %dK log g = %.1f B = %.2f kG" % (self.Teff, self.logg, self.B)
             parameters["TEFF"] = self.Teff
             parameters["LOGG"] = self.logg
             parameters["BFIELD"] = self.B
         except:
-            parameters["LABEL"] = "Synthetic Spectrum"
+            parameters["NAME"] = "Synthetic Spectrum"
             parameters["TEFF"] = 0
             parameters["LOGG"] = 0
             parameters["BFIELD"] = 0
@@ -1106,17 +1109,17 @@ class SyntheticMelody( Melody ):
                 parameters["LOGG"] = self.logg
                 parameters["BFIELD"] = self.B
                 if self.contents == 'INTEGRATED':
-                    label = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s" % (
+                    name = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s" % (
                             self.Teff, self.logg, self.B, hdr.get('VSINI'))
-                    parameters["LABEL"] = label
+                    parameters["NAME"] = name
                     parameters["VSINI"] = hdr.get('VSINI')
                     parameters["WLSTART"] = hdr.get('WLSTART')
                     parameters["WLSTOP"] = hdr.get('WLSTOP')
                     parameters["SELECTED"] = False
                 if self.contents == 'CONVOLVED':
-                    label = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" % (
+                    name = "T = %dK log g = %.1f B = %.2f kG vsini = %.2f km/s R = %d" % (
                             self.Teff, self.logg, self.B, hdr.get('VSINI'), hdr.get('RESOLVING_POWER'))
-                    parameters["LABEL"] = label
+                    parameters["NAME"] = name
                     parameters["VSINI"] = hdr.get('VSINI')
                     parameters["R"] = hdr.get('RESOLVING_POWER')
                     parameters["WLSTART"] = hdr.get('WLSTART')
@@ -1204,7 +1207,7 @@ class SyntheticMelody( Melody ):
         if keySignature=='CONVOLVED':
             newPhrase = SyntheticPhrase(convolvedData=[mergedSpectra], Melody=self)
             mergedLabel.addReference(Phrase=newPhrase)
-            self.Score.appendLabel(mergedLabel)#convolved_labels.append(mergedLabel)
+            self.Score.appendLabel(mergedLabel)
             self.addPhrases(phrases = [newPhrase])
         
         return mergedLabel
@@ -1242,7 +1245,7 @@ class Score( object ):
 
         if not(self.observed==None):
             self.ObservedMelodies = [ObservedMelody(filename=self.observed, 
-                label='TWHydra', Score=self)]
+                Score=self)]
             self.ObservedMelodies[0].loadData()
 
     def getMelodyParams(self, retLabels=True):
@@ -1316,7 +1319,7 @@ class Score( object ):
             params = {}
             self.convolvedGridPoints = {}
             keys = ["TEFF", "LOGG", "BFIELD", "WLSTART", "WLSTOP", "SELECTED", "VSINI", 
-                    "LABEL", "R"]
+                    "NAME", "R"]
             for key in keys:
                 params[key] = []
             for convolved in self.convolved_labels:
@@ -1378,7 +1381,7 @@ class Score( object ):
         params = {}
         self.convolvedGridPoints = {}
         keys = ["TEFF", "LOGG", "BFIELD", "WLSTART", "WLSTOP", "SELECTED", "VSINI", 
-                "LABEL", "R"]
+                "NAME", "R"]
         for key in keys:
             params[key] = []
         #for convolved in self.convolved_labels:
@@ -1620,34 +1623,21 @@ class Score( object ):
             newPhrase = ObservedPhrase(observedData=[mergedSpectra], Melody=self)
             mergedLabel.addReference(Phrase=newPhrase)
             mergedLabel.addReference(Score=self)
-            self.appendLabel(mergedLabel, keySignature=keySignature)#convolved_labels.append(mergedLabel)
-            #self.addPhrases(phrases = [newPhrase])
-        #blended = SyntheticMelody(phrases=phrases, header=header, Score=self)
-        #compositeSpectrum = spectra[0]
-        #compositeLabel = label[0].copy()
-        #for sp in spectrum[1:]:
-        #    compositeSpectrum.. = SpectralTools.mergeSpectra(first=compositeSpectrum,
-        #            second=sp)
+            self.appendLabel(mergedLabel, keySignature=keySignature)
 
         self.compositeObservedLabel = mergedLabel
 
         return mergedSpectra, mergedLabel
 
-    def record(self, selected=[], filename='', keySignature='CONVOLVED', dI = False):
-        """
-        for melody in self.syntheticMelodies:
-            if not(melody.muted):
-                for i in range(len(melody.label)-1):
-                    if melody.label[i+1] in selected:
-                        melody.record(melody.label[i+1], basename=basename)
-        #"""
+    def record(self, selected=[], filename='', keySignature='CONVOLVED', dI = False, 
+              primaryHeaderKWs=None):
         if len(selected) > 0:
             for label in selected:
                label.Phrase.record(filename=filename)
         else:
             if keySignature == 'OBSERVED':
                 for label in self.getLabels(keySignature=keySignature):
-                    label.Phrase.record(filename=filename, dI=dI)
+                    label.Phrase.record(filename=filename, dI=dI, primaryHeaderKWs=primaryHeaderKWs)
             if keySignature == 'CONVOLVED':
                 for label in self.getLabels(keySignature=keySignature):
                     label.Phrase.record(filename=filename)
@@ -1847,7 +1837,7 @@ class Score( object ):
         print "Blend Finished!"
         blendedLabels[0].Spectrum.rv(rv)
         print "RV Finished!"
-        blendedLabels[0].Spectrum.bin(self.compositeObservedLabel.Spectrum.wl)
+        blendedLabels[0].Spectrum.bin(self.compositeObservedLabel.Spectrum.wl, pad=0.0)
         print "Binning Finished!"
         difference = blendedLabels[0].Spectrum - self.compositeObservedLabel.Spectrum
         print "Difference Finished!"
