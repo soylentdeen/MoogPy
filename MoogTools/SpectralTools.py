@@ -250,6 +250,12 @@ class Spectrum( object ):
                 coldefs.append(continuum)
             self.columns = pyfits.ColDefs(coldefs)
 
+    def savePlainFits(self, I=True, dI=False, Q=False, U=False, V=False, continuum=False, outfileName='Output.fits'):
+        
+        data = numpy.array([self.wl, self.flux_I])
+        hdu = pyfits.PrimaryHDU(data)
+        hdu.writeto(outfileName, clobber=True)
+        
     def plot(self, I=True, Q=False, U=False, V=False,
                  continuum=False, ax=None, **kwargs):
         """
@@ -307,9 +313,6 @@ class Spectrum( object ):
                 break
             newWl.append(newWl[-1]+stepsize)
             
-        print("Stepsize : %.5f" % stepsize)
-        print("Ending WL: %.5f, %.5f" % (newWl[-1], self.wl[-1] ))
-
         if self.flux_I != None:
             I = scipy.interpolate.interpolate.interp1d(self.wl,
                     self.flux_I, bounds_error=False, fill_value=1.0)
@@ -383,11 +386,9 @@ class Spectrum( object ):
             processed.bin(nyquistWl)
 
         if observedWl == None:
-            print("no observedWl : %d" % len(processed.wl))
             return processed
         else:
             processed.bin(observedWl, pad=pad)
-            print("observedWl : %d" % len(processed.wl))
             return processed
 
     def rv(self, rv=0.0):
@@ -602,7 +603,6 @@ class Spectrum( object ):
         return Spectrum(wl=self.wl, I=I, Q=Q, U=U, V=V, 
                 continuum=continuum, header=self.header,
                 spectrum_type="ROTATED")
-
 
     def __sub__(self, other):
         '''
