@@ -15,3 +15,10 @@ astropy
 4) Unzip the tarballs in the MoogPy/data/ directory.  They should create 2 directories (AbsorptionLines, Atmospheres) filled to the brim with useful data.  If you decide to put the data files elsewhere, ensure that the config files (moogPy.cfg and moogPar.cfg) point to the proper directories/files.
 5) Start up ipython
 6) run StokesExample.py
+
+
+Modifications to .bashrc:
+
+PYTHONPATH = /home/user/Code/Pythong/MoogPy/MoogTools/
+MOOGSTOKESSOURCE
+MOOGPYDATAPATH

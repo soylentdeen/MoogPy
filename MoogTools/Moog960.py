@@ -1,7 +1,6 @@
 import astropy.io.fits as pyfits
 import AstroUtils
 import glob
-import MoogTools
 import SpectralTools
 import numpy
 import os
@@ -9,6 +8,8 @@ import matplotlib.lines as Lines
 import time
 import random
 import string
+from matplotlib import pyplot
+from scipy.interpolate import LinearNDInterpolator, interp1d
 
 class Label( object ):
     """
@@ -32,6 +33,123 @@ class Label( object ):
         self.Melody = Melody
         self.Score = Score
 
+    @classmethod
+    def fromBlend(self, desiredParameters={}, gridPoints=[]):
+        parameters = gridPoints[0].parameters.copy()
+        for newParam in desiredParameters.keys():
+            parameters[newParam] = desiredParameters[newParam]
+            
+        wl = gridPoints[0].Spectrum.wl
+        
+        if gridPoints[0].Spectrum.flux_I != None:
+            flux_I = []
+        else:
+            flux_I = None
+        if gridPoints[0].Spectrum.flux_Q != None:
+            flux_Q = []
+        else:
+            flux_Q = None
+        if gridPoints[0].Spectrum.flux_U != None:
+            flux_U = []
+        else:
+            flux_U = None
+        if gridPoints[0].Spectrum.flux_V != None:
+            flux_V = []
+        else:
+            flux_V = None
+        if gridPoints[0].Spectrum.continuum != None:
+            continuum = []
+        else:
+            continuum = None 
+        
+        params = desiredParameters.keys()
+        I_interp = []
+        Q_interp = []
+        U_interp = []
+        V_interp = []
+        continuum_interp = []
+        coords = []
+        for gP in gridPoints:
+            if ((gP.Spectrum.wl[0] > wl[0]) |  (gP.Spectrum.wl[-1] < wl[-1])):
+                wl = gP.Spectrum.wl
+            point = []
+            for param in params:
+                point.append(gP.parameters[param])
+            coords.append(numpy.array(point))
+            if gP.Spectrum.flux_I != None:
+                I_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.flux_I))
+            if gP.Spectrum.flux_Q != None:
+                Q_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.flux_Q))
+            if gP.Spectrum.flux_U != None:
+                U_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.flux_U))
+            if gP.Spectrum.flux_V != None:
+                V_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.flux_V))
+            if gP.Spectrum.continuum != None:
+                continuum_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.continuum))
+        
+        newCoords = []
+        for param in params:
+            newCoords.append(desiredParameters[param])
+        newCoords = numpy.array(newCoords)
+        coords = numpy.array(coords)
+        I_interp = numpy.array(I_interp)
+        
+        for i in range(len(wl)):
+            if flux_I != None:
+                points = []
+                for I in I_interp:
+                    points.append(I(wl[i]))
+                points = numpy.array(points)
+                interpolator = LinearNDInterpolator(coords, points)
+                flux_I.append(interpolator(newCoords)[0])
+            if flux_Q != None:
+                points = []
+                for Q in Q_interp:
+                    points.append(Q(wl[i]))
+                points = numpy.array(points)
+                interpolator = LinearNDInterpolator(coords, points)
+                flux_Q.append(interpolator(newCoords)[0])
+            if flux_U != None:
+                points = []
+                for U in U_interp:
+                    points.append(U(wl[i]))
+                points = numpy.array(points)
+                interpolator = LinearNDInterpolator(coords, points)
+                flux_U.append(interpolator(newCoords)[0])
+            if flux_V != None:
+                points = []
+                for V in V_interp:
+                    points.append(V(wl[i]))
+                points = numpy.array(points)
+                interpolator = LinearNDInterpolator(coords, points)
+                flux_V.append(interpolator(newCoords)[0])
+            if continuum != None:
+                points = []
+                for continuum in continuum_interp:
+                    points.append(continuum(wl[i]))
+                points = numpy.array(points)
+                interpolator = LinearNDInterpolator(coords, points)
+                continuum.append(interpolator(newCoords)[0])
+            
+        if flux_I != None:
+            flux_I = numpy.array(flux_I)
+        if flux_Q != None:
+            flux_Q = numpy.array(flux_Q)
+        if flux_U != None:
+            flux_U = numpy.array(flux_U)
+        if flux_V != None:
+            flux_V = numpy.array(flux_V)
+        if continuum != None:
+            continuum = numpy.array(continuum)
+        
+        header = gridPoints[0].Spectrum.header
+        
+        blendedSpectrum = SpectralTools.Spectrum(wl=wl, I=flux_I, Q=flux_Q, U=flux_U, V=flux_V, continuum=continuum, header=header, spectrum_type='BLENDED')
+        
+        retval =  self(parameters=parameters, Score = gridPoints[0].Score, Melody=gridPoints[0].Melody, Phrase=gridPoints[0].Phrase, Spectrum=blendedSpectrum)
+
+        return retval
+        
 
     def addReference(self, Spectrum=None, Phrase=None, Melody=None, Score=None,
             reference=None):
@@ -86,6 +204,7 @@ class Label( object ):
                     raise Moog960Error(2, '[%s] %s != %s' % (key, self.parameters[key],
                             other.parameters[key]))
             parameters[key] = self.parameters[key]
+        self.Spectrum = self.Spectrum.mergeSpectra(other.Spectrum)
         oldStart = self.parameters["WLSTART"]
         oldStop = self.parameters["WLSTOP"]
         newStart = other.parameters["WLSTART"]
@@ -93,20 +212,7 @@ class Label( object ):
         parameters["WLSTART"] = numpy.min([oldStart, newStart])
         parameters["WLSTOP"] = numpy.max([oldStop, newStop])
 
-        return Label(parameters)
-
-    def __eq__(self, other):
-        """
-        Label.__eq__(other)
-        
-        Determines whether or not two labels are equal to one another.
-        """
-        if other == None:
-            return False
-        for key in self.parameters.keys():
-            if self.parameters[key] != other.parameters[key]:
-                return False
-        return True
+        return Label(parameters, Score=self.Score, Phrase=self.Phrase, Melody=self.Melody, Spectrum=self.Spectrum)
 
     def __le__(self, other):
         if hasattr(other, 'getWlStart'):
@@ -162,7 +268,7 @@ class Phrase( object ):
         if ID == None:
             self.ID = ''.join(random.choice(string.ascii_letters) for _ in range(10))
         else:
-           self.ID = ID
+            self.ID = ID
         return
 
     def owns(self, hdr):
@@ -228,7 +334,7 @@ class ObservedPhrase( Phrase ):
             if not(Melody.ID in Melody.Score.observed_labels.keys()):
                 Melody.Score.observed_labels[Melody.ID] = {}
             Melody.Score.observed_labels[Melody.ID][ID] = []
-            Melody.Score.observed_labels[Melody.ID][ID].append(Label(parameters, reference=retval.observedData[-1], Phrase=retval, Spectrum = retval.observedData[-1]))
+            Melody.Score.observed_labels[Melody.ID][ID].append(Label(parameters, reference=retval.observedData[-1], Phrase=retval, Spectrum = retval.observedData[-1], Score=Melody.Score, Melody=Melody))
         return retval
         
     def loadData(self):
@@ -328,7 +434,7 @@ class SyntheticPhrase( Phrase ):
         if ID == None:
             self.ID = ''.join(random.choice(string.ascii_letters) for _ in range(10))
         else:
-           self.ID = ID
+            self.ID = ID
 
     @classmethod
     def fromFile(self, hdr, data=None, filename=None, ext=None, diskInt=None,
@@ -358,7 +464,8 @@ class SyntheticPhrase( Phrase ):
                 if not(Melody.ID in Melody.Score.raw_labels.keys()):
                     Melody.Score.raw_labels[Melody.ID] = {}
                 Melody.Score.raw_labels[Melody.ID][ID] = []
-                Melody.Score.raw_labels[Melody.ID][ID].append(Label(parameters, reference=rawData[-1], Phrase=retval))
+                Melody.Score.raw_labels[Melody.ID][ID].append(Label(parameters, reference=rawData[-1], Phrase=retval,
+                        Spectrum=rawData[-1], Melody=Melody, Score=Melody.Score))
         elif sourceType == "INTERPOLATED":
             rawData = []
             interpolatedData = []
@@ -374,7 +481,8 @@ class SyntheticPhrase( Phrase ):
                 if not(Melody.ID in Melody.Score.interpolated_labels.keys()):
                     Melody.Score.interpolated_labels[Melody.ID] = {}
                 Melody.Score.interpolated_labels[Melody.ID][ID] = []
-                Melody.Score.interpolated_labels[Melody.ID][ID].append(Label(parameters, reference=interpolatedData[-1], Phrase=retval))
+                Melody.Score.interpolated_labels[Melody.ID][ID].append(Label(parameters, reference=interpolatedData[-1], Phrase=retval,
+                        Spectrum=interpolatedData[-1], Melody=Melody, Score=Melody.Score))
         elif sourceType == "INTEGRATED":
             rawData = []
             interpolatedData = []
@@ -390,7 +498,8 @@ class SyntheticPhrase( Phrase ):
                 if not(Melody.ID in Melody.Score.integrated_labels.keys()):
                     Melody.Score.integrated_labels[Melody.ID] = {}
                 Melody.Score.integrated_labels[Melody.ID][ID] = []
-                Melody.Score.integrated_labels[Melody.ID][ID].append(Label(parameters, reference=integratedData[-1], Phrase=retval))
+                Melody.Score.integrated_labels[Melody.ID][ID].append(Label(parameters, reference=integratedData[-1], Phrase=retval, 
+                        Spectrum=integratedData[-1], Melody=Melody, Score=Melody.Score))
             
         elif sourceType == "CONVOLVED":
             rawData = []
@@ -409,7 +518,7 @@ class SyntheticPhrase( Phrase ):
                     Melody.Score.convolved_labels[Melody.ID] = {}
                 Melody.Score.convolved_labels[Melody.ID][ID] = []
                 Melody.Score.convolved_labels[Melody.ID][ID].append(Label(parameters, reference=convolvedData[-1], Phrase=retval,
-                       Spectrum=convolvedData[-1]))
+                       Spectrum=convolvedData[-1], Melody=Melody, Score=Melody.Score))
 
         return retval
     
@@ -875,7 +984,7 @@ class Melody( object ):
         self.header = header
         self.nPhrases = len(self.phrases)
         self.filename = filename
-        self.selectedPhrases = [False for i in range(self.nPhrases)]
+        #self.selectedPhrases = [False for i in range(self.nPhrases)]  #TODO: Need to get away from selectedPhrases
         self.muted = True
         self.name = name
         self.Score = Score   # Pointer to Score which contains this melody (optional)
@@ -938,9 +1047,10 @@ class Melody( object ):
                 #               wlStart=label.parameters["WLSTART"], 
                 #               wlStop = label.parameters["WLSTOP"])
         else:
-            for i in range(self.nPhrases):
-                if self.selectedPhrases[i]:
-                    self.phrases[i].saveConvolved()
+            for phrase in self.phrases:
+                for convolved in phrase.convolvedData:
+                    if (convolved.label.parameters["SELECTED"]):
+                        convolved.saveConvolved()  #TODO: This probably the wrong function... .No, it looks like it's doing the right thing
 
                            
             #TODO make Labels actually do what they are supposed to.
@@ -1025,7 +1135,7 @@ class ObservedMelody( Melody ):
         for phrase in self.phrases:
             if selectAll:
                 for observed in phrase.convolvedData:
-                    convolved.label.parameters["SELECTED"] = True
+                    observed.label.parameters["SELECTED"] = True
             else:
                 for convolved in phrase.convolvedData:
                     convolved.label.parameters["SELECTED"] = phrase.inWlRange(wlStart=wlRange[0],
@@ -1035,7 +1145,6 @@ class ObservedMelody( Melody ):
         spectra = []
         for i in range(self.nPhrases):
             spectra.append(self.phrases[i].listen())
-            spectra.append(sp)
 
         return spectra
 
@@ -1053,9 +1162,9 @@ class ObservedMelody( Melody ):
                 filename = basename+".fits"
             for i in range(self.nPhrases):
                 if (self.selectedPhrases[i] and (label in
-                    self.phrases[i].observedLabels)):
-                   print label.parameters
-                   self.phrases[i].save(filename=filename)
+                         self.phrases[i].observedLabels)):
+                    print label.parameters
+                    self.phrases[i].save(filename=filename)
                            
 
 class SyntheticMelody( Melody ):
@@ -1154,7 +1263,6 @@ class SyntheticMelody( Melody ):
         #            wlStop=wlRange[1], exact=exact))
 
     def rehearse(self, vsini = 0.0, R = 0, observedWl = None):
-        convolved = []
         for phrase in self.Score.raw_labels[self.ID].keys():
             self.Score.raw_labels[self.ID][phrase][0].Phrase.rehearse(vsini=vsini, R=R,
                         observedWl=observedWl)
@@ -1184,33 +1292,34 @@ class SyntheticMelody( Melody ):
                 return spectrum, lab
 
     def master(self, keySignature='CONVOLVED'):
-        spectra = []
+        #spectra = []
         labels = []
         for i in range(self.nPhrases):
-             spectra.append(self.phrases[i].convolvedData[0])
-             labels.append(self.phrases[i].convolvedData[0].label)
-        spectra = numpy.array(spectra).T
+            #spectra.append(self.phrases[i].convolvedData[0])
+            labels.append(self.phrases[i].convolvedData[0].label)
+        #spectra = numpy.array(spectra).T
         labels = numpy.array(labels).T
+        if(len(labels) > 1):
+            order = numpy.argsort(labels)
+            labels = labels[order]
 
-        order = numpy.argsort(labels)
-        spectra = spectra[order]
-        labels = labels[order]
+            #mergedSpectra = spectra[0]
+            mergedLabel = labels[0]
+            labels[0].parameters["SELECTED"]=False
+            for l in labels[1:]:
+                mergedLabel = mergedLabel.merge(l)
+                l.parameters["SELECTED"]=False
 
-        mergedSpectra = spectra[0]
-        mergedLabel = labels[0]
-        for sp, l in zip(spectra[1:], labels[1:]):
-            mergedSpectra = mergedSpectra.mergeSpectra(sp)
-            mergedLabel = mergedLabel.merge(l)
-
-        mergedLabel.parameters["SELECTED"] = True
-        mergedLabel.addReference(Spectrum = mergedSpectra)
-        if keySignature=='CONVOLVED':
-            newPhrase = SyntheticPhrase(convolvedData=[mergedSpectra], Melody=self)
-            mergedLabel.addReference(Phrase=newPhrase)
-            self.Score.appendLabel(mergedLabel)
-            self.addPhrases(phrases = [newPhrase])
+                mergedLabel.parameters["SELECTED"] = True
+            if keySignature=='CONVOLVED':
+                newPhrase = SyntheticPhrase(convolvedData=[mergedLabel.Spectrum], Melody=self)
+                mergedLabel.addReference(Phrase=newPhrase)
+                self.Score.appendLabel(mergedLabel)
+                self.addPhrases(phrases = [newPhrase])
         
-        return mergedLabel
+            return mergedLabel
+        else:
+            return labels[0]
         
 
 class Score( object ):
@@ -1226,7 +1335,6 @@ class Score( object ):
         self.files = files
         self.loadMelodies()
         self.computeGridPoints()
-        #self.getMelodyParams(retLabels = False)
 
     def loadMelodies(self):
         if len(self.files) == 0:
@@ -1248,97 +1356,6 @@ class Score( object ):
                 Score=self)]
             self.ObservedMelodies[0].loadData()
 
-    def getMelodyParams(self, retLabels=True):
-        raw_labels = []
-        interpolated_labels = []
-        integrated_labels = []
-        convolved_labels = []
-        observed_labels = []
-        for melody in self.syntheticMelodies:
-            for phrase in melody.phrases:
-                for raw in phrase.rawLabels:
-                    raw_labels.append(raw)
-                for interpolated in phrase.interpolatedLabels:
-                    interpolated_labels.append(interpolated)
-                for integrated in phrase.integratedLabels:
-                    integrated_labels.append(integrated)
-                for convolved in phrase.convolvedLabels:
-                    convolved_labels.append(convolved)
-        if not(self.observed==None):
-            for melody in self.ObservedMelodies:
-                for phrase in melody.phrases:
-                    for obs in phrase.observedLabels:
-                        observed_labels.append(obs)
-
-        if retLabels:
-            return raw_labels, interpolated_labels, integrated_labels, convolved_labels, observed_labels
-        else:
-            self.raw_labels = raw_labels
-            self.interpolated_labels = interpolated_labels
-            self.integrated_labels = integrated_labels
-            self.convolved_labels = convolved_labels
-            self.observed_labels = observed_labels
-            
-            # raw GridPoints
-            params = {}
-            self.rawGridPoints = {}
-            keys = ["TEFF", "LOGG", "BFIELD"]
-            for key in keys:
-                params[key] = []
-            for raw in self.raw_labels:
-                for key in raw.keys():
-                    params[key].append(raw[key])
-            for key in params.keys():
-                self.rawGridPoints[key] = numpy.unique(params[key])
-
-            # interpolated GridPoints
-            params = {}
-            self.interpolatedGridPoints = {}
-            keys = ["TEFF", "LOGG", "BFIELD"]
-            for key in keys:
-                params[key] = []
-            for interpolated in self.interpolated_labels:
-                for key in interpolated.keys():
-                    params[key].append(interpolated[key])
-            for key in params.keys():
-                self.interpolatedGridPoints[key] = numpy.unique(params[key])
-
-            # integrated GridPoints
-            params = {}
-            self.integratedGridPoints = {}
-            keys = ["TEFF", "LOGG", "BFIELD"]
-            for key in keys:
-                params[key] = []
-            for integrated in self.integrated_labels:
-                for key in integrated.keys():
-                    params[key].append(integrated[key])
-            for key in params.keys():
-                self.integratedGridPoints[key] = numpy.unique(params[key])
-
-            # convolved GridPoints
-            params = {}
-            self.convolvedGridPoints = {}
-            keys = ["TEFF", "LOGG", "BFIELD", "WLSTART", "WLSTOP", "SELECTED", "VSINI", 
-                    "NAME", "R"]
-            for key in keys:
-                params[key] = []
-            for convolved in self.convolved_labels:
-                for key in keys:#convolved.parameters.keys():
-                    params[key].append(convolved.parameters[key])
-            for key in params.keys():
-                self.convolvedGridPoints[key] = numpy.unique(params[key])
-
-            # observed GridPoints
-            params = {}
-            self.observedGridPoints = {}
-            keys = ["WLSTART", "WLSTOP"]
-            for key in keys:
-                params[key] = []
-            for observed in self.observed_labels:
-                for key in observed.parameters.keys():
-                    params[key].append(observed.parameters[key])
-            for key in params.keys():
-                self.observedGridPoints[key] = numpy.unique(params[key])
 
     def computeGridPoints(self):
         # raw GridPoints
@@ -1574,66 +1591,69 @@ class Score( object ):
         spectra = []
         parameters = []
         if len(selectedLabels) == 0:
-            for melody in self.syntheticMelodies:
-                spectrum = []
-                params = []
-                if keySignature == "CONVOLVED":
-                    for convolved in self.getLabels(keySignature='CONVOLVED'):
-                        if convolved.parameters["SELECTED"]:
-                            spectrum.append(convolved.Spectrum)
-                            params.append(convolved)
-                if len(spectrum) > 0:
-                    spectra.append(spectrum)
-                    parameters.append(params)
+            spectrum = []
+            params = []
+            if keySignature == "CONVOLVED":
+                for convolved in self.getLabels(keySignature='CONVOLVED'):
+                    if convolved.parameters["SELECTED"]:
+                        spectrum.append(convolved.Spectrum)
+                        params.append(convolved)
+            if len(spectrum) > 0:
+                spectra.append(spectrum)
+                parameters.append(params)
         else:
             for label in selectedLabels:
                 if label.parameters["SELECTED"]:
-                     spectra.append(label.Spectrum)
-                     parameters.append(label)
+                    spectra.append(label.Spectrum)
+                    parameters.append(label)
 
         return spectra, parameters
 
 
     def listen(self, keySignature='OBSERVED'):   # gets the observed spectrum
         self.compositeObserved = []
-        spectra = []
+        #spectra = []
         labels = []
         for melody in self.observed_labels.keys():
             for phrase in self.observed_labels[melody].keys():
                 for label in self.observed_labels[melody][phrase]:
-                    spectra.append(label.Phrase.listen())
+                    #spectra.append(label.Phrase.listen())
                     labels.append(label)
 
-        spectra = numpy.array(spectra)
+        #spectra = numpy.array(spectra)
         labels = numpy.array(labels)
 
         order = numpy.argsort(labels)
-        spectra = spectra[order]
+        #spectra = spectra[order]
         labels = labels[order]
 
-        mergedSpectra = spectra[0][0]
+        #mergedSpectra = spectra[0][0]
         mergedLabel = labels[0]
-        for sp, l in zip(spectra[1:], labels[1:]):
-            mergedSpectra = mergedSpectra.mergeSpectra(sp[0])
+        labels[0].parameters["SELECTED"] = False
+        for l in labels[1:]:
             mergedLabel = mergedLabel.merge(l)
+            l.parameters["SELECTED"]=False
+        #for sp, l in zip(spectra[1:], labels[1:]):
+        #    mergedSpectra = mergedSpectra.mergeSpectra(sp[0])
+        #    mergedLabel = mergedLabel.merge(l)
 
         mergedLabel.parameters["SELECTED"] = True
-        mergedLabel.addReference(Spectrum = mergedSpectra)
+        #mergedLabel.addReference(Spectrum = mergedSpectra)
         if keySignature=='OBSERVED':
-            newPhrase = ObservedPhrase(observedData=[mergedSpectra], Melody=self)
+            newPhrase = ObservedPhrase(observedData=[mergedLabel.Spectrum], Melody=self)
             mergedLabel.addReference(Phrase=newPhrase)
             mergedLabel.addReference(Score=self)
             self.appendLabel(mergedLabel, keySignature=keySignature)
 
         self.compositeObservedLabel = mergedLabel
 
-        return mergedSpectra, mergedLabel
+        return mergedLabel
 
     def record(self, selected=[], filename='', keySignature='CONVOLVED', dI = False, 
               primaryHeaderKWs=None):
         if len(selected) > 0:
             for label in selected:
-               label.Phrase.record(filename=filename)
+                label.Phrase.record(filename=filename)
         else:
             if keySignature == 'OBSERVED':
                 for label in self.getLabels(keySignature=keySignature):
@@ -1669,21 +1689,30 @@ class Score( object ):
             gridPoints[key] = [numpy.sort(points[points<=desired])[-1],
                                     numpy.sort(points[points >=desired])[0]]
 
+        #fig = pyplot.figure(0)
+        #ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+        
         selected = []
+        print desiredParameters
         for label in self.getLabels(keySignature='CONVOLVED'):
             if label.parameters["TEFF"] in gridPoints["TEFF"]:
                 if label.parameters["LOGG"] in gridPoints["LOGG"]:
                     if label.parameters["BFIELD"] in gridPoints["BFIELD"]:
                         if label.parameters["SELECTED"]:
                             selected.append(label)
+                            #label.Spectrum.plot(ax=ax, color = 'k')
+                            print("T=%d, g=%.2f, B=%.2f" % (label.parameters["TEFF"], 
+                                   label.parameters["LOGG"], label.parameters["BFIELD"]))
+                            print("Melody=%s, Score=%s, Phrase=%s" % (label.Melody, 
+                                   label.Score, label.Phrase))
 
-        spectra = []
-        params = []
-        for label in selected:
-            spectra.append(label.Spectrum)
-            params.append(label)
-            
 
+        BlendedLabel = Label.fromBlend(desiredParameters=desiredParameters, gridPoints=selected)            
+        #BlendedLabel.Spectrum.plot(ax=ax, color='r')
+        #fig.show()
+        #raw_input()
+        
+        """
         Bspectra = []
         Bparams = []
         if len(params) == 1:
@@ -1821,10 +1850,11 @@ class Score( object ):
         for p in interpolatedParams:
             p.addReference(Melody=blended)
             self.appendLabel(label=p, keySignature='CONVOLVED')
-
-        if appendTheBlend:
-            self.syntheticMelodies.append(blended)
-        return blended, interpolatedParams
+            
+        """
+        #if appendTheBlend:
+        #    self.syntheticMelodies.append(blended)
+        return BlendedLabel
         
     def calc_lnlike(self, Teff=0.0, logg=0.0, Bfield=0.0, rv=0.0, ax=None):
         desiredParams = {}
