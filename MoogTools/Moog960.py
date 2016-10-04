@@ -38,113 +38,78 @@ class Label( object ):
         parameters = gridPoints[0].parameters.copy()
         for newParam in desiredParameters.keys():
             parameters[newParam] = desiredParameters[newParam]
+        
+        minT = gridPoints[0].parameters["TEFF"]
+        maxT = gridPoints[0].parameters["TEFF"]
+        minG = gridPoints[0].parameters["LOGG"]
+        maxG = gridPoints[0].parameters["LOGG"]
+        minB = gridPoints[0].parameters["BFIELD"]
+        maxB = gridPoints[0].parameters["BFIELD"]
+        corners = numpy.zeros(len(gridPoints), dtype=numpy.int)
+        for i in range(len(gridPoints)):
+            if gridPoints[i].parameters["TEFF"] < minT:
+                minT = gridPoints[i].parameters["TEFF"]
+            if gridPoints[i].parameters["TEFF"] > maxT:
+                maxT = gridPoints[i].parameters["TEFF"]
+            if gridPoints[i].parameters["LOGG"] < minG:
+                minG = gridPoints[i].parameters["LOGG"]
+            if gridPoints[i].parameters["LOGG"] > maxG:
+                maxG = gridPoints[i].parameters["LOGG"]
+            if gridPoints[i].parameters["BFIELD"] < minB:
+                minB = gridPoints[i].parameters["BFIELD"]
+            if gridPoints[i].parameters["BFIELD"] > maxB:
+                maxB = gridPoints[i].parameters["BFIELD"]
+
+        #Calculate distances
+        if (minT != maxT):
+            Teff_d = (desiredParameters["TEFF"] - minT)/(maxT - minT)
+        else:
+            raise Moog960Error(1, "Teff points are not different!")
+        if (minG != maxG):
+            Logg_d = (desiredParameters["LOGG"] - minG)/(maxG - minG)
+        else:
+            raise Moog960Error(1, "Log G points are not different!")
+        if (minB != maxB):
+            Bfield_d = (desiredParameters["BFIELD"] - minB)/(maxB - minB)
+        else:
+            raise Moog960Error(1, "B field points are not different!")
+                
+        for i in range(len(gridPoints)):
+            if gridPoints[i].parameters["TEFF"] == minT:
+                if gridPoints[i].parameters["LOGG"] == minG:
+                    if gridPoints[i].parameters["BFIELD"] == minB:
+                        corners[0] = i
+                    else:
+                        corners[4] = i
+                else:
+                    if gridPoints[i].parameters["BFIELD"] == minB:
+                        corners[1] = i
+                    else:
+                        corners[5] = i
+            else:
+                if gridPoints[i].parameters["LOGG"] == minG:
+                    if gridPoints[i].parameters["BFIELD"] == minB:
+                        corners[2] = i
+                    else:
+                        corners[6] = i
+                else:
+                    if gridPoints[i].parameters["BFIELD"] == minB:
+                        corners[3] = i
+                    else:
+                        corners[7] = i
+                    
             
-        wl = gridPoints[0].Spectrum.wl
+        c00 = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, Logg_d)
+        c01 = gridPoints[corners[4]].Spectrum.blend(gridPoints[corners[5]].Spectrum, Logg_d)
+        c10 = gridPoints[corners[2]].Spectrum.blend(gridPoints[corners[3]].Spectrum, Logg_d)
+        c11 = gridPoints[corners[6]].Spectrum.blend(gridPoints[corners[7]].Spectrum, Logg_d)
         
-        if gridPoints[0].Spectrum.flux_I != None:
-            flux_I = []
-        else:
-            flux_I = None
-        if gridPoints[0].Spectrum.flux_Q != None:
-            flux_Q = []
-        else:
-            flux_Q = None
-        if gridPoints[0].Spectrum.flux_U != None:
-            flux_U = []
-        else:
-            flux_U = None
-        if gridPoints[0].Spectrum.flux_V != None:
-            flux_V = []
-        else:
-            flux_V = None
-        if gridPoints[0].Spectrum.continuum != None:
-            continuum = []
-        else:
-            continuum = None 
+        c0 = c00.blend(c10, Bfield_d)
+        c1 = c01.blend(c11, Bfield_d)
         
-        params = desiredParameters.keys()
-        I_interp = []
-        Q_interp = []
-        U_interp = []
-        V_interp = []
-        continuum_interp = []
-        coords = []
-        for gP in gridPoints:
-            if ((gP.Spectrum.wl[0] > wl[0]) |  (gP.Spectrum.wl[-1] < wl[-1])):
-                wl = gP.Spectrum.wl
-            point = []
-            for param in params:
-                point.append(gP.parameters[param])
-            coords.append(numpy.array(point))
-            if gP.Spectrum.flux_I != None:
-                I_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.flux_I))
-            if gP.Spectrum.flux_Q != None:
-                Q_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.flux_Q))
-            if gP.Spectrum.flux_U != None:
-                U_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.flux_U))
-            if gP.Spectrum.flux_V != None:
-                V_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.flux_V))
-            if gP.Spectrum.continuum != None:
-                continuum_interp.append(interp1d(gP.Spectrum.wl, gP.Spectrum.continuum))
-        
-        newCoords = []
-        for param in params:
-            newCoords.append(desiredParameters[param])
-        newCoords = numpy.array(newCoords)
-        coords = numpy.array(coords)
-        I_interp = numpy.array(I_interp)
-        
-        for i in range(len(wl)):
-            if flux_I != None:
-                points = []
-                for I in I_interp:
-                    points.append(I(wl[i]))
-                points = numpy.array(points)
-                interpolator = LinearNDInterpolator(coords, points)
-                flux_I.append(interpolator(newCoords)[0])
-            if flux_Q != None:
-                points = []
-                for Q in Q_interp:
-                    points.append(Q(wl[i]))
-                points = numpy.array(points)
-                interpolator = LinearNDInterpolator(coords, points)
-                flux_Q.append(interpolator(newCoords)[0])
-            if flux_U != None:
-                points = []
-                for U in U_interp:
-                    points.append(U(wl[i]))
-                points = numpy.array(points)
-                interpolator = LinearNDInterpolator(coords, points)
-                flux_U.append(interpolator(newCoords)[0])
-            if flux_V != None:
-                points = []
-                for V in V_interp:
-                    points.append(V(wl[i]))
-                points = numpy.array(points)
-                interpolator = LinearNDInterpolator(coords, points)
-                flux_V.append(interpolator(newCoords)[0])
-            if continuum != None:
-                points = []
-                for continuum in continuum_interp:
-                    points.append(continuum(wl[i]))
-                points = numpy.array(points)
-                interpolator = LinearNDInterpolator(coords, points)
-                continuum.append(interpolator(newCoords)[0])
-            
-        if flux_I != None:
-            flux_I = numpy.array(flux_I)
-        if flux_Q != None:
-            flux_Q = numpy.array(flux_Q)
-        if flux_U != None:
-            flux_U = numpy.array(flux_U)
-        if flux_V != None:
-            flux_V = numpy.array(flux_V)
-        if continuum != None:
-            continuum = numpy.array(continuum)
+        blendedSpectrum = c0.blend(c1, Teff_d)
         
         header = gridPoints[0].Spectrum.header
-        
-        blendedSpectrum = SpectralTools.Spectrum(wl=wl, I=flux_I, Q=flux_Q, U=flux_U, V=flux_V, continuum=continuum, header=header, spectrum_type='BLENDED')
         
         retval =  self(parameters=parameters, Score = gridPoints[0].Score, Melody=gridPoints[0].Melody, Phrase=gridPoints[0].Phrase, Spectrum=blendedSpectrum)
 
@@ -1693,7 +1658,6 @@ class Score( object ):
         #ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
         
         selected = []
-        print desiredParameters
         for label in self.getLabels(keySignature='CONVOLVED'):
             if label.parameters["TEFF"] in gridPoints["TEFF"]:
                 if label.parameters["LOGG"] in gridPoints["LOGG"]:
@@ -1701,10 +1665,10 @@ class Score( object ):
                         if label.parameters["SELECTED"]:
                             selected.append(label)
                             #label.Spectrum.plot(ax=ax, color = 'k')
-                            print("T=%d, g=%.2f, B=%.2f" % (label.parameters["TEFF"], 
-                                   label.parameters["LOGG"], label.parameters["BFIELD"]))
-                            print("Melody=%s, Score=%s, Phrase=%s" % (label.Melody, 
-                                   label.Score, label.Phrase))
+                            #print("T=%d, g=%.2f, B=%.2f" % (label.parameters["TEFF"], 
+                            #       label.parameters["LOGG"], label.parameters["BFIELD"]))
+                            #print("Melody=%s, Score=%s, Phrase=%s" % (label.Melody, 
+                            #       label.Score, label.Phrase))
 
 
         BlendedLabel = Label.fromBlend(desiredParameters=desiredParameters, gridPoints=selected)            
@@ -1862,14 +1826,14 @@ class Score( object ):
         desiredParams["LOGG"] = logg
         desiredParams["BFIELD"] = Bfield
         #print rv
-        blended, blendedLabels = self.blend(desiredParameters=desiredParams,
+        blendedLabel = self.blend(desiredParameters=desiredParams,
                   appendTheBlend=False)
         #print "Blend Finished!"
-        blendedLabels[0].Spectrum.rv(rv)
+        blendedLabel.Spectrum.rv(rv)
         #print "RV Finished!"
-        blendedLabels[0].Spectrum.bin(self.compositeObservedLabel.Spectrum.wl, pad=0.0)
+        blendedLabel.Spectrum.bin(self.compositeObservedLabel.Spectrum.wl, pad=0.0)
         #print "Binning Finished!"
-        difference = blendedLabels[0].Spectrum - self.compositeObservedLabel.Spectrum
+        difference = blendedLabel.Spectrum - self.compositeObservedLabel.Spectrum
         #print "Difference Finished!"
         lnlike = -0.5*numpy.sum( 
                   (difference/self.compositeObservedLabel.Spectrum).flux_I**2.0)
@@ -1877,14 +1841,13 @@ class Score( object ):
         print lnlike
         if ax != None:
             ax.clear()
-            blendedLabels[0].Spectrum.plot(ax=ax)
+            blendedLabel.Spectrum.plot(ax=ax)
             self.compositeObservedLabel.Spectrum.plot(ax=ax)
             ax.figure.show()
             raw_input()
 
         del(difference)
-        del(blendedLabels[0])
-        del(blended)
+        del(blendedLabel)
         return lnlike
 
 class Moog960( object ):
