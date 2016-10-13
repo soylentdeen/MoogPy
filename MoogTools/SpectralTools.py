@@ -256,6 +256,10 @@ class Spectrum( object ):
         hdu = pyfits.PrimaryHDU(data)
         hdu.writeto(outfileName, clobber=True)
         
+    def copy(self):
+        return Spectrum(wl=self.wl, I=self.flux_I, Q=self.flux_Q, U=self.flux_U,continuum=self.continuum,
+                V=self.flux_V, header=self.header, spectrum_type='CONVOLVED')
+
     def plot(self, I=True, Q=False, U=False, V=False,
                  continuum=False, ax=None, **kwargs):
         """
@@ -288,6 +292,19 @@ class Spectrum( object ):
         if continuum:
             ax.plot(self.wl, self.continuum, label=plotLabel, **kwargs)
     
+    def nyquistSample(self, R=0.0):
+        nyquistWl = []
+        deltaWl = min(self.wl)/(2.0*R)
+        nyquistWl.append(min(self.wl) + deltaWl)
+        while True:
+            deltaWl = nyquistWl[-1]/(2.0*R)
+            if nyquistWl[-1]+deltaWl > self.wl[-1]:
+                break
+            nyquistWl.append(nyquistWl[-1]+deltaWl)
+        nyquistWl = numpy.array(nyquistWl)
+        self.bin(nyquistWl)
+
+        
     def resample(self, R=0.0, nyquist=False, observedWl=None, pad=None):
         """
         Spectrum.resample(R=0.0, nyquist=False, observedWl=None, pad=None)
@@ -416,7 +433,7 @@ class Spectrum( object ):
              which are not spanned by a complete bin.
         """
 
-        #"""
+        """
         if self.flux_I != None:
             I = scipy.interpolate.splrep(self.wl, self.flux_I)
             newSpec_I = scipy.interpolate.splev(newWl, I, ext=1)
@@ -456,8 +473,8 @@ class Spectrum( object ):
             self.continuum = numpy.array(newSpec_continuum)
         #"""
 
-        """
-        factor = 2.0
+        #"""
+        factor = 5.0
         deltaWl = numpy.median(numpy.diff(newWl))/factor
         if pad == None:
             #interpWl = numpy.arange(self.wl[0], self.wl[-1], deltaWl)
@@ -530,15 +547,15 @@ class Spectrum( object ):
             elif (len(inBin) == 1):
                 newWave.append(newWl[i])
                 if self.flux_I != None:
-                    newSpec_I.append(I_interp[inBin])
+                    newSpec_I.append(I_interp[inBin][0])
                 if self.flux_Q != None:
-                    newSpec_Q.append(Q_interp[inBin])
+                    newSpec_Q.append(Q_interp[inBin][0])
                 if self.flux_U != None:
-                    newSpec_U.append(U_interp[inBin])
+                    newSpec_U.append(U_interp[inBin][0])
                 if self.flux_V != None:
-                    newSpec_V.append(V_interp[inBin])
+                    newSpec_V.append(V_interp[inBin][0])
                 if self.continuum != None:
-                    newSpec_continuum.append(cont_interp[inBin])
+                    newSpec_continuum.append(cont_interp[inBin][0])
             else:
                 newWave.append(newWl[i])
                 if self.flux_I != None:
@@ -615,31 +632,68 @@ class Spectrum( object ):
         '''
         overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
         overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl)])
-        overlap_self = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
-        overlap_other = scipy.where((other.wl >= overlap_start) & (other.wl <= overlap_stop))
-        
-        I = None
-        Q = None
-        U = None
-        V = None
-        continuum = None
+        overlap = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
         
         if (self.flux_I != None) & (other.flux_I != None):
-            I = self.flux_I[overlap_self] - other.flux_I[overlap_other]
-            I[self.flux_I[overlap_self] == 0.0] = 0.0
-            I[other.flux_I[overlap_other] == 0.0] = 0.0
+            I = scipy.interpolate.splrep(other.wl, other.flux_I)
+            retval_I = numpy.zeros(len(self.wl))
+            retval_I[overlap] = self.flux_I[overlap] - scipy.interpolate.splev(self.wl[overlap], I)
+        else:
+            retval_I = None
         if (self.flux_Q != None) & (other.flux_Q != None):
-            Q = self.flux_Q[overlap_self] - other.flux_Q[overlap_other]
+            Q = scipy.interpolate.splrep(other.wl, other.flux_Q)
+            retval_Q = numpy.zeros(len(self.wl))
+            retval_Q[overlap] = self.flux_Q[overlap] - scipy.interpolate.splev(self.wl[overlap], Q)
+        else:
+            retval_Q = None
         if (self.flux_U != None) & (other.flux_U != None):
-            U = self.flux_U[overlap_self] - other.flux_U[overlap_other]
+            U = scipy.interpolate.splrep(other.wl, other.flux_U)
+            retval_U = numpy.zeros(len(self.wl))
+            retval_U[overlap] = self.flux_U[overlap] - scipy.interpolate.splev(self.wl[overlap], U)
+        else:
+            retval_U = None
         if (self.flux_V != None) & (other.flux_V != None):
-            V = self.flux_V[overlap_self] - other.flux_V[overlap_other]
+            V = scipy.interpolate.splrep(other.wl, other.flux_V)
+            retval_V = numpy.zeros(len(self.wl))
+            retval_V[overlap] = self.flux_V[overlap] - scipy.interpolate.splev(self.wl[overlap], V)
+        else:
+            retval_V = None
         if (self.continuum != None) & (other.continuum != None):
-            continuum = self.continuum[overlap_self] - other.continuum[overlap_other]
+            continuum = scipy.interpolate.splrep(other.wl, other.continuum)
+            retval_continuum = numpy.zeros(len(self.wl))
+            retval_continuum[overlap] = self.continuum[overlap] - scipy.interpolate.splev(self.wl[overlap], continuum)
+        else:
+            retval_continuum = None
         
-        return Spectrum(wl=self.wl[overlap_self], I=I, Q=Q, U=U, V=V, 
-                continuum=continuum, header=self.header,
+        return Spectrum(wl=self.wl, I=retval_I, Q=retval_Q, U=retval_U, V=retval_V, 
+                continuum=retval_continuum, header=self.header,
                 spectrum_type="DIFFERENCE")
+
+    def __mul__(self, factor):
+        
+        if (self.flux_I != None):
+            I = self.flux_I*factor
+        else:
+            I = None
+        if (self.flux_Q != None):
+            Q = self.flux_Q*factor
+        else:
+            Q = None
+        if (self.flux_U != None):
+            U = self.flux_U*factor
+        else:
+            U = None
+        if (self.flux_V != None):
+            V = self.flux_V*factor
+        else:
+            V = None
+        if (self.continuum != None):
+            continuum = self.continuum*factor
+        else:
+            continuum = None
+
+        return Spectrum(wl=self.wl, I=I, Q=Q, U=U, V=V, continuum=continuum,
+               header=self.header, spectrum_type="SCALED")
 
     def __div__(self, factor):
         """

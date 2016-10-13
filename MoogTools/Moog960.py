@@ -39,76 +39,67 @@ class Label( object ):
         for newParam in desiredParameters.keys():
             parameters[newParam] = desiredParameters[newParam]
         
-        minT = gridPoints[0].parameters["TEFF"]
-        maxT = gridPoints[0].parameters["TEFF"]
-        minG = gridPoints[0].parameters["LOGG"]
-        maxG = gridPoints[0].parameters["LOGG"]
-        minB = gridPoints[0].parameters["BFIELD"]
-        maxB = gridPoints[0].parameters["BFIELD"]
+        keys = numpy.array(["TEFF", "LOGG", "BFIELD"])
+        mins = {}
+        maxs = {}
+        for key in keys:
+            mins[key] = numpy.inf
+            maxs[key] = -numpy.inf
         corners = numpy.zeros(len(gridPoints), dtype=numpy.int)
         for i in range(len(gridPoints)):
-            if gridPoints[i].parameters["TEFF"] < minT:
-                minT = gridPoints[i].parameters["TEFF"]
-            if gridPoints[i].parameters["TEFF"] > maxT:
-                maxT = gridPoints[i].parameters["TEFF"]
-            if gridPoints[i].parameters["LOGG"] < minG:
-                minG = gridPoints[i].parameters["LOGG"]
-            if gridPoints[i].parameters["LOGG"] > maxG:
-                maxG = gridPoints[i].parameters["LOGG"]
-            if gridPoints[i].parameters["BFIELD"] < minB:
-                minB = gridPoints[i].parameters["BFIELD"]
-            if gridPoints[i].parameters["BFIELD"] > maxB:
-                maxB = gridPoints[i].parameters["BFIELD"]
+            for key in keys:
+                if gridPoints[i].parameters[key] < mins[key]:
+                    mins[key] = gridPoints[i].parameters[key]
+                if gridPoints[i].parameters[key] > maxs[key]:
+                    maxs[key] = gridPoints[i].parameters[key]
 
         #Calculate distances
-        if (minT != maxT):
-            Teff_d = (desiredParameters["TEFF"] - minT)/(maxT - minT)
-        else:
-            raise Moog960Error(1, "Teff points are not different!")
-        if (minG != maxG):
-            Logg_d = (desiredParameters["LOGG"] - minG)/(maxG - minG)
-        else:
-            raise Moog960Error(1, "Log G points are not different!")
-        if (minB != maxB):
-            Bfield_d = (desiredParameters["BFIELD"] - minB)/(maxB - minB)
-        else:
-            raise Moog960Error(1, "B field points are not different!")
-                
-        for i in range(len(gridPoints)):
-            if gridPoints[i].parameters["TEFF"] == minT:
-                if gridPoints[i].parameters["LOGG"] == minG:
-                    if gridPoints[i].parameters["BFIELD"] == minB:
-                        corners[0] = i
-                    else:
-                        corners[4] = i
-                else:
-                    if gridPoints[i].parameters["BFIELD"] == minB:
-                        corners[1] = i
-                    else:
-                        corners[5] = i
+        distances = {}
+        interp_dimensions = []
+        const_dimensions = []
+        for key in keys:
+            if (mins[key] != maxs[key]):
+                distances[key] = 1.0- (desiredParameters[key] - mins[key])/float(maxs[key] - mins[key])
+                interp_dimensions.append(key)
             else:
-                if gridPoints[i].parameters["LOGG"] == minG:
-                    if gridPoints[i].parameters["BFIELD"] == minB:
-                        corners[2] = i
-                    else:
-                        corners[6] = i
-                else:
-                    if gridPoints[i].parameters["BFIELD"] == minB:
-                        corners[3] = i
-                    else:
-                        corners[7] = i
-                    
-            
-        c00 = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, Logg_d)
-        c01 = gridPoints[corners[4]].Spectrum.blend(gridPoints[corners[5]].Spectrum, Logg_d)
-        c10 = gridPoints[corners[2]].Spectrum.blend(gridPoints[corners[3]].Spectrum, Logg_d)
-        c11 = gridPoints[corners[6]].Spectrum.blend(gridPoints[corners[7]].Spectrum, Logg_d)
-        
-        c0 = c00.blend(c10, Bfield_d)
-        c1 = c01.blend(c11, Bfield_d)
-        
-        blendedSpectrum = c0.blend(c1, Teff_d)
-        
+                distances[key] = 0.0
+                const_dimensions.append(key)
+
+        corners = numpy.zeros(2**len(interp_dimensions), dtype=numpy.int)
+        for j in range(len(gridPoints)):
+            i = 0
+            for key, step in zip(interp_dimensions, [1, 2, 4]):
+                if gridPoints[j].parameters[key] == mins[key]:
+                    i += 0
+                if gridPoints[j].parameters[key] == maxs[key]:
+                    i += step
+            corners[i] = j
+
+        if len(gridPoints) == 8:
+            c00 = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, distances[interp_dimensions[0]])
+            c01 = gridPoints[corners[2]].Spectrum.blend(gridPoints[corners[3]].Spectrum, distances[interp_dimensions[0]])
+            c10 = gridPoints[corners[4]].Spectrum.blend(gridPoints[corners[5]].Spectrum, distances[interp_dimensions[0]])
+            c11 = gridPoints[corners[6]].Spectrum.blend(gridPoints[corners[7]].Spectrum, distances[interp_dimensions[0]])
+
+            c0 = c00.blend(c10, distances[interp_dimensions[1]])
+            c1 = c01.blend(c11, distances[interp_dimensions[1]])
+
+            blendedSpectrum = c0.blend(c1, distances[interp_dimensions[2]])
+        elif len(gridPoints) == 4:
+            c0 = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, distances[interp_dimensions[0]])
+            c1 = gridPoints[corners[2]].Spectrum.blend(gridPoints[corners[3]].Spectrum, distances[interp_dimensions[0]])
+
+            blendedSpectrum = c0.blend(c1, distances[interp_dimensions[1]])
+
+        elif len(gridPoints) == 2:
+            blendedSpectrum = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, distances[interp_dimensions[0]])
+        elif len(gridPoints) == 1:
+            blendedSpectrum = gridPoints[0].Spectrum.copy()
+        else:
+            print "Error!"
+            print asdf
+
+
         header = gridPoints[0].Spectrum.header
         
         retval =  self(parameters=parameters, Score = gridPoints[0].Score, Melody=gridPoints[0].Melody, Phrase=gridPoints[0].Phrase, Spectrum=blendedSpectrum)
