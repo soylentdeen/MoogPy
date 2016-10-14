@@ -420,7 +420,7 @@ class Spectrum( object ):
         beta = rv/299792.0
         self.wl = self.wl * (1 + beta)/(1.0 - beta**2.0)**(-0.5)
 
-    def bin(self, newWl, pad=None):
+    def bin(self, newWl, pad=None, subsample=3.0):
         """
         Spectrum.bin(newWl=[], pad=None)
         
@@ -433,157 +433,154 @@ class Spectrum( object ):
              which are not spanned by a complete bin.
         """
 
-        """
-        if self.flux_I != None:
-            I = scipy.interpolate.splrep(self.wl, self.flux_I)
-            newSpec_I = scipy.interpolate.splev(newWl, I, ext=1)
-        else:
-            newSpec_I = None
-        if self.flux_Q != None:
-            Q = scipy.interpolate.splrep(self.wl, self.flux_Q)
-            newSpec_Q = scipy.interpolate.splev(newWl, Q, ext=1)
-        else:
-            newSpec_Q = None
-        if self.flux_U != None:
-            U = scipy.interpolate.splrep(self.wl, self.flux_U)
-            newSpec_U = scipy.interpolate.splev(newWl, U, ext=1)
-        else:
-            newSpec_U = None
-        if self.flux_V != None:
-            V = scipy.interpolate.splrep(self.wl, self.flux_V)
-            newSpec_V = scipy.interpolate.splev(newWl, V, ext=1)
-        else:
-            newSpec_V = None
-        if self.continuum != None:
-            continuum = scipy.interpolate.splrep(self.wl, self.continuum)
-            newSpec_continuum = scipy.interpolate.splev(newWl, continuum, ext=1)
-        else:
-            newSpec_continuum = None
-
-        self.wl = newWl
-        if self.flux_I != None:
-            self.flux_I = numpy.array(newSpec_I)
-        if self.flux_Q != None:
-            self.flux_Q = numpy.array(newSpec_Q)
-        if self.flux_U != None:
-            self.flux_U = numpy.array(newSpec_U)
-        if self.flux_V != None:
-            self.flux_V = numpy.array(newSpec_V)
-        if self.continuum != None:
-            self.continuum = numpy.array(newSpec_continuum)
-        #"""
-
-        #"""
-        factor = 5.0
-        deltaWl = numpy.median(numpy.diff(newWl))/factor
-        if pad == None:
-            #interpWl = numpy.arange(self.wl[0], self.wl[-1], deltaWl)
-            npts = int((self.wl[-1]-self.wl[0])/deltaWl)
-            interpWl = numpy.linspace(self.wl[0], self.wl[-1], num=npts)
-        else:
-            #interpWl = numpy.arange(newWl[0], newWl[-1], deltaWl)
-            npts = int((newWl[-1]-newWl[0])/deltaWl)
-            interpWl = numpy.linspace(newWl[0], newWl[-1], num=npts)
-        newWave = []
-
-        if self.flux_I != None:
-            I = scipy.interpolate.splrep(self.wl, self.flux_I)
-            I_interp = scipy.interpolate.splev(interpWl, I, ext=1)
-            if pad != None:
-                I_interp[I_interp==0]=1.0
-            newSpec_I = []
-        if self.flux_Q != None:
-            Q = scipy.interpolate.splrep(self.wl, self.flux_Q)
-            Q_interp = scipy.interpolate.splev(interpWl, Q, ext=1)
-            newSpec_Q = numpy.zeros(len(newWl))
-        if self.flux_U != None:
-            U = scipy.interpolate.splrep(self.wl, self.flux_U)
-            U_interp = scipy.interpolate.splev(interpWl, U, ext=1)
-            newSpec_U = numpy.zeros(len(newWl))
-        if self.flux_V != None:
-            V = scipy.interpolate.splrep(self.wl, self.flux_V)
-            V_interp = scipy.interpolate.splev(interpWl, V, ext=1)
-            if pad != None:
-                V_interp[V_interp==0]=0.0
-            newSpec_V = []
-        if self.continuum != None:
-            continuum = scipy.interpolate.splrep(self.wl, self.continuum)
-            cont_interp = scipy.interpolate.splev(interpWl, continuum, ext=1)
-            newSpec_continuum = numpy.zeros(len(newWl))
-        for i in range(len(newWl)):
-            if i==0:
-                lowerBound = newWl[0]-deltaWl*(factor/2.0)
+        if subsample == 0:
+            if self.flux_I != None:
+                I = scipy.interpolate.splrep(self.wl, self.flux_I)
+                newSpec_I = scipy.interpolate.splev(newWl, I, ext=1)
             else:
-                lowerBound = (newWl[i-1]+newWl[i])/2.0
-            if i==len(newWl)-1:
-                upperBound = newWl[-1]+deltaWl*(factor/2.0)
+                newSpec_I = None
+            if self.flux_Q != None:
+                Q = scipy.interpolate.splrep(self.wl, self.flux_Q)
+                newSpec_Q = scipy.interpolate.splev(newWl, Q, ext=1)
             else:
-                upperBound = (newWl[i]+newWl[i+1])/2.0
-            inBin = scipy.where( (interpWl > lowerBound) & (
-                interpWl <= upperBound))[0]
-            if (len(inBin) > 1):
-                newWave.append(newWl[i])
-                denom = interpWl[inBin][-1] - interpWl[inBin][0]
-                if self.flux_I != None:
-                    num=scipy.integrate.simps(I_interp[inBin], 
-                            x=interpWl[inBin])
-                    newSpec_I.append(num/denom)
-                if self.flux_Q != None:
-                    num=scipy.integrate.simps(Q_interp[inBin], 
-                            x=interpWl[inBin])
-                    newSpec_Q[i] = num/denom
-                if self.flux_U != None:
-                    num=scipy.integrate.simps(U_interp[inBin], 
-                            x=interpWl[inBin])
-                    newSpec_U[i] = num/denom
-                if self.flux_V != None:
-                    num=scipy.integrate.simps(V_interp[inBin], 
-                            x=interpWl[inBin])
-                    newSpec_V.append(num/denom)
-                if self.continuum != None:
-                    num=scipy.integrate.simps(cont_interp[inBin], 
-                            x=interpWl[inBin])
-                    newSpec_continuum[i] = num/denom
-            elif (len(inBin) == 1):
-                newWave.append(newWl[i])
-                if self.flux_I != None:
-                    newSpec_I.append(I_interp[inBin][0])
-                if self.flux_Q != None:
-                    newSpec_Q.append(Q_interp[inBin][0])
-                if self.flux_U != None:
-                    newSpec_U.append(U_interp[inBin][0])
-                if self.flux_V != None:
-                    newSpec_V.append(V_interp[inBin][0])
-                if self.continuum != None:
-                    newSpec_continuum.append(cont_interp[inBin][0])
+                newSpec_Q = None
+            if self.flux_U != None:
+                U = scipy.interpolate.splrep(self.wl, self.flux_U)
+                newSpec_U = scipy.interpolate.splev(newWl, U, ext=1)
             else:
-                newWave.append(newWl[i])
-                if self.flux_I != None:
-                    newSpec_I.append(scipy.interpolate.splev(newWl[i], I, ext=1))
-                if self.flux_Q != None:
-                    newSpec_Q.append(scipy.interpolate.splev(newWl[i], Q, ext=1))
-                if self.flux_U != None:
-                    newSpec_U.append(scipy.interpolate.splev(newWl[i], U, ext=1))
-                if self.flux_V != None:
-                    newSpec_V.append(scipy.interpolate.splev(newWl[i], V, ext=1))
-                if self.continuum != None:
-                    newSpec_continuum.append(scipy.interpolate.splev(newWl[i], continuum, ext=1))
+                newSpec_U = None
+            if self.flux_V != None:
+                V = scipy.interpolate.splrep(self.wl, self.flux_V)
+                newSpec_V = scipy.interpolate.splev(newWl, V, ext=1)
+            else:
+                newSpec_V = None
+            if self.continuum != None:
+                continuum = scipy.interpolate.splrep(self.wl, self.continuum)
+                newSpec_continuum = scipy.interpolate.splev(newWl, continuum, ext=1)
+            else:
+                newSpec_continuum = None
+
+            self.wl = newWl
+            if self.flux_I != None:
+                self.flux_I = numpy.array(newSpec_I)
+            if self.flux_Q != None:
+                self.flux_Q = numpy.array(newSpec_Q)
+            if self.flux_U != None:
+                self.flux_U = numpy.array(newSpec_U)
+            if self.flux_V != None:
+                self.flux_V = numpy.array(newSpec_V)
+            if self.continuum != None:
+                self.continuum = numpy.array(newSpec_continuum)
+        else:
+            factor = subsample
+            deltaWl = numpy.median(numpy.diff(newWl))/factor
+            if pad == None:
+                #interpWl = numpy.arange(self.wl[0], self.wl[-1], deltaWl)
+                npts = int((self.wl[-1]-self.wl[0])/deltaWl)
+                interpWl = numpy.linspace(self.wl[0], self.wl[-1], num=npts)
+            else:
+                #interpWl = numpy.arange(newWl[0], newWl[-1], deltaWl)
+                npts = int((newWl[-1]-newWl[0])/deltaWl)
+                interpWl = numpy.linspace(newWl[0], newWl[-1], num=npts)
+            newWave = []
+    
+            if self.flux_I != None:
+                I = scipy.interpolate.splrep(self.wl, self.flux_I)
+                I_interp = scipy.interpolate.splev(interpWl, I, ext=1)
+                if pad != None:
+                    I_interp[I_interp==0]=1.0
+                newSpec_I = []
+            if self.flux_Q != None:
+                Q = scipy.interpolate.splrep(self.wl, self.flux_Q)
+                Q_interp = scipy.interpolate.splev(interpWl, Q, ext=1)
+                newSpec_Q = numpy.zeros(len(newWl))
+            if self.flux_U != None:
+                U = scipy.interpolate.splrep(self.wl, self.flux_U)
+                U_interp = scipy.interpolate.splev(interpWl, U, ext=1)
+                newSpec_U = numpy.zeros(len(newWl))
+            if self.flux_V != None:
+                V = scipy.interpolate.splrep(self.wl, self.flux_V)
+                V_interp = scipy.interpolate.splev(interpWl, V, ext=1)
+                if pad != None:
+                    V_interp[V_interp==0]=0.0
+                newSpec_V = []
+            if self.continuum != None:
+                continuum = scipy.interpolate.splrep(self.wl, self.continuum)
+                cont_interp = scipy.interpolate.splev(interpWl, continuum, ext=1)
+                newSpec_continuum = numpy.zeros(len(newWl))
+            for i in range(len(newWl)):
+                if i==0:
+                    lowerBound = newWl[0]-deltaWl*(factor/2.0)
+                else:
+                    lowerBound = (newWl[i-1]+newWl[i])/2.0
+                if i==len(newWl)-1:
+                    upperBound = newWl[-1]+deltaWl*(factor/2.0)
+                else:
+                    upperBound = (newWl[i]+newWl[i+1])/2.0
+                inBin = scipy.where( (interpWl > lowerBound) & (
+                    interpWl <= upperBound))[0]
+                if (len(inBin) > 1):
+                    newWave.append(newWl[i])
+                    denom = interpWl[inBin][-1] - interpWl[inBin][0]
+                    if self.flux_I != None:
+                        num=scipy.integrate.simps(I_interp[inBin], 
+                                x=interpWl[inBin])
+                        newSpec_I.append(num/denom)
+                    if self.flux_Q != None:
+                        num=scipy.integrate.simps(Q_interp[inBin], 
+                                x=interpWl[inBin])
+                        newSpec_Q[i] = num/denom
+                    if self.flux_U != None:
+                        num=scipy.integrate.simps(U_interp[inBin], 
+                                x=interpWl[inBin])
+                        newSpec_U[i] = num/denom
+                    if self.flux_V != None:
+                        num=scipy.integrate.simps(V_interp[inBin], 
+                                x=interpWl[inBin])
+                        newSpec_V.append(num/denom)
+                    if self.continuum != None:
+                        num=scipy.integrate.simps(cont_interp[inBin], 
+                                x=interpWl[inBin])
+                        newSpec_continuum[i] = num/denom
+                elif (len(inBin) == 1):
+                    newWave.append(newWl[i])
+                    if self.flux_I != None:
+                        newSpec_I.append(I_interp[inBin][0])
+                    if self.flux_Q != None:
+                        newSpec_Q.append(Q_interp[inBin][0])
+                    if self.flux_U != None:
+                        newSpec_U.append(U_interp[inBin][0])
+                    if self.flux_V != None:
+                        newSpec_V.append(V_interp[inBin][0])
+                    if self.continuum != None:
+                        newSpec_continuum.append(cont_interp[inBin][0])
+                else:
+                    newWave.append(newWl[i])
+                    if self.flux_I != None:
+                        newSpec_I.append(scipy.interpolate.splev(newWl[i], I, ext=1))
+                    if self.flux_Q != None:
+                        newSpec_Q.append(scipy.interpolate.splev(newWl[i], Q, ext=1))
+                    if self.flux_U != None:
+                        newSpec_U.append(scipy.interpolate.splev(newWl[i], U, ext=1))
+                    if self.flux_V != None:
+                        newSpec_V.append(scipy.interpolate.splev(newWl[i], V, ext=1))
+                    if self.continuum != None:
+                        newSpec_continuum.append(scipy.interpolate.splev(newWl[i], continuum, ext=1))
                 
-                #print "ERROR!!! newWave is not appended!"
-                #raw_input()
+                    #print "ERROR!!! newWave is not appended!"
+                    #raw_input()
 
-        self.wl = numpy.array(newWave)
-        if self.flux_I != None:
-            self.flux_I = numpy.array(newSpec_I)
-        if self.flux_Q != None:
-            self.flux_Q = numpy.array(newSpec_Q)
-        if self.flux_U != None:
-            self.flux_U = numpy.array(newSpec_U)
-        if self.flux_V != None:
-            self.flux_V = numpy.array(newSpec_V)
-        if self.continuum != None:
-            self.continuum = numpy.array(newSpec_continuum)
-        #"""
+            self.wl = numpy.array(newWave)
+            if self.flux_I != None:
+                self.flux_I = numpy.array(newSpec_I)
+            if self.flux_Q != None:
+                self.flux_Q = numpy.array(newSpec_Q)
+            if self.flux_U != None:
+                self.flux_U = numpy.array(newSpec_U)
+            if self.flux_V != None:
+                self.flux_V = numpy.array(newSpec_V)
+            if self.continuum != None:
+                self.continuum = numpy.array(newSpec_continuum)
 
     def rotate(self, angle=0.0, wlPoint = None):
         """
