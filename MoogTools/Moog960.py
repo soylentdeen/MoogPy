@@ -1829,7 +1829,7 @@ class Score( object ):
         lnlike = -0.5*numpy.sum( 
                   (difference/self.compositeObservedLabel.Spectrum).flux_I**2.0)
         #print "ln_likelihood Finished!"
-        #print lnlike
+        print lnlike
         if ax != None:
             ax.clear()
             blendedLabel.Spectrum.plot(ax=ax)
