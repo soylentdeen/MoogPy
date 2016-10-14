@@ -9,6 +9,7 @@ import numpy
 
 import astropy.io.fits as pyfits
 
+print asdf
 
 class SpectrumError( Exception ):
     def __init__(self, value, errmsg):
