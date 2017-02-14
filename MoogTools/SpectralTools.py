@@ -4,12 +4,8 @@ import scipy.integrate
 import scipy.interpolate
 import scipy.signal
 import string
-
 import numpy
-
 import astropy.io.fits as pyfits
-
-print asdf
 
 class SpectrumError( Exception ):
     def __init__(self, value, errmsg):
@@ -254,7 +250,7 @@ class Spectrum( object ):
     def savePlainFits(self, I=True, dI=False, Q=False, U=False, V=False, continuum=False, outfileName='Output.fits'):
         
         data = numpy.array([self.wl, self.flux_I])
-        hdu = pyfits.PrimaryHDU(data)
+        hdu = pyfits.PrimaryHDU(data, header=self.header)
         hdu.writeto(outfileName, clobber=True)
         
     def copy(self):

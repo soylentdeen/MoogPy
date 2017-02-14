@@ -141,6 +141,14 @@ class MoogStokes( object ):
             self.B = self.config["Bfield"]
             self.modelFile = None
         
+        if 'metallicity' in self.config.keys():
+            self.metallicity = self.config['metallicity']
+        else:
+            self.metallicity = 0.0
+        if 'mturb' in self.config.keys():
+            self.mturb = self.config['mturb']
+        else:
+            self.mturb = 1.0
         if "diskInt" in kwargs.keys():
             self.diskInt = kwargs["diskInt"]
         elif "diskInt" in self.config.keys():
@@ -308,7 +316,7 @@ class MoogStokes( object ):
         self.lineList.writeLineLists(parent=self, mode=self.LineListFormat, **kwargs)
         self.parameterFile.setName(self.fileBase)
         self.parameterFile.setModel(teff=self.T, logg=self.logg, 
-                modelFile=self.modelFile)
+                modelFile=self.modelFile, metallicity=self.metallicity, mturb=self.mturb)
         self.parameterFile.writeParFile()
         self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
         self.MoogPy.atmos.linecount = 0
@@ -319,9 +327,9 @@ class MoogStokes( object ):
         self.Phrase = Moog960.SyntheticPhrase(rawData=self.Spectra,
                 diskInt=self.diskInt)
         if saveRaw:
-            filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_raw.fits'%(self.config["Teff"],
-                    self.config["logg"], self.config["Bfield"])
-            PHKWs = {"BFIELD":self.config["Bfield"], "TEFF":self.config["Teff"], "LOGG":self.config["logg"]}
+            filename = self.config["outdir"]+self.config["outbase"]+'_T%d_G%.2f_B%.2f_M%.2f_t%.2f_raw.fits'%(self.config["Teff"],
+                    self.config["logg"], self.config["Bfield"], self.metallicity, self.mturb)
+            PHKWs = {"BFIELD":self.config["Bfield"], "TEFF":self.config["Teff"], "LOGG":self.config["logg"], "FEH":self.metallicity, "MTURB": self.mturb}
             self.Phrase.saveRaw(filename=filename, primaryHeaderKWs=PHKWs)
 
     def trace(self, save=False):
@@ -329,7 +337,8 @@ class MoogStokes( object ):
         self.lineList.writeLineLists(parent=self, mode="MOOGSTOKES")
         self.MoogPy.charstuff.fparam = self.fileName.ljust(80)
         self.parameterFile.setName(self.fileBase)
-        self.parameterFile.setModel(teff = self.T, logg = self.logg)
+        self.parameterFile.setModel(teff = self.T, logg = self.logg, modelFile=self.modelFile,
+                                    metallicity=self.metallicity, mturb=self.mturb)
         self.parameterFile.writeParFile()
         self.MoogPy.atmos.linecount = 0
         self.MoogPy.moogstokessilent()
@@ -361,6 +370,10 @@ class ParameterFile( object ):
         if "atmos_dir" in self.moogPars.keys():
             atmos_dir = self.moogPars["atmos_dir"]
             self.moogPars["atmos_dir"] = os.environ.get('MOOGPYDATAPATH')+atmos_dir
+        if 'model_type' in self.config.keys():
+            self.model_type = self.config['model_type']
+        else:
+            self.model_type = 'MARCS'
         self.mode = self.moogPars['mode']
         self.labels = {'terminal':'x11',
                       'strong':1, 
@@ -392,11 +405,16 @@ class ParameterFile( object ):
         self.file_labels['stronglines_in'] = self.parent.MoogSandbox + self.config['Strong_FileName']+'_'+name
         self.parFileName = self.parent.MoogSandbox + name+'.par'
         
-    def setModel(self, teff=0.0, logg=0.0, modelFile=None):
+    def setModel(self, teff=0.0, logg=0.0, modelFile=None, metallicity='0.0', mturb=1.0):
         if modelFile==None:
-            self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH')+ \
+            if self.model_type == 'MARCS':
+                self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH')+ \
                     'Atmospheres/MARCS/MARCS_T'+ str(int(teff))+'_G'+ \
-                    str(logg)+'_M0.0_t1.0.md'
+                    str(logg)+'_M'+str(metallicity)+'_t'+str(mturb)+'.md'
+                print self.file_labels["model_in"]
+            elif self.model_type == 'BTSettl':
+                self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH')+ \
+                    'Atmopsheres/BTSettl/BTSettl_T'+str(int(teff))
         else:
             self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH') + \
                     'Atmospheres/' + modelFile
