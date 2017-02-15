@@ -34,7 +34,7 @@ class Label( object ):
         self.Score = Score
 
     @classmethod
-    def fromBlend(self, desiredParameters={}, gridPoints=[]):
+    def fromBlend(self, desiredParameters={}, gridPoints=[], wlRange=None):
         parameters = gridPoints[0].parameters.copy()
         for newParam in desiredParameters.keys():
             parameters[newParam] = desiredParameters[newParam]
@@ -76,23 +76,23 @@ class Label( object ):
             corners[i] = j
 
         if len(gridPoints) == 8:
-            c00 = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, distances[interp_dimensions[0]])
-            c01 = gridPoints[corners[2]].Spectrum.blend(gridPoints[corners[3]].Spectrum, distances[interp_dimensions[0]])
-            c10 = gridPoints[corners[4]].Spectrum.blend(gridPoints[corners[5]].Spectrum, distances[interp_dimensions[0]])
-            c11 = gridPoints[corners[6]].Spectrum.blend(gridPoints[corners[7]].Spectrum, distances[interp_dimensions[0]])
+            c00 = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, distances[interp_dimensions[0]], wlRange=wlRange)
+            c01 = gridPoints[corners[2]].Spectrum.blend(gridPoints[corners[3]].Spectrum, distances[interp_dimensions[0]], wlRange=wlRange)
+            c10 = gridPoints[corners[4]].Spectrum.blend(gridPoints[corners[5]].Spectrum, distances[interp_dimensions[0]], wlRange=wlRange)
+            c11 = gridPoints[corners[6]].Spectrum.blend(gridPoints[corners[7]].Spectrum, distances[interp_dimensions[0]], wlRange=wlRange)
 
             c0 = c00.blend(c10, distances[interp_dimensions[1]])
             c1 = c01.blend(c11, distances[interp_dimensions[1]])
 
             blendedSpectrum = c0.blend(c1, distances[interp_dimensions[2]])
         elif len(gridPoints) == 4:
-            c0 = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, distances[interp_dimensions[0]])
-            c1 = gridPoints[corners[2]].Spectrum.blend(gridPoints[corners[3]].Spectrum, distances[interp_dimensions[0]])
+            c0 = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, distances[interp_dimensions[0]], wlRange=wlRange)
+            c1 = gridPoints[corners[2]].Spectrum.blend(gridPoints[corners[3]].Spectrum, distances[interp_dimensions[0]], wlRange=wlRange)
 
             blendedSpectrum = c0.blend(c1, distances[interp_dimensions[1]])
 
         elif len(gridPoints) == 2:
-            blendedSpectrum = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, distances[interp_dimensions[0]])
+            blendedSpectrum = gridPoints[corners[0]].Spectrum.blend(gridPoints[corners[1]].Spectrum, distances[interp_dimensions[0]], wlRange=wlRange)
         elif len(gridPoints) == 1:
             blendedSpectrum = gridPoints[0].Spectrum.copy()
         else:
@@ -1566,7 +1566,7 @@ class Score( object ):
         return spectra, parameters
 
 
-    def listen(self, keySignature='OBSERVED'):   # gets the observed spectrum
+    def listen(self, keySignature='OBSERVED', wlRange=None):   # gets the observed spectrum
         self.compositeObserved = []
         #spectra = []
         labels = []
@@ -1593,6 +1593,8 @@ class Score( object ):
         #    mergedSpectra = mergedSpectra.mergeSpectra(sp[0])
         #    mergedLabel = mergedLabel.merge(l)
 
+        if wlRange != None:
+            mergedLabel.Spectrum.trim(wlRange[0], wlRange[1])
         mergedLabel.parameters["SELECTED"] = True
         #mergedLabel.addReference(Spectrum = mergedSpectra)
         if keySignature=='OBSERVED':
@@ -1632,7 +1634,7 @@ class Score( object ):
         return mastered
 
 
-    def blend(self, desiredParameters={}, appendTheBlend=True):
+    def blend(self, desiredParameters={}, appendTheBlend=True, wlRange=None):
         gridPoints = {}
         for key in desiredParameters.keys():
             points = self.convolvedGridPoints[key]
@@ -1662,7 +1664,8 @@ class Score( object ):
                             #       label.Score, label.Phrase))
 
 
-        BlendedLabel = Label.fromBlend(desiredParameters=desiredParameters, gridPoints=selected)            
+        BlendedLabel = Label.fromBlend(desiredParameters=desiredParameters, gridPoints=selected,
+                 wlRange=wlRange)
         #BlendedLabel.Spectrum.plot(ax=ax, color='r')
         #fig.show()
         #raw_input()
@@ -1818,7 +1821,8 @@ class Score( object ):
         desiredParams["BFIELD"] = Bfield
         #print rv
         blendedLabel = self.blend(desiredParameters=desiredParams,
-                  appendTheBlend=False)
+                  appendTheBlend=False, wlRange=[self.compositeObservedLabel.Spectrum.wl[0], 
+                  self.compositeObservedLabel.Spectrum.wl[-1]])
         #print "Blend Finished!"
         blendedLabel.Spectrum.rv(rv)
         #print "RV Finished!"
@@ -1829,7 +1833,7 @@ class Score( object ):
         lnlike = -0.5*numpy.sum( 
                   (difference/self.compositeObservedLabel.Spectrum).flux_I**2.0)
         #print "ln_likelihood Finished!"
-        print lnlike, desiredParams
+        print lnlike, desiredParams, rv
         if ax != None:
             ax.clear()
             blendedLabel.Spectrum.plot(ax=ax)

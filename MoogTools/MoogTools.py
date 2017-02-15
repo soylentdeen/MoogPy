@@ -12,8 +12,21 @@ import Moog960
 class MARCS_Atmosphere( object ):
     def __init__(self, df):
         data = open(df, 'r')
-        print asdf
-        coords = data.readline().split('_')
+        model = data.readlines()
+        #coords = data.readline().split('_')
+        #self.G = float(coords[1][1:])
+        #self.m = float(coords[2][1:])
+        #self.mt = int(coords[3][1:])
+        self.T = int(model[1].split()[0])
+        self.G = numpy.log10(float(model[3].split()[0]))
+        self.mt = float(model[4].split()[0])
+        junk = model[6].split()
+        self.FeH = float(junk[0])
+        self.Alpha = float(junk[1])
+        self.nlayers = int(model[22].split()[0])
+        #for 
+
+
 
 class Atmosphere( object ):
     def __init__(self, df):
