@@ -902,6 +902,26 @@ class Spectrum( object ):
         return Spectrum(wl=newWl, I=newI, Q=newQ, U=newU, V=newV, continuum=newCont, header=self.header,
                         spectrum_type="BLENDED")
     
+    def trim(self, wlStart, wlStop):
+        if (wlStart > self.wl[-1]) or (wlStop < self.wl[0]) or (wlStart < self.wl[0]) or (wlStop > self.wl[-1]):
+            raise SpectrumError(2, 'Requested region falls outside wavelength bounds!')
+            
+        bm = scipy.where( (self.wl > wlStart) & (self.wl < wlStop))[0]
+        newwl = self.wl[bm]
+        if self.I != None:
+            newI = self.flux_I[bm]
+        if self.Q != None:
+            newQ = self.flux_Q[bm]
+        if self.U != None:
+            newU = self.flux_U[bm]
+        if self.V != None:
+            newV = self.flux_V[bm]
+        if self.continuum != None:
+            newCont = self.continuum[bm]
+         
+        return Spectrum(wl=newWl, I=newI, Q=newQ, U=newU, V=newV, continuum=newCont, header=self.header,
+                        spectrum_type="TRIMMMED")
+
     def calc_EW(self, wlStart, wlStop, findContinuum=False):
         """
         EW = Spectrum.calc_EW(wlStart, wlStop, findContinuum=False)

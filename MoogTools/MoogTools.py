@@ -9,6 +9,12 @@ import astropy.io.fits as pyfits
 import time
 import Moog960
 
+class MARCS_Atmosphere( object ):
+    def __init__(self, df):
+        data = open(df, 'r')
+        print asdf
+        coords = data.readline().split('_')
+
 class Atmosphere( object ):
     def __init__(self, df):
         data = open(df, 'r')
