@@ -250,7 +250,10 @@ class Spectrum( object ):
     def savePlainFits(self, I=True, dI=False, Q=False, U=False, V=False, continuum=False, outfileName='Output.fits'):
         
         data = numpy.array([self.wl, self.flux_I])
-        hdu = pyfits.PrimaryHDU(data, header=self.header)
+        saved_header = self.header.copy()
+        for card in self.label.Melody.header.cards[4:]:
+            saved_header.append(card)
+        hdu = pyfits.PrimaryHDU(data, header=saved_header)
         hdu.writeto(outfileName, clobber=True)
         
     def copy(self):
