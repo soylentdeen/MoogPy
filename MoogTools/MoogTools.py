@@ -76,13 +76,13 @@ class MARCS_Atmosphere( object ):
         self.RHOX = numpy.array(RHOX)
 
     def write_BEGN(self, outdir=''):
-        self.filename = 'MARCS_T'+str(self.Teff)+'_G'+str(self.G)+'_M'+str(self.FeH)+'_t'+str(self.mt)+'.md'
+        self.filename = 'MARCS_T'+str(self.Teff)+'_G%.2f'% self.G+'_M%.2f' % self.FeH +'_t%.2f'%self.mt+'.md'
         f = open(outdir+self.filename, 'w')
         f.write('BEGN\n')
         f.write('MARCS T=%d Log g=%.2f Fe/H=%.2f mturb=%.1f\n' % (self.Teff, self.G, self.FeH, self.mt))
-        f.write('%d\n' % self.nlayers)
+        f.write('                   %d\n' % self.nlayers)
         for i in range(self.nlayers):
-            f.write('%.1f %.1f %f %f %f %f\n' % (self.lgTauR[i], self.T[i], self.Pg[i], self.Ne[i], self.Mu[i],
+            f.write('%.1f %.1f %.2f %.5E %f %f\n' % (self.lgTauR[i], self.T[i], self.Pg[i], self.Ne[i], self.Mu[i],
                                                self.KappaRoss[i]))
         f.write('%d\n' % float(self.mt*100000.0))
         f.write('natoms            0    %.2f\n' % self.FeH)
@@ -493,8 +493,8 @@ class ParameterFile( object ):
         if modelFile==None:
             if self.model_type == 'MARCS':
                 self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH')+ \
-                    'Atmospheres/MARCS/MARCS_T'+ str(int(teff))+'_G'+ \
-                    str(logg)+'_M'+str(metallicity)+'_t'+str(mturb)+'.md'
+                    'Atmospheres/MARCS/MARCS_T'+ str(int(teff))+'_G%.2f'% logg +\
+                    '_M%.2f'%metallicity+'_t%.2f'%mturb+'.md'
                 print self.file_labels["model_in"]
             elif self.model_type == 'BTSettl':
                 self.file_labels["model_in"] = os.environ.get('MOOGPYDATAPATH')+ \
