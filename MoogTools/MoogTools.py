@@ -17,14 +17,79 @@ class MARCS_Atmosphere( object ):
         #self.G = float(coords[1][1:])
         #self.m = float(coords[2][1:])
         #self.mt = int(coords[3][1:])
-        self.T = int(model[1].split()[0])
+        self.Teff = int(float(model[1].split()[0]))
         self.G = numpy.log10(float(model[3].split()[0]))
         self.mt = float(model[4].split()[0])
         junk = model[6].split()
         self.FeH = float(junk[0])
         self.Alpha = float(junk[1])
         self.nlayers = int(model[22].split()[0])
-        #for 
+        n = []
+        lgTauR = []
+        lgTau5 = []
+        T = []
+        Pe = []
+        Ne = []
+        Pg = []
+        Prad = []
+        Pturb = []
+        KappaRoss = []
+        Density = []
+        Mu = []
+        Vconv = []
+        Fconv_F = []
+        RHOX = []
+        k = 1.380648e-16
+        for i in range(self.nlayers):
+            line = model[25+i].split()
+            n.append(int(line[0]))
+            lgTauR.append(float(line[1]))
+            lgTau5.append(float(line[2]))
+            T.append(float(line[4]))
+            Pe.append(float(line[5]))
+            Ne.append(Pe[-1]/(k*T[-1]))
+            Pg.append(float(line[6]))
+            Prad.append(float(line[7]))
+            Pturb.append(float(line[8]))
+            line = model[26+self.nlayers+i].split()
+            KappaRoss.append(float(line[2]))
+            Density.append(float(line[3]))
+            Mu.append(float(line[4]))
+            Vconv.append(float(line[5]))
+            Fconv_F.append(float(line[6]))
+            RHOX.append(float(line[7]))
+
+        self.n = numpy.array(n)
+        self.lgTauR = numpy.array(lgTauR)
+        self.lgTau5 = numpy.array(lgTau5)
+        self.T = numpy.array(T)
+        self.Pe = numpy.array(Pe)
+        self.Ne = numpy.array(Ne)
+        self.Pg = numpy.array(Pg)
+        self.Prad = numpy.array(Prad)
+        self.Pturb = numpy.array(Pturb)
+        self.KappaRoss = numpy.array(KappaRoss)
+        self.Density = numpy.array(Density)
+        self.Mu = numpy.array(Mu)
+        self.Vconv = numpy.array(Vconv)
+        self.Fconv_F = numpy.array(Fconv_F)
+        self.RHOX = numpy.array(RHOX)
+
+    def write_BEGN(self, outdir=''):
+        self.filename = 'MARCS_T'+str(self.Teff)+'_G'+str(self.G)+'_M'+str(self.FeH)+'_t'+str(self.mt)+'.md'
+        f = open(outdir+self.filename, 'w')
+        f.write('BEGN\n')
+        f.write('MARCS T=%d Log g=%.2f Fe/H=%.2f mturb=%.1f\n' % (self.Teff, self.G, self.FeH, self.mt))
+        f.write('%d\n' % self.nlayers)
+        for i in range(self.nlayers):
+            f.write('%.1f %.1f %f %f %f %f\n' % (self.lgTauR[i], self.T[i], self.Pg[i], self.Ne[i], self.Mu[i],
+                                               self.KappaRoss[i]))
+        f.write('%d\n' % float(self.mt*100000.0))
+        f.write('natoms            0    %.2f\n' % self.FeH)
+        f.write('nmol              12\n')
+        f.write('          101.         106.       107.      108.         606.        607.        608.\n')
+        f.write('          707.         708.       808.    10108.       60808.\n')
+        f.close()
 
 
 

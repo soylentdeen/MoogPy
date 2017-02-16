@@ -857,7 +857,7 @@ class Spectrum( object ):
             return Spectrum(wl=self.wl[overlap], I=retval_I, Q=retval_Q, U=retval_U, V=retval_V, continuum=retval_continuum, header=self.header,
                         spectrum_type="DIFFERENCE")
 
-    def blend(self, other, fraction, wlRange=[0.0, numpy.inf]):
+    def blend(self, other, fraction, wlRange=None):
         """
         blended = Spectrum.blend(other, fraction)
         
@@ -872,6 +872,8 @@ class Spectrum( object ):
 
         The function returns a Spectrum object containing the blended spectrum
         """
+        if wlRange == None:
+            wlRange = [0.0, numpy.inf]
         overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl), wlRange[0]])
         overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl), wlRange[1]])
         overlap = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
