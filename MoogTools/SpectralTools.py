@@ -127,7 +127,7 @@ class Spectrum( object ):
     def addLabel(self, label=None):
         self.label = label
 
-    def extractData(self, data):
+    def extractData(self, data, plainFits=False):
         """
         Spectrum.extractData(data)
         
@@ -137,36 +137,48 @@ class Spectrum( object ):
         
         Note: the data object must contain a 'Wavelength' field.
         """
-        try:
-            self.wl = data.field('Wavelength')
-        except:
-            raise SpectrumError(0, "Spectrum data must contain WL data")
-        try:
-            self.flux_I = data.field('Stokes_I')
-        except:
-            self.flux_I = None
-        try:
-            self.dflux_I = data.field('dStokes_I')
-        except:
-            self.dflux_I = None
-        try:
-            self.flux_Q = data.field('Stokes_Q')
-        except:
+        if plainFits:
+            self.wl = data[0]
+            self.flux_I = data[1]
             self.flux_Q = None
-        try:
-            self.flux_U = data.field('Stokes_U')
-        except:
             self.flux_U = None
-        try:
-            self.flux_V = data.field('Stokes_V')
-        except:
             self.flux_V = None
-        try:
-            self.continuum = data.field('Continuum')
-        except:
             self.continuum = None
+            if len(data) == 3:
+                self.dflux_I = data[2]
+            else:
+                self.dflux_I = None
+        else:
+            try:
+                self.wl = data.field('Wavelength')
+            except:
+                raise SpectrumError(0, "Spectrum data must contain WL data")
+            try:
+                self.flux_I = data.field('Stokes_I')
+            except:
+                self.flux_I = None
+            try:
+                self.dflux_I = data.field('dStokes_I')
+            except:
+                self.dflux_I = None
+            try:
+                self.flux_Q = data.field('Stokes_Q')
+            except:
+                self.flux_Q = None
+            try:
+                self.flux_U = data.field('Stokes_U')
+            except:
+                self.flux_U = None
+            try:
+                self.flux_V = data.field('Stokes_V')
+            except:
+                self.flux_V = None
+            try:
+                self.continuum = data.field('Continuum')
+            except:
+                self.continuum = None
 
-    def loadData(self):
+    def loadData(self, plainFits=False):
         """
         Spectrum.loadData()
         
@@ -184,7 +196,9 @@ class Spectrum( object ):
         except:
             raise SpectrumError(0, "Error reading extension %d from %s" %
                     (self.ext, self.filename))
-        self.extractData(data)
+        self.extractData(data, plainFits=plainFits)
+        if plainFits:
+            self.header = pyfits.getheader(self.filename)
         del(data)
 
     def preserve(self, prepareColumns=True, I=True, dI=False, Q=False, U=False, V=True, continuum=True):
@@ -666,6 +680,54 @@ class Spectrum( object ):
                 continuum=retval_continuum, header=self.header,
                 spectrum_type="DIFFERENCE")
 
+    def __add__(self, other):
+        '''
+        Spectrum.__plus__(other)
+		
+        __sub__ overloads the addition operator.  It adds one spectrum 
+        to the other
+        
+        added = Spectrum + other
+        '''
+        overlap_start = numpy.max([numpy.min(self.wl), numpy.min(other.wl)])
+        overlap_stop = numpy.min([numpy.max(self.wl), numpy.max(other.wl)])
+        overlap = scipy.where((self.wl >= overlap_start) & (self.wl <= overlap_stop))
+        
+        if (self.flux_I != None) & (other.flux_I != None):
+            I = scipy.interpolate.splrep(other.wl, other.flux_I)
+            retval_I = numpy.zeros(len(self.wl))
+            retval_I[overlap] = self.flux_I[overlap] + scipy.interpolate.splev(self.wl[overlap], I)
+        else:
+            retval_I = None
+        if (self.flux_Q != None) & (other.flux_Q != None):
+            Q = scipy.interpolate.splrep(other.wl, other.flux_Q)
+            retval_Q = numpy.zeros(len(self.wl))
+            retval_Q[overlap] = self.flux_Q[overlap] + scipy.interpolate.splev(self.wl[overlap], Q)
+        else:
+            retval_Q = None
+        if (self.flux_U != None) & (other.flux_U != None):
+            U = scipy.interpolate.splrep(other.wl, other.flux_U)
+            retval_U = numpy.zeros(len(self.wl))
+            retval_U[overlap] = self.flux_U[overlap] + scipy.interpolate.splev(self.wl[overlap], U)
+        else:
+            retval_U = None
+        if (self.flux_V != None) & (other.flux_V != None):
+            V = scipy.interpolate.splrep(other.wl, other.flux_V)
+            retval_V = numpy.zeros(len(self.wl))
+            retval_V[overlap] = self.flux_V[overlap] + scipy.interpolate.splev(self.wl[overlap], V)
+        else:
+            retval_V = None
+        if (self.continuum != None) & (other.continuum != None):
+            continuum = scipy.interpolate.splrep(other.wl, other.continuum)
+            retval_continuum = numpy.zeros(len(self.wl))
+            retval_continuum[overlap] = self.continuum[overlap] + scipy.interpolate.splev(self.wl[overlap], continuum)
+        else:
+            retval_continuum = None
+        
+        return Spectrum(wl=self.wl, I=retval_I, Q=retval_Q, U=retval_U, V=retval_V, 
+                continuum=retval_continuum, header=self.header,
+                spectrum_type="DIFFERENCE")
+
     def __mul__(self, factor):
         
         if (self.flux_I != None):
@@ -1119,7 +1181,7 @@ class Spectrum( object ):
 
 
         retval = Spectrum(wl=new_x, I = new_I, dI = new_dI, Q = new_Q, U = new_U, V = new_V, 
-                continuum = new_C, spectrum_type='MERGED', header=header)
+                continuum = new_C, spectrum_type='MERGED', header=header, filename=self.filename)
 
         return retval
 
@@ -1624,6 +1686,52 @@ class BeachBall( Integrator ):
 
 
 
+def blackBodySpectrum(TemplateSpectrum=None, **kwargs):
+    """ Returns a blackbody function over the given wavelength  """
+
+    """
+    inputs:
+        wl : wavelength array
+               Assumed to be in units of cm, unless specified by wlUnits kwarg
+
+        nu : frequency array
+               
+        T : Blackbody Temperature (K)
+
+        wlUnits: Units of wavelengths (Optional)
+               'Angstroms'
+               'nanometers'
+               'microns'
+               'cm'
+               'meters'
+        outUnits: cgs Units to output.
+               'Fnu'
+               'Flambda'
+               'Energy'
+
+    outputs:
+        y : Blackbody function.  Unit is assumed to be Flambda or Fnu (depnding on whether
+                wl or nu was given) unless overridden by outUnits kwarg
+    """
+    h = 6.626e-27
+    c = 2.998e10
+    k = 1.38e-16
+    T = kwargs["T"]
+
+    wl = TemplateSpectrum.wl
+    if "wlUnits" in kwargs:
+        if kwargs["wlUnits"] == "Angstroms":
+            wl = wl*1e-8
+    c1 = 2.0*h*c**2.0
+    c2 = h*c/(k*T)
+    Flambda = c1/(wl**5.0*(numpy.exp(c2/wl)-1.0))
+    if "outUnits" in kwargs:
+        if kwargs["outUnits"] == "Energy":
+            return Flambda*wl
+    else:
+        return Spectrum(wl=TemplateSpectrum.wl, I=Flambda)
+
+
 def blackBody(**kwargs):
     """ Returns a blackbody function over the given wavelength  """
 
@@ -1658,6 +1766,9 @@ def blackBody(**kwargs):
 
     if "wl" in kwargs:
         wl = kwargs["wl"]
+        if "wlUnits" in kwargs:
+            if kwargs["wlUnits"] == "Angstroms":
+                wl = wl*1e-8
         c1 = 2.0*h*c**2.0
         c2 = h*c/(k*T)
         Flambda = c1/(wl**5.0*(numpy.exp(c2/wl)-1.0))

@@ -13,10 +13,6 @@ class MARCS_Atmosphere( object ):
     def __init__(self, df):
         data = open(df, 'r')
         model = data.readlines()
-        #coords = data.readline().split('_')
-        #self.G = float(coords[1][1:])
-        #self.m = float(coords[2][1:])
-        #self.mt = int(coords[3][1:])
         self.Teff = int(float(model[1].split()[0]))
         self.G = numpy.log10(float(model[3].split()[0]))
         self.mt = float(model[4].split()[0])
