@@ -271,8 +271,35 @@ class Spectrum( object ):
         hdu.writeto(outfileName, clobber=True)
         
     def copy(self):
-        return Spectrum(wl=self.wl, I=self.flux_I, Q=self.flux_Q, U=self.flux_U,continuum=self.continuum,
-                V=self.flux_V, header=self.header, spectrum_type='CONVOLVED')
+        newWl = self.wl.copy()
+        if self.flux_I != None:
+            newI = self.flux_I.copy()
+        else:
+            newI = None
+        if self.dflux_I != None:
+            newdI = self.dflux_I.copy()
+        else:
+            newdI = None
+        if self.flux_Q != None:
+            newQ = self.flux_Q.copy()
+        else:
+            newQ = None
+        if self.flux_U != None:
+            newU = self.flux_U.copy()
+        else:
+            newU = None
+        if self.flux_V != None:
+            newV = self.flux_V.copy()
+        else:
+            newV = None
+        if self.continuum != None:
+            newCont= self.continuum.copy()
+        else:
+            newCont = None
+
+        return Spectrum(wl=newWl, I=newI, dI=newdI, Q=newQ, 
+                        U=newU, continuum=newCont,
+                V=newV, header=self.header.copy(), spectrum_type='CONVOLVED')
 
     def plot(self, I=True, Q=False, U=False, V=False,
                  continuum=False, ax=None, **kwargs):
@@ -290,7 +317,10 @@ class Spectrum( object ):
         ax [matplotlib.pyplot.axis object]
         **kwargs = arguments to pass to the plot command
         """
-        plotLabel = self.header.get('EXTNAME')
+        if 'label' in kwargs:
+            plotLabel = kwargs.pop('label')
+        else:
+            plotLabel = self.header.get('EXTNAME')
         if I:
             if self.dflux_I != None:
                 ax.errorbar(self.wl, self.flux_I, yerr=self.dflux_I, 
@@ -628,7 +658,7 @@ class Spectrum( object ):
         if (self.continuum != None):
             continuum = self.continuum + offset
 
-        return Spectrum(wl=self.wl, I=I, Q=Q, U=U, V=V, 
+        return Spectrum(wl=self.wl, I=I, dI=self.dflux_I, Q=Q, U=U, V=V, 
                 continuum=continuum, header=self.header,
                 spectrum_type="ROTATED")
 
@@ -974,6 +1004,8 @@ class Spectrum( object ):
         self.wl = self.wl[bm]
         if self.flux_I != None:
             self.flux_I = self.flux_I[bm]
+        if self.dflux_I != None:
+            self.dflux_I = self.dflux_I[bm]
         if self.flux_Q != None:
             self.flux_Q = self.flux_Q[bm]
         if self.flux_U != None:
@@ -1727,7 +1759,7 @@ def blackBodySpectrum(TemplateSpectrum=None, **kwargs):
     Flambda = c1/(wl**5.0*(numpy.exp(c2/wl)-1.0))
     if "outUnits" in kwargs:
         if kwargs["outUnits"] == "Energy":
-            return Flambda*wl
+            return Spectrum(wl=TemplateSpectrum.wl, I=Flambda*TemplateSpectrum.wl)
     else:
         return Spectrum(wl=TemplateSpectrum.wl, I=Flambda)
 
