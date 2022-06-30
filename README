@@ -19,6 +19,6 @@ astropy
 
 Modifications to .bashrc:
 
-PYTHONPATH = /home/user/Code/Pythong/MoogPy/MoogTools/
+PYTHONPATH = /home/user/Code/Python/MoogPy/MoogTools/
 MOOGSTOKESSOURCE
 MOOGPYDATAPATH
